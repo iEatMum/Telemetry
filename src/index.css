@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----------------------------------------------------------------------------
+   Design tokens. Dark is the default (he opens this at 6:45am and 10:15pm).
+   The light block only kicks in if the system is set to light.
+   One accent — a deep gold (#F5A623). Used ONLY for the streak flame, the
+   active timer, and primary actions. Everything else stays quiet.
+---------------------------------------------------------------------------- */
+:root {
+  --bg: #0a0b0d;
+  --surface: #141619;
+  --surface-2: #1c1f24;
+  --line: #2a2e35;
+  --text: #f3f4f6;
+  --muted: #8b919c;
+  --accent: #f5a623;
+  --accent-deep: #d98e0b;
+  --accent-ink: #1a1206;
+  --accent-glow: rgba(245, 166, 35, 0.45);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f6f4;
+    --surface: #ffffff;
+    --surface-2: #efefec;
+    --line: #e3e3dd;
+    --text: #15171b;
+    --muted: #5c636e;
+    --accent: #b97d08; /* deeper gold so it stays legible on white */
+    --accent-deep: #9a6606;
+    --accent-ink: #ffffff;
+    --accent-glow: rgba(185, 125, 8, 0.3);
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: theme('fontFamily.sans');
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* No rubber-banding past the app edges on iOS. */
+    overscroll-behavior-y: none;
+  }
+
+  /* Keyboard users get a clear, gold focus ring on desktop. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  button {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  /* Shared text-input look. */
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none;
+  }
+}
+
+@layer utilities {
+  /* The stopwatch numerals: every digit the same width so numbers don't jitter. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* The scoreboard glow — static, so it's fine with reduced motion. */
+  .scoreboard {
+    text-shadow: 0 0 18px var(--accent-glow);
+  }
+
+  /* iOS safe areas (notch / home indicator). */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* The active-timer / flame pulse — disabled entirely under reduced motion. */
+@keyframes pulse-accent {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.animate-pulse-accent {
+  animation: pulse-accent 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

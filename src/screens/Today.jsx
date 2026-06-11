@@ -1,0 +1,238 @@
+import { useState } from 'react'
+import { useStore } from '../lib/store.jsx'
+import { Card, SectionLabel, Stat } from '../components/ui.jsx'
+import { verseForDay } from '../lib/verses.js'
+import {
+  appDayKey,
+  dateKey,
+  greeting,
+  longDate,
+  isSunday,
+  lastNDates,
+  streakDays,
+} from '../lib/dates.js'
+
+export default function Today({ onOpenSettings }) {
+  const { settings, streak, sprints, income, runs } = useStore()
+
+  const days = streakDays(streak.startedAt)
+  const verse = verseForDay()
+
+  // Live stat row (money + miles read 0 until Phase 2 adds their inputs).
+  const today = dateKey()
+  const sprintsToday = sprints.find((s) => s.date === today)?.count || 0
+  const monthPrefix = today.slice(0, 7) // 'YYYY-MM'
+  const moneyThisMonth = income
+    .filter((e) => (e.date || '').startsWith(monthPrefix))
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+  const weekKeys = new Set(lastNDates(7))
+  const milesThisWeek = runs
+    .filter((r) => weekKeys.has(r.date))
+    .reduce((sum, r) => sum + (Number(r.miles) || 0), 0)
+
+  return (
+    <div className="space-y-5 pt-3">
+      {/* Header */}
+      <header className="flex items-start justify-between">
+        <div>
+          <div className="text-sm text-muted">{longDate()}</div>
+          <h1 className="text-2xl font-semibold leading-tight">
+            {greeting()}
+            {settings.name ? `, ${settings.name.split(' ')[0]}` : ''}.
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-full border border-line bg-surface px-3 py-1.5">
+            <span aria-hidden>🔥</span>
+            <span className="font-clock tnum text-sm text-accent">{days}</span>
+            <span className="text-xs text-muted">{days === 1 ? 'day' : 'days'}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label="Settings"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface text-muted"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      {/* Sunday weekly-review banner */}
+      {isSunday() && (
+        <Card className="border-accent/40 bg-accent/5 p-4">
+          <div className="text-sm font-medium text-accent">Sunday — weekly review</div>
+          <div className="mt-0.5 text-sm text-muted">
+            The guided 10-minute review lands in Phase 2.
+          </div>
+        </Card>
+      )}
+
+      {/* Daily verse */}
+      <Card className="overflow-hidden">
+        <div className="border-l-2 border-accent p-5">
+          <SectionLabel>Today's verse</SectionLabel>
+          <p className="mt-3 text-[15px] leading-relaxed text-ink">{verse.text}</p>
+          <div className="mt-3 font-clock text-sm text-accent">{verse.ref}</div>
+        </div>
+      </Card>
+
+      {/* Morning protocol */}
+      <MorningChecklist wakeTime={settings.wakeTime} />
+
+      {/* Today's tasks */}
+      <TaskList />
+
+      {/* Stat row */}
+      <Card className="grid grid-cols-4 divide-x divide-line">
+        <Stat value={days} label="Streak" accent />
+        <Stat value={sprintsToday} label="Sprints" />
+        <Stat value={`$${moneyThisMonth}`} label="This mo" />
+        <Stat value={milesThisWeek.toFixed(milesThisWeek % 1 ? 1 : 0)} label="Mi / wk" />
+      </Card>
+
+      <p className="pb-2 text-center text-xs text-muted">A reset is data, not failure.</p>
+    </div>
+  )
+}
+
+// ---- Morning checklist -----------------------------------------------------
+function MorningChecklist({ wakeTime }) {
+  const { checklist, toggleChecklistItem } = useStore()
+  const today = checklist[appDayKey()] || {}
+
+  const items = [
+    { key: 'wake', label: `Wake ${wakeTime || '06:45'}`, tag: null },
+    { key: 'prayer', label: 'Prayer + Bible · 15 min', tag: null },
+    { key: 'run', label: 'Morning run', tag: null },
+    { key: 'phone', label: 'Phone out of bedroom', tag: '10:15pm' },
+  ]
+
+  const doneCount = items.filter((i) => today[i.key]).length
+
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between px-1">
+        <SectionLabel>Morning protocol</SectionLabel>
+        <span className="font-clock tnum text-xs text-muted">
+          {doneCount}/{items.length}
+        </span>
+      </div>
+      <Card className="divide-y divide-line">
+        {items.map((item) => (
+          <CheckRow
+            key={item.key}
+            checked={!!today[item.key]}
+            onToggle={() => toggleChecklistItem(item.key)}
+            label={item.label}
+            tag={item.tag}
+          />
+        ))}
+      </Card>
+    </section>
+  )
+}
+
+// A single tappable check row — used by the checklist. 44px+ tall.
+function CheckRow({ checked, onToggle, label, tag }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+      aria-pressed={checked}
+    >
+      <Box checked={checked} />
+      <span className={`flex-1 text-[15px] ${checked ? 'text-muted line-through' : 'text-ink'}`}>
+        {label}
+      </span>
+      {tag && <span className="text-xs text-muted">{tag}</span>}
+    </button>
+  )
+}
+
+function Box({ checked }) {
+  return (
+    <span
+      className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border ${
+        checked ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface2'
+      }`}
+    >
+      {checked && (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+    </span>
+  )
+}
+
+// ---- Today's tasks ---------------------------------------------------------
+function TaskList() {
+  const { tasks, addTask, toggleTask, deleteTask } = useStore()
+  const [draft, setDraft] = useState('')
+
+  function submit(e) {
+    e.preventDefault()
+    addTask(draft)
+    setDraft('')
+  }
+
+  return (
+    <section>
+      <div className="mb-2 px-1">
+        <SectionLabel>Today's tasks</SectionLabel>
+      </div>
+      <Card className="p-2">
+        <form onSubmit={submit} className="flex gap-2 p-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Add a task…"
+            className="flex-1 rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-ink disabled:opacity-40"
+            disabled={!draft.trim()}
+          >
+            Add
+          </button>
+        </form>
+
+        {tasks.length > 0 && (
+          <ul className="mt-1 divide-y divide-line">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex items-center gap-3 px-2 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => toggleTask(t.id)}
+                  aria-pressed={t.done}
+                  aria-label={t.done ? 'Mark not done' : 'Mark done'}
+                >
+                  <Box checked={t.done} />
+                </button>
+                <span className={`flex-1 text-[15px] ${t.done ? 'text-muted line-through' : 'text-ink'}`}>
+                  {t.title}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteTask(t.id)}
+                  aria-label="Delete task"
+                  className="px-1 text-muted hover:text-ink"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </section>
+  )
+}
