@@ -95,6 +95,37 @@ export function lastNDates(n, end = new Date()) {
   return out
 }
 
+// Total days in the month containing d.
+export function daysInMonth(d = new Date()) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+}
+
+// Days remaining in the month, counting today (for the $/day required pace).
+export function daysLeftInMonth(d = new Date()) {
+  return daysInMonth(d) - d.getDate() + 1
+}
+
+// Sunday 00:00 of the week containing d.
+export function startOfWeek(d = new Date()) {
+  const s = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  s.setDate(s.getDate() - s.getDay())
+  return s
+}
+
+// The last n weeks (oldest → newest) as { startKey, endKey, label }.
+export function lastNWeeks(n, end = new Date()) {
+  const thisWeek = startOfWeek(end)
+  const out = []
+  for (let i = n - 1; i >= 0; i--) {
+    const start = new Date(thisWeek)
+    start.setDate(start.getDate() - i * 7)
+    const endOf = new Date(start)
+    endOf.setDate(endOf.getDate() + 6)
+    out.push({ startKey: dateKey(start), endKey: dateKey(endOf), label: `${MONTHS[start.getMonth()].slice(0, 3)} ${start.getDate()}` })
+  }
+  return out
+}
+
 // Days between today and a target date (e.g. report-to-college). Negative = past.
 export function daysUntil(targetKey, from = new Date()) {
   if (!targetKey) return null

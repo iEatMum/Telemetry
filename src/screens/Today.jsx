@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { Card, SectionLabel, Stat } from '../components/ui.jsx'
 import { verseForDay } from '../lib/verses.js'
+import { isDue, recurrenceLabel, RECURRENCE_PRESETS, CATEGORIES } from '../lib/tasks.js'
 import {
   appDayKey,
   dateKey,
@@ -12,16 +13,15 @@ import {
   streakDays,
 } from '../lib/dates.js'
 
-export default function Today({ onOpenSettings }) {
+export default function Today({ onOpenSettings, onOpenReview }) {
   const { settings, streak, sprints, income, runs } = useStore()
 
   const days = streakDays(streak.startedAt)
   const verse = verseForDay()
 
-  // Live stat row (money + miles read 0 until Phase 2 adds their inputs).
   const today = dateKey()
   const sprintsToday = sprints.find((s) => s.date === today)?.count || 0
-  const monthPrefix = today.slice(0, 7) // 'YYYY-MM'
+  const monthPrefix = today.slice(0, 7)
   const moneyThisMonth = income
     .filter((e) => (e.date || '').startsWith(monthPrefix))
     .reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
@@ -61,14 +61,16 @@ export default function Today({ onOpenSettings }) {
         </div>
       </header>
 
-      {/* Sunday weekly-review banner */}
+      {/* Sunday Debrief banner */}
       {isSunday() && (
-        <Card className="border-accent/40 bg-accent/5 p-4">
-          <div className="text-sm font-medium text-accent">Sunday — weekly review</div>
-          <div className="mt-0.5 text-sm text-muted">
-            The guided 10-minute review lands in Phase 2.
-          </div>
-        </Card>
+        <button
+          type="button"
+          onClick={onOpenReview}
+          className="block w-full rounded-2xl border border-accent/40 bg-accent/5 p-4 text-left"
+        >
+          <div className="text-sm font-medium text-accent">Sunday Debrief →</div>
+          <div className="mt-0.5 text-sm text-muted">Ten minutes. Review the week, set one change.</div>
+        </button>
       )}
 
       {/* Daily verse */}
@@ -80,10 +82,13 @@ export default function Today({ onOpenSettings }) {
         </div>
       </Card>
 
+      {/* Reading plan */}
+      <ReadingCard />
+
       {/* Morning protocol */}
       <MorningChecklist wakeTime={settings.wakeTime} />
 
-      {/* Today's tasks */}
+      {/* Today's tasks (recurring engine) */}
       <TaskList />
 
       {/* Stat row */}
@@ -99,9 +104,41 @@ export default function Today({ onOpenSettings }) {
   )
 }
 
-// ---- Morning checklist -----------------------------------------------------
+// ---- Reading plan ----------------------------------------------------------
+function ReadingCard() {
+  const { reading, advanceReading } = useStore()
+  const done = reading.index >= reading.plan.length
+  const current = done ? null : reading.plan[reading.index]
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between">
+        <SectionLabel>Today's reading</SectionLabel>
+        <span className="font-clock tnum text-xs text-muted">
+          {reading.index}/{reading.plan.length}
+        </span>
+      </div>
+      {done ? (
+        <p className="mt-3 text-[15px] text-ink">Plan complete. Add the next book in Settings.</p>
+      ) : (
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="font-clock text-xl text-ink">{current}</span>
+          <button
+            type="button"
+            onClick={advanceReading}
+            className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent"
+          >
+            Mark read →
+          </button>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+// ---- Morning checklist (tri-state: done / missed) --------------------------
 function MorningChecklist({ wakeTime }) {
-  const { checklist, toggleChecklistItem } = useStore()
+  const { checklist, cycleChecklistItem } = useStore()
   const today = checklist[appDayKey()] || {}
 
   const items = [
@@ -111,7 +148,7 @@ function MorningChecklist({ wakeTime }) {
     { key: 'phone', label: 'Phone out of bedroom', tag: '10:15pm' },
   ]
 
-  const doneCount = items.filter((i) => today[i.key]).length
+  const doneCount = items.filter((i) => normalize(today[i.key]) === 'done').length
 
   return (
     <section>
@@ -125,43 +162,60 @@ function MorningChecklist({ wakeTime }) {
         {items.map((item) => (
           <CheckRow
             key={item.key}
-            checked={!!today[item.key]}
-            onToggle={() => toggleChecklistItem(item.key)}
+            state={normalize(today[item.key])}
+            onCycle={() => cycleChecklistItem(item.key)}
             label={item.label}
             tag={item.tag}
           />
         ))}
       </Card>
+      <p className="mt-1.5 px-1 text-[11px] text-muted">Tap: ✓ done · again: ✕ missed · again: clear</p>
     </section>
   )
 }
 
-// A single tappable check row — used by the checklist. 44px+ tall.
-function CheckRow({ checked, onToggle, label, tag }) {
+function normalize(v) {
+  return v === true ? 'done' : v // legacy booleans
+}
+
+function CheckRow({ state, onCycle, label, tag }) {
+  const done = state === 'done'
+  const missed = state === 'missed'
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={onCycle}
       className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-      aria-pressed={checked}
+      aria-pressed={done}
     >
-      <Box checked={checked} />
-      <span className={`flex-1 text-[15px] ${checked ? 'text-muted line-through' : 'text-ink'}`}>
+      <Box state={state} />
+      <span className={`flex-1 text-[15px] ${done ? 'text-muted line-through' : missed ? 'text-muted' : 'text-ink'}`}>
         {label}
       </span>
+      {missed && <span className="text-[10px] uppercase tracking-wide text-muted">missed</span>}
       {tag && <span className="text-xs text-muted">{tag}</span>}
     </button>
   )
 }
 
-function Box({ checked }) {
+function Box({ state }) {
+  if (state === 'missed') {
+    return (
+      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border border-dashed border-muted text-muted">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </span>
+    )
+  }
+  const done = state === 'done'
   return (
     <span
       className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border ${
-        checked ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface2'
+        done ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface2'
       }`}
     >
-      {checked && (
+      {done && (
         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 13l4 4L19 7" />
         </svg>
@@ -170,14 +224,21 @@ function Box({ checked }) {
   )
 }
 
-// ---- Today's tasks ---------------------------------------------------------
+// ---- Today's tasks (recurring engine) --------------------------------------
 function TaskList() {
-  const { tasks, addTask, toggleTask, deleteTask } = useStore()
+  const { tasks, addTask, completeTask, missTask, deleteTask } = useStore()
   const [draft, setDraft] = useState('')
+  const [recIdx, setRecIdx] = useState(0)
+  const [cat, setCat] = useState('Life')
+
+  const today = dateKey()
+  const due = tasks.filter((t) => isDue(t, today))
+  const doneOneTime = tasks.filter((t) => t.recurrence?.type === 'none' && t.done)
+  const display = [...due, ...doneOneTime]
 
   function submit(e) {
     e.preventDefault()
-    addTask(draft)
+    addTask(draft, cat, RECURRENCE_PRESETS[recIdx].make(new Date()))
     setDraft('')
   }
 
@@ -187,49 +248,87 @@ function TaskList() {
         <SectionLabel>Today's tasks</SectionLabel>
       </div>
       <Card className="p-2">
-        <form onSubmit={submit} className="flex gap-2 p-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Add a task…"
-            className="flex-1 rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-ink disabled:opacity-40"
-            disabled={!draft.trim()}
-          >
-            Add
-          </button>
+        <form onSubmit={submit} className="space-y-2 p-2">
+          <div className="flex gap-2">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Add a task…"
+              className="flex-1 rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-ink disabled:opacity-40"
+              disabled={!draft.trim()}
+            >
+              Add
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {RECURRENCE_PRESETS.map((p, i) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => setRecIdx(i)}
+                className={`rounded-full border px-2.5 py-1 text-xs ${
+                  recIdx === i ? 'border-accent text-accent' : 'border-line text-muted'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+            <select
+              value={cat}
+              onChange={(e) => setCat(e.target.value)}
+              className="ml-auto rounded-full border border-line bg-surface2 px-2 py-1 text-xs text-muted focus:outline-none"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
         </form>
 
-        {tasks.length > 0 && (
+        {display.length > 0 && (
           <ul className="mt-1 divide-y divide-line">
-            {tasks.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 px-2 py-2.5">
-                <button
-                  type="button"
-                  onClick={() => toggleTask(t.id)}
-                  aria-pressed={t.done}
-                  aria-label={t.done ? 'Mark not done' : 'Mark done'}
-                >
-                  <Box checked={t.done} />
-                </button>
-                <span className={`flex-1 text-[15px] ${t.done ? 'text-muted line-through' : 'text-ink'}`}>
-                  {t.title}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => deleteTask(t.id)}
-                  aria-label="Delete task"
-                  className="px-1 text-muted hover:text-ink"
-                >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
-              </li>
-            ))}
+            {display.map((t) => {
+              const recurring = t.recurrence?.type !== 'none'
+              return (
+                <li key={t.id} className="flex items-center gap-3 px-2 py-2.5">
+                  <button type="button" onClick={() => completeTask(t.id)} aria-label="Complete">
+                    <Box state={t.done ? 'done' : undefined} />
+                  </button>
+                  <div className="flex-1">
+                    <span className={`text-[15px] ${t.done ? 'text-muted line-through' : 'text-ink'}`}>
+                      {t.title}
+                    </span>
+                    <span className="ml-2 text-[11px] text-muted">
+                      {t.cat} · {recurrenceLabel(t.recurrence)}
+                    </span>
+                  </div>
+                  {recurring ? (
+                    <button
+                      type="button"
+                      onClick={() => missTask(t.id)}
+                      className="text-[11px] uppercase tracking-wide text-muted"
+                    >
+                      skip
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => deleteTask(t.id)}
+                      aria-label="Delete task"
+                      className="px-1 text-muted hover:text-ink"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M6 6l12 12M18 6L6 18" />
+                      </svg>
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
       </Card>

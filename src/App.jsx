@@ -7,18 +7,26 @@ import Money from './screens/Money.jsx'
 import Train from './screens/Train.jsx'
 import UrgeProtocol from './components/UrgeProtocol.jsx'
 import SettingsSheet from './components/SettingsSheet.jsx'
+import WeeklyReview from './components/WeeklyReview.jsx'
 
 export default function App() {
   const [tab, setTab] = useState('today')
   const [urgeOpen, setUrgeOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
+
+  function openReview() {
+    setSettingsOpen(false)
+    setReviewOpen(true)
+  }
 
   return (
     <div className="min-h-full bg-bg text-ink">
       <div className="relative mx-auto flex min-h-full max-w-app flex-col">
-        {/* Content. Bottom padding clears the fixed tab bar. */}
         <main className="flex-1 px-4 pb-28 pt-safe">
-          {tab === 'today' && <Today onOpenSettings={() => setSettingsOpen(true)} />}
+          {tab === 'today' && (
+            <Today onOpenSettings={() => setSettingsOpen(true)} onOpenReview={openReview} />
+          )}
           {tab === 'streak' && <Streak onOpenUrge={() => setUrgeOpen(true)} />}
           {tab === 'sprint' && <Sprint />}
           {tab === 'money' && <Money />}
@@ -28,11 +36,11 @@ export default function App() {
         <TabBar active={tab} onChange={setTab} />
       </div>
 
-      {/* Full-screen takeover — the urge protocol. Reachable in 2 taps: Streak → HELP NOW. */}
       {urgeOpen && <UrgeProtocol onClose={() => setUrgeOpen(false)} />}
-
-      {/* Minimal Phase-1 settings (full version is Phase 2). */}
-      {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <SettingsSheet onClose={() => setSettingsOpen(false)} onOpenReview={openReview} />
+      )}
+      {reviewOpen && <WeeklyReview onClose={() => setReviewOpen(false)} />}
     </div>
   )
 }

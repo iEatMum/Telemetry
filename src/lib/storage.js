@@ -7,7 +7,7 @@
 // Shape of the data lives in DEFAULTS below — it doubles as documentation.
 
 const PREFIX = 'lockedin:'
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 // Today's date as the app sees it (used for a couple of defaults below).
 // The real day-rollover logic (3am) lives in dates.js.
@@ -20,9 +20,14 @@ export const DEFAULTS = {
   settings: {
     name: '',
     wakeTime: '06:45',
+    bedTime: '22:15', // "phone out of the bedroom by 10:15pm"
     moneyGoal: 3500,
+    // Phase 2: multiple accountability partners on the HELP button.
+    // partnerName/partnerPhone are kept for one-time migration (see store.jsx).
+    partners: [], // [{ id, name, phone }]
     partnerName: '',
     partnerPhone: '',
+    shoes: [], // ['Vaporfly', 'Daily trainer', ...] — tag runs to track mileage
     reportDate: '2026-08-15', // "Report to Fresno State" — editable in Settings
     focusShortcutName: 'Sprint', // iOS Shortcut the Sprint screen can trigger
     schemaVersion: SCHEMA_VERSION,
@@ -39,14 +44,28 @@ export const DEFAULTS = {
   },
 
   sprints: [], // [{ date:'YYYY-MM-DD', count:Number, labels:[String] }]
-  income: [], // [{ id, date, amount, source }]                  (Phase 2)
-  runs: [], // [{ id, date, type, miles, minutes, rpe, note }]   (Phase 2)
-  tasks: [], // [{ id, title, cat, recurrence, nextDue, done, history:[] }] (Phase 2)
-  reviews: [], // [{ weekOf, stats:{}, worked, broke, oneChange }] (Phase 2)
+  income: [], // [{ id, date, amount, source }]
+  runs: [], // [{ id, date, type, miles, minutes, rpe, note, shoe, warmup }]
+  // recurrence: { type:'none'|'daily'|'weekly'|'everyN', weekday?, n?, unit? }
+  tasks: [], // [{ id, title, cat, recurrence, nextDue, done, history:[] }]
+  reviews: [], // [{ weekOf, stats:{}, worked, broke, oneChange }]
 
   // Morning protocol checklist, keyed by app-day ('YYYY-MM-DD', rolls at 3am).
-  // { '2026-06-11': { wake:false, prayer:false, run:false, phone:false } }
+  // Each item is tri-state: undefined | 'done' | 'missed' (a miss is data, not failure).
+  // { '2026-06-11': { wake:'done', prayer:'missed', run:undefined, phone:'done' } }
   checklist: {},
+
+  // A reading plan you move through one section at a time (Ian's ask).
+  // index points at the current section; advancing logs to history.
+  reading: {
+    index: 0,
+    history: [], // [{ label, at }]
+    plan: [
+      'John 1', 'John 2', 'John 3', 'John 4', 'John 5', 'John 6', 'John 7',
+      'John 8', 'John 9', 'John 10', 'John 11', 'John 12', 'John 13', 'John 14',
+      'John 15', 'John 16', 'John 17', 'John 18', 'John 19', 'John 20', 'John 21',
+    ],
+  },
 }
 
 function keyOf(name) {

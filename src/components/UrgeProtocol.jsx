@@ -44,8 +44,7 @@ export default function UrgeProtocol({ onClose }) {
     setDone((d) => d.map((v, idx) => (idx === i ? !v : v)))
   }
 
-  const partner = settings.partnerName || 'your partner'
-  const hasPhone = !!settings.partnerPhone
+  const partners = (settings.partners || []).filter((p) => p.phone)
 
   const steps = [
     'Put the phone down. Leave the room.',
@@ -83,24 +82,31 @@ export default function UrgeProtocol({ onClose }) {
             if (i === 2) {
               return (
                 <li key="text" className="rounded-2xl border border-accent bg-accent/5 p-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex gap-3">
                     <StepNum n={3} on={done[2]} onClick={() => toggle(2)} />
                     <div className="flex-1">
-                      <div className="text-[15px] text-ink">Text {partner}.</div>
-                      {hasPhone ? (
-                        <a
-                          href={smsLink(settings.partnerPhone, TEXT_BODY)}
-                          onClick={() => toggle(2)}
-                          className="mt-2 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-ink"
-                        >
-                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" />
-                          </svg>
-                          Text now — “…check on me in 15.”
-                        </a>
+                      <div className="text-[15px] text-ink">
+                        Text {partners.length === 1 ? partners[0].name : 'someone in your corner'}.
+                      </div>
+                      {partners.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {partners.map((p) => (
+                            <a
+                              key={p.id}
+                              href={smsLink(p.phone, TEXT_BODY)}
+                              onClick={() => toggle(2)}
+                              className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-ink"
+                            >
+                              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" />
+                              </svg>
+                              Text {p.name}
+                            </a>
+                          ))}
+                        </div>
                       ) : (
                         <div className="mt-1 text-xs text-muted">
-                          Add your partner's number in Settings for one-tap texting.
+                          Add a partner's number in Settings for one-tap texting.
                         </div>
                       )}
                     </div>

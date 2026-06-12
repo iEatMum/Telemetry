@@ -9,6 +9,23 @@ Legend: `[easy]` small change · `[schema]` touches the data model in storage.js
 
 ---
 
+## ✅ Shipped in Phase 2
+
+- Money (goal, $/day pace, run-rate projection, income log, per-source totals, the "pile")
+- Train (session log + auto-pace, shoe tracker, warm-up checkbox, weekly mileage,
+  last-4-weeks bars, >15% jump flag, Fresno State countdown)
+- Recurring task engine (seeded tasks, due-only surfacing, recurrence + categories)
+- Weekly review → "Sunday Debrief" (auto-stats + good/bad questions + last week's one-change)
+- Full Settings (multi-partner list, shoes, money goal, bedtime, report date, wipe-all)
+- Ian's asks: **missed/failed state** (tri-state checklist), **multi-person HELP button**,
+  **weekly good/bad report**, **reading assignment** (John 1–21 plan, extendable)
+
+**Still parked** (mostly Phase-1 polish + Phase-3 backend): HALT check, 3-sec hold-to-reset,
+urge timeline, +5 flow extension, sprint stacking, RPE-vs-pace auto-note, the 🔶 color
+decision, and the whole auto-accountability layer (§6).
+
+---
+
 ## ★ Ian's direct asks (top of the list)
 
 1. **A "failed / missed" option.** `[schema]` Right now a checklist item is just
