@@ -6,6 +6,8 @@
 //
 // Shape of the data lives in DEFAULTS below — it doubles as documentation.
 
+import { sanitize } from './validate.js'
+
 const PREFIX = 'lockedin:'
 export const SCHEMA_VERSION = 2
 
@@ -77,30 +79,28 @@ function keyOf(name) {
 // and valid, otherwise a fresh copy of the default for that key.
 export function get(name) {
   const fallback = structuredClone(DEFAULTS[name])
+  let value = fallback
   try {
     const raw = localStorage.getItem(keyOf(name))
-    if (raw == null) return fallback
-    const parsed = JSON.parse(raw)
-    // For object-shaped stores, merge over defaults so new fields appear
-    // automatically after an update without wiping a user's existing data.
-    if (
-      fallback &&
-      typeof fallback === 'object' &&
-      !Array.isArray(fallback)
-    ) {
-      // Only merge if the STORED value is also a plain object. If it got
-      // corrupted to an array/primitive (possible under iOS storage eviction),
-      // fall back to a clean default instead of spreading junk into the shape.
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return fallback
-      return { ...fallback, ...parsed }
+    if (raw != null) {
+      const parsed = JSON.parse(raw)
+      if (fallback && typeof fallback === 'object' && !Array.isArray(fallback)) {
+        // Object store: merge over defaults so new fields appear after an update,
+        // but only if the stored value is itself a plain object (corruption to an
+        // array/primitive under iOS eviction falls back to a clean default).
+        value = !parsed || typeof parsed !== 'object' || Array.isArray(parsed) ? fallback : { ...fallback, ...parsed }
+      } else if (Array.isArray(fallback) && !Array.isArray(parsed)) {
+        value = fallback // array store corrupted to a non-array
+      } else {
+        value = parsed
+      }
     }
-    // Array-shaped stores: if corruption made it a non-array, use the default.
-    if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback
-    return parsed
   } catch (err) {
     console.warn(`[storage] could not read "${name}", using default`, err)
-    return fallback
+    value = fallback
   }
+  // Final checks-and-balances pass: clamp/cap/drop anything out of shape.
+  return sanitize(name, value)
 }
 
 // Write a value. Returns the value so callers can chain.
