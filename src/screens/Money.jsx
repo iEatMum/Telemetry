@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { Card, SectionLabel } from '../components/ui.jsx'
-import { dateKey, daysLeftInMonth, MONTHS } from '../lib/dates.js'
+import { dateKey, daysLeftInMonth, daysInMonth, MONTHS } from '../lib/dates.js'
 
 const SOURCES = ['Job', 'Roblox', 'Other']
 
@@ -25,9 +25,11 @@ export default function Money() {
   const daysLeft = daysLeftInMonth()
   const requiredPace = remaining > 0 ? Math.ceil(remaining / daysLeft) : 0
 
-  // Run-rate: projected month-end at the current daily average.
-  const dayOfMonth = new Date().getDate()
-  const projected = Math.round((monthTotal / dayOfMonth) * (new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()))
+  // Run-rate: projected month-end at the current daily average. Only shown once
+  // a few days in (gate below) — a single entry on the 1st would project wildly.
+  const now = new Date()
+  const dayOfMonth = now.getDate()
+  const projected = Math.round((monthTotal / dayOfMonth) * daysInMonth(now))
 
   const perSource = SOURCES.map((src) => ({
     src,
@@ -62,7 +64,7 @@ export default function Money() {
           <Mini label="Days left" value={daysLeft} />
           <Mini label="Need / day" value={money(requiredPace)} accent />
         </div>
-        {monthTotal > 0 && (
+        {monthTotal > 0 && dayOfMonth >= 5 && (
           <p className="mt-4 text-center text-xs text-muted">
             At your current pace you'll bank <span className="text-ink">{money(projected)}</span> by month-end.
           </p>
@@ -180,6 +182,7 @@ function LogIncome({ onAdd }) {
           <input
             type="date"
             value={date}
+            max={dateKey()}
             onChange={(e) => setDate(e.target.value)}
             className="rounded-xl border border-line bg-surface2 px-3 py-2.5 font-clock text-sm text-ink focus:border-accent focus:outline-none"
           />

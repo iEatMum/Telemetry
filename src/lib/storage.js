@@ -30,6 +30,7 @@ export const DEFAULTS = {
     shoes: [], // ['Vaporfly', 'Daily trainer', ...] — tag runs to track mileage
     reportDate: '2026-08-15', // "Report to Fresno State" — editable in Settings
     focusShortcutName: 'Sprint', // iOS Shortcut the Sprint screen can trigger
+    seededTasks: false, // set true once starter tasks are seeded — see store.jsx
     schemaVersion: SCHEMA_VERSION,
   },
 
@@ -87,8 +88,14 @@ export function get(name) {
       typeof fallback === 'object' &&
       !Array.isArray(fallback)
     ) {
+      // Only merge if the STORED value is also a plain object. If it got
+      // corrupted to an array/primitive (possible under iOS storage eviction),
+      // fall back to a clean default instead of spreading junk into the shape.
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return fallback
       return { ...fallback, ...parsed }
     }
+    // Array-shaped stores: if corruption made it a non-array, use the default.
+    if (Array.isArray(fallback) && !Array.isArray(parsed)) return fallback
     return parsed
   } catch (err) {
     console.warn(`[storage] could not read "${name}", using default`, err)

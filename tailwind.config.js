@@ -23,7 +23,6 @@ export default {
         accent: 'var(--accent)',
         'accent-deep': 'var(--accent-deep)',
         'accent-ink': 'var(--accent-ink)',
-        good: 'var(--good)',
       },
       fontFamily: {
         // The "stopwatch" look. SF Mono / system monospace — crisp, offline, free.

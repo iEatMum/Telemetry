@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { Card, SectionLabel } from '../components/ui.jsx'
-import { dateKey, lastNWeeks, daysUntil } from '../lib/dates.js'
+import { appDayDate, lastNWeeks, daysUntil } from '../lib/dates.js'
 
 const TYPES = ['Easy', 'Workout', 'Long', 'Strides', 'Lift', 'Cross']
 
 function pace(miles, minutes) {
   if (!miles || !minutes) return null
-  const p = minutes / miles
-  const m = Math.floor(p)
-  const s = String(Math.round((p - m) * 60)).padStart(2, '0')
+  // Round to total seconds first, then split — so 7.995 min/mi reads "8:00",
+  // never "7:60" (seconds rounding up to 60 without carrying the minute).
+  const total = Math.round((minutes / miles) * 60)
+  const m = Math.floor(total / 60)
+  const s = String(total % 60).padStart(2, '0')
   return `${m}:${s}`
 }
 
@@ -25,7 +27,12 @@ export default function Train() {
   const thisWeek = weeks[3].miles
   const lastWeek = weeks[2].miles
   const maxWeek = Math.max(1, ...weeks.map((w) => w.miles))
-  const bigJump = lastWeek > 0 && thisWeek > lastWeek * 1.15
+  // Project the still-accumulating current week to a full-week pace before
+  // flagging — otherwise merely matching last week's volume mid-week trips it.
+  const [sy, sm, sd] = weeks[3].startKey.split('-').map(Number)
+  const daysElapsed = Math.min(7, Math.max(1, Math.round((appDayDate() - new Date(sy, sm - 1, sd)) / 86400000) + 1))
+  const projectedWeek = Math.round((thisWeek / daysElapsed) * 7)
+  const bigJump = lastWeek > 0 && projectedWeek > lastWeek * 1.15
 
   const reportDays = daysUntil(settings.reportDate)
   const recent = [...runs].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 6)
@@ -47,9 +54,11 @@ export default function Train() {
         </div>
         <div className="text-right">
           <div className="font-clock tnum text-3xl text-accent scoreboard">
-            {reportDays != null ? reportDays : '—'}
+            {reportDays == null ? '—' : Math.max(0, reportDays)}
           </div>
-          <div className="text-[10px] uppercase tracking-wide text-muted">days out</div>
+          <div className="text-[10px] uppercase tracking-wide text-muted">
+            {reportDays != null && reportDays <= 0 ? 'report day' : 'days out'}
+          </div>
         </div>
       </Card>
 
@@ -77,7 +86,7 @@ export default function Train() {
         </div>
         {bigJump && (
           <p className="mt-3 rounded-xl border border-accent/40 bg-accent/5 px-3 py-2 text-xs text-accent">
-            Big jump — {lastWeek.toFixed(0)} → {thisWeek.toFixed(0)} mi (&gt;15%). Build gradually.
+            Big jump — last week {lastWeek.toFixed(0)} mi, on pace for {projectedWeek} mi (&gt;15%). Ease in.
           </p>
         )}
       </Card>

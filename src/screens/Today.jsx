@@ -8,7 +8,7 @@ import {
   dateKey,
   greeting,
   longDate,
-  isSunday,
+  isAppSunday,
   lastNDates,
   streakDays,
 } from '../lib/dates.js'
@@ -61,8 +61,8 @@ export default function Today({ onOpenSettings, onOpenReview }) {
         </div>
       </header>
 
-      {/* Sunday Debrief banner */}
-      {isSunday() && (
+      {/* Sunday Debrief banner — gated on the 3am app-day, like everything else */}
+      {isAppSunday() && (
         <button
           type="button"
           onClick={onOpenReview}
@@ -86,7 +86,7 @@ export default function Today({ onOpenSettings, onOpenReview }) {
       <ReadingCard />
 
       {/* Morning protocol */}
-      <MorningChecklist wakeTime={settings.wakeTime} />
+      <MorningChecklist wakeTime={settings.wakeTime} bedTime={settings.bedTime} />
 
       {/* Today's tasks (recurring engine) */}
       <TaskList />
@@ -137,7 +137,7 @@ function ReadingCard() {
 }
 
 // ---- Morning checklist (tri-state: done / missed) --------------------------
-function MorningChecklist({ wakeTime }) {
+function MorningChecklist({ wakeTime, bedTime }) {
   const { checklist, cycleChecklistItem } = useStore()
   const today = checklist[appDayKey()] || {}
 
@@ -145,7 +145,7 @@ function MorningChecklist({ wakeTime }) {
     { key: 'wake', label: `Wake ${wakeTime || '06:45'}`, tag: null },
     { key: 'prayer', label: 'Prayer + Bible · 15 min', tag: null },
     { key: 'run', label: 'Morning run', tag: null },
-    { key: 'phone', label: 'Phone out of bedroom', tag: '10:15pm' },
+    { key: 'phone', label: 'Phone out of bedroom', tag: fmt12(bedTime || '22:15') },
   ]
 
   const doneCount = items.filter((i) => normalize(today[i.key]) === 'done').length
@@ -176,6 +176,15 @@ function MorningChecklist({ wakeTime }) {
 
 function normalize(v) {
   return v === true ? 'done' : v // legacy booleans
+}
+
+// 'HH:MM' (24h) -> '10:15pm'. Handles noon/midnight + zero-padded minutes so
+// the checklist tag always matches the configurable bedTime setting.
+function fmt12(t) {
+  const [h, m] = (t || '22:15').split(':').map(Number)
+  const ap = h < 12 ? 'am' : 'pm'
+  const h12 = ((h + 11) % 12) + 1
+  return `${h12}:${String(m).padStart(2, '0')}${ap}`
 }
 
 function CheckRow({ state, onCycle, label, tag }) {
@@ -233,7 +242,11 @@ function TaskList() {
 
   const today = dateKey()
   const due = tasks.filter((t) => isDue(t, today))
-  const doneOneTime = tasks.filter((t) => t.recurrence?.type === 'none' && t.done)
+  // Show a one-time task as "just done" only on the day it was completed, then
+  // let it drop off — otherwise every task ever finished lingers here forever.
+  const doneOneTime = tasks.filter(
+    (t) => t.recurrence?.type === 'none' && t.done && t.history?.at(-1)?.date === today
+  )
   const display = [...due, ...doneOneTime]
 
   function submit(e) {

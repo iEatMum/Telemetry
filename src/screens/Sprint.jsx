@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { Card, SectionLabel } from '../components/ui.jsx'
-import { dateKey, lastNDates, WEEKDAYS } from '../lib/dates.js'
+import { appDayKey, appDayDate, lastNDates, WEEKDAYS } from '../lib/dates.js'
 import {
   prepareSound,
   playSound,
@@ -26,6 +26,7 @@ export default function Sprint() {
   const [status, setStatus] = useState('idle') // idle | running | paused | finished
   const [remaining, setRemaining] = useState(25 * 60)
   const endRef = useRef(null) // wall-clock ms when the timer hits 0
+  const finishedRef = useRef(false) // guards finish() from running twice
 
   // Tick from a real end-timestamp so backgrounding the tab doesn't drift.
   useEffect(() => {
@@ -33,7 +34,10 @@ export default function Sprint() {
     const tick = () => {
       const rem = Math.max(0, Math.round((endRef.current - Date.now()) / 1000))
       setRemaining(rem)
-      if (rem <= 0) finish()
+      if (rem <= 0) {
+        clearInterval(id) // stop the live interval before React tears it down
+        finish()
+      }
     }
     const id = setInterval(tick, 250)
     const onVis = () => {
@@ -49,6 +53,7 @@ export default function Sprint() {
   }, [status, mode])
 
   function startTimer(mins, theMode) {
+    finishedRef.current = false
     setMode(theMode)
     setRemaining(mins * 60)
     endRef.current = Date.now() + mins * 60 * 1000
@@ -71,11 +76,13 @@ export default function Sprint() {
     releaseWakeLock()
   }
   function resume() {
+    finishedRef.current = false
     endRef.current = Date.now() + remaining * 1000
     setStatus('running')
     requestWakeLock()
   }
   function stop() {
+    finishedRef.current = false
     setStatus('idle')
     setMode('sprint')
     setRemaining(durationMin * 60)
@@ -83,6 +90,8 @@ export default function Sprint() {
   }
 
   function finish() {
+    if (finishedRef.current) return // idempotent — a racing tick can't double-count
+    finishedRef.current = true
     setStatus('finished')
     playSound()
     releaseWakeLock()
@@ -94,7 +103,7 @@ export default function Sprint() {
     }
   }
 
-  const todayCount = sprints.find((s) => s.date === dateKey())?.count || 0
+  const todayCount = sprints.find((s) => s.date === appDayKey())?.count || 0
 
   // ---- Active takeover (running / paused / finished) -----------------------
   if (status !== 'idle') {
@@ -305,7 +314,7 @@ function SprintTakeover({
 
 // ---- 7-day history bar chart ----------------------------------------------
 function WeekChart({ sprints }) {
-  const week = lastNDates(7).map((key) => {
+  const week = lastNDates(7, appDayDate()).map((key) => {
     const [y, m, d] = key.split('-').map(Number)
     return {
       key,

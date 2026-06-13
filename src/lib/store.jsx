@@ -13,7 +13,10 @@ import { computeNextDue, seedTasks } from './tasks.js'
 const StoreContext = createContext(null)
 
 function newId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+  // crypto.randomUUID where available (all modern iOS/desktop), else a
+  // time + wider-random fallback to shrink the same-millisecond collision window.
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 11)
 }
 
 // On first ever launch, stamp the streak's start time (defaults can't be "now").
@@ -43,12 +46,22 @@ function initSettings() {
   return s
 }
 
-// Seed the recurring tasks on first run.
+// Seed the recurring tasks once, EVER. A persisted flag decides — not emptiness —
+// so deleting every task doesn't resurrect the 5 seeds on the next launch.
+function markTasksSeeded() {
+  storage.set('settings', { ...storage.get('settings'), seededTasks: true })
+}
 function initTasks() {
   const t = storage.get('tasks')
-  if (t && t.length) return t
+  if (storage.get('settings').seededTasks) return t
+  // First run, or an existing install from before the flag existed.
+  if (t && t.length) {
+    markTasksSeeded()
+    return t
+  }
   const seeded = seedTasks()
   storage.set('tasks', seeded)
+  markTasksSeeded()
   return seeded
 }
 
@@ -148,7 +161,7 @@ export function StoreProvider({ children }) {
 
   // ---- Sprints ------------------------------------------------------------
   function completeSprint(label) {
-    const day = dateKey()
+    const day = appDayKey() // 3am rollover — a 1am sprint counts for the day you're finishing
     commit('sprints', setSprints, (prev) => {
       const idx = prev.findIndex((s) => s.date === day)
       const labels = label ? [label] : []
@@ -182,6 +195,9 @@ export function StoreProvider({ children }) {
             history: done ? [...t.history, { date: today, status: 'done' }] : t.history,
           }
         }
+        // Recurring: idempotent for the day — a double-tap shouldn't log two
+        // 'done' entries or over-advance nextDue.
+        if (t.history.some((h) => h.date === today && h.status === 'done')) return t
         return {
           ...t,
           history: [...t.history, { date: today, status: 'done' }],
@@ -208,7 +224,9 @@ export function StoreProvider({ children }) {
   // ---- Income -------------------------------------------------------------
   function addIncome({ amount, source, date }) {
     const amt = Number(amount)
-    if (!amt) return
+    // Reject 0/NaN AND negatives and absurd values — a negative would silently
+    // subtract from the month's progress toward the goal.
+    if (!Number.isFinite(amt) || amt <= 0 || amt > 1_000_000) return
     commit('income', setIncome, (prev) => [
       ...prev,
       { id: newId(), amount: amt, source: source || 'Other', date: date || dateKey() },
@@ -220,14 +238,18 @@ export function StoreProvider({ children }) {
 
   // ---- Runs ---------------------------------------------------------------
   function addRun({ type, miles, minutes, rpe, note, shoe, warmup, date }) {
+    // Clamp at the write path so no caller can store negative/absurd values.
+    const m = Math.max(0, Number(miles) || 0)
+    const min = Math.max(0, Number(minutes) || 0)
+    if (m <= 0 && min <= 0) return // need at least distance or time
     commit('runs', setRuns, (prev) => [
       ...prev,
       {
         id: newId(),
         type: type || 'Easy',
-        miles: Number(miles) || 0,
-        minutes: Number(minutes) || 0,
-        rpe: Number(rpe) || 0,
+        miles: m,
+        minutes: min,
+        rpe: Math.min(10, Math.max(0, Number(rpe) || 0)),
         note: note || '',
         shoe: shoe || '',
         warmup: !!warmup,

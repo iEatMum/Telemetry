@@ -49,11 +49,22 @@ export function notify(title, body) {
 // "unlock" the element on the Start tap, then it's free to play when the timer
 // finishes minutes later. A Web Audio beep is the fallback if the file fails.
 let audioEl = null
+let audioCtx = null
 
 export function prepareSound() {
   if (!audioEl) {
     audioEl = new Audio('/sounds/sprint-end.wav')
     audioEl.preload = 'auto'
+  }
+  // Also unlock a shared AudioContext NOW, inside the tap gesture, so the beep
+  // fallback can actually sound minutes later. A fresh iOS AudioContext created
+  // at finish time starts 'suspended' and stays silent.
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (Ctx && !audioCtx) audioCtx = new Ctx()
+    audioCtx?.resume?.()
+  } catch {
+    /* ignore */
   }
   // Play-then-pause within the gesture to satisfy autoplay policies.
   const p = audioEl.play()
@@ -78,8 +89,9 @@ export function playSound() {
 function beep() {
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext
-    if (!Ctx) return
-    const ctx = new Ctx()
+    const ctx = audioCtx || (Ctx ? new Ctx() : null)
+    if (!ctx) return
+    ctx.resume?.() // safe even if already running
     const tones = [880, 1320]
     tones.forEach((freq, i) => {
       const osc = ctx.createOscillator()
@@ -135,5 +147,13 @@ export function releaseWakeLock() {
 // the user; this fires it. Leaves the PWA briefly — that's iOS, not us.
 export function triggerFocusShortcut(name) {
   const shortcut = encodeURIComponent(name || 'Sprint')
-  window.location.href = `shortcuts://run-shortcut?name=${shortcut}`
+  // Use a transient anchor instead of window.location.href so the app's OWN
+  // document never tries to navigate to the custom scheme — that can cold-reload
+  // the installed PWA (and discard an in-progress sprint) on return.
+  const a = document.createElement('a')
+  a.href = `shortcuts://run-shortcut?name=${shortcut}`
+  a.rel = 'noopener'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
 }

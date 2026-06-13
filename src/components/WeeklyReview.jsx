@@ -5,12 +5,14 @@
 import { useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
-import { startOfWeek, dateKey, streakDays } from '../lib/dates.js'
+import { startOfWeek, dateKey, streakDays, appDayDate } from '../lib/dates.js'
 
 export default function WeeklyReview({ onClose }) {
   const { streak, sprints, income, runs, reviews, saveReview } = useStore()
 
-  const ws = startOfWeek()
+  // Anchor the week to the 3am app-day so a clean log made Sun 12–3am (stamped
+  // to Saturday by appDayKey) still lands in this week's window.
+  const ws = startOfWeek(appDayDate())
   const weekOf = dateKey(ws)
   const weekEnd = dateKey(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 6))
   const inWeek = (d) => d >= weekOf && d <= weekEnd

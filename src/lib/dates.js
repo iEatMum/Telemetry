@@ -72,6 +72,18 @@ export function isSunday(d = new Date()) {
   return d.getDay() === 0
 }
 
+// The app-day (3am rollover) as a local Date at noon — safe for weekday math,
+// no DST/midnight edge. Use this anywhere "what day is it" must match the
+// 3am rule the rest of the app runs on.
+export function appDayDate(d = new Date()) {
+  const [y, m, day] = appDayKey(d).split('-').map(Number)
+  return new Date(y, m - 1, day, 12, 0, 0)
+}
+
+export function isAppSunday(d = new Date()) {
+  return appDayDate(d).getDay() === 0
+}
+
 // Calendar scaffolding for a month: which weekday the 1st lands on + day count.
 export function monthInfo(year, month /* 0-based */) {
   const first = new Date(year, month, 1)

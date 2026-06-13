@@ -109,7 +109,9 @@ function Calendar({ cleanDates, resets }) {
   const info = monthInfo(year, month)
   const clean = new Set(cleanDates)
   const resetDays = new Set(resets.map((r) => (r.at ? dateKey(new Date(r.at)) : null)))
-  const todayKey = dateKey()
+  // Ring the app-day cell (3am rollover) so the "today" ring lands on the same
+  // cell the clean-day fill uses — they diverge between midnight and 3am.
+  const todayKey = appDayKey()
 
   function shift(delta) {
     const d = new Date(year, month + delta, 1)

@@ -3,12 +3,13 @@
 // starts automatically; the steps are fixed and in order; texting the
 // accountability partner is one tap. Finishing logs a WIN, not a loss.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import {
   smsLink,
   requestWakeLock,
   releaseWakeLock,
+  reacquireWakeLockIfNeeded,
 } from '../lib/browser.js'
 
 const DURATION = 15 * 60 // seconds
@@ -18,15 +19,25 @@ export default function UrgeProtocol({ onClose }) {
   const { settings, logUrgeSurvived } = useStore()
   const [remaining, setRemaining] = useState(DURATION)
   const [done, setDone] = useState([false, false, false, false, false])
+  const endRef = useRef(null)
 
-  // Auto-start countdown + keep the screen on for the full 15 minutes.
+  // Auto-start countdown + keep the screen on. The clock is WALL-CLOCK anchored:
+  // the protocol literally sends the user away from the phone, and iOS suspends
+  // JS timers when the screen is off — so we compute remaining from a real end
+  // timestamp and re-sync (plus reacquire the wake lock) when they come back.
   useEffect(() => {
+    endRef.current = Date.now() + DURATION * 1000
     requestWakeLock()
-    const id = setInterval(() => {
-      setRemaining((r) => (r > 0 ? r - 1 : 0))
-    }, 1000)
+    const tick = () => setRemaining(Math.max(0, Math.round((endRef.current - Date.now()) / 1000)))
+    const onVis = () => {
+      reacquireWakeLockIfNeeded()
+      tick()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    const id = setInterval(tick, 1000)
     return () => {
       clearInterval(id)
+      document.removeEventListener('visibilitychange', onVis)
       releaseWakeLock()
     }
   }, [])
