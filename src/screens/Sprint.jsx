@@ -18,13 +18,15 @@ const BREAK_MIN = 5
 const DAILY_TARGET = 6
 
 export default function Sprint() {
-  const { completeSprint, sprints, settings } = useStore()
+  const { completeSprint, sprints, settings, updateSettings } = useStore()
 
   const [durationMin, setDurationMin] = useState(25)
-  const [label, setLabel] = useState('')
+  const [label, setLabel] = useState(settings.nextSprintNote || '') // resume where you parked it
   const [mode, setMode] = useState('sprint') // 'sprint' | 'break'
   const [status, setStatus] = useState('idle') // idle | running | paused | finished
   const [remaining, setRemaining] = useState(25 * 60)
+  const [extensions, setExtensions] = useState(0) // capped +5s this sprint
+  const [parkNote, setParkNote] = useState('') // end-of-sprint "next step" note
   const endRef = useRef(null) // wall-clock ms when the timer hits 0
   const finishedRef = useRef(false) // guards finish() from running twice
 
@@ -56,6 +58,8 @@ export default function Sprint() {
     finishedRef.current = false
     setMode(theMode)
     setRemaining(mins * 60)
+    setExtensions(0)
+    if (theMode === 'sprint') setParkNote('')
     endRef.current = Date.now() + mins * 60 * 1000
     setStatus('running')
     prepareSound() // unlock audio inside this user gesture
@@ -68,6 +72,15 @@ export default function Sprint() {
   }
   function startBreak() {
     startTimer(BREAK_MIN, 'break')
+  }
+
+  // Capped "+5 — finish this thought": let the stop land at a natural boundary
+  // (Adamczyk & Bailey 2004), but bounded (2 max) so it can't crowd out the break.
+  function extend() {
+    if (mode !== 'sprint' || extensions >= 2) return
+    endRef.current += 5 * 60 * 1000
+    setRemaining((r) => r + 5 * 60)
+    setExtensions((n) => n + 1)
   }
 
   function pause() {
@@ -114,6 +127,13 @@ export default function Sprint() {
         remaining={remaining}
         label={label}
         focusName={settings.focusShortcutName}
+        canExtend={mode === 'sprint' && extensions < 2}
+        onExtend={extend}
+        parkNote={parkNote}
+        onParkNote={(v) => {
+          setParkNote(v)
+          updateSettings({ nextSprintNote: v })
+        }}
         onPause={pause}
         onResume={resume}
         onStop={stop}
@@ -150,6 +170,8 @@ export default function Sprint() {
           ))}
         </div>
 
+        <p className="mt-3 text-xs text-muted">Pick the length you can hold. 20–25 min is a starting point, not a law.</p>
+
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -157,10 +179,12 @@ export default function Sprint() {
           className="mt-4 w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
         />
 
+        <p className="mt-4 text-xs text-muted">Edge, not a rule: put the phone in another room for this one — a phone in reach is a small tax on focus.</p>
+
         <button
           type="button"
           onClick={startSprint}
-          className="mt-4 w-full rounded-2xl bg-accent py-4 text-lg font-bold uppercase tracking-wide text-accent-ink shadow-glow"
+          className="mt-3 w-full rounded-2xl bg-accent py-4 text-lg font-bold uppercase tracking-wide text-accent-ink shadow-glow"
         >
           Start
         </button>
@@ -171,7 +195,9 @@ export default function Sprint() {
         <div className="mb-3 flex items-center justify-between">
           <SectionLabel>Today's target</SectionLabel>
           <span className="font-clock tnum text-sm text-muted">
-            {todayCount}/{DAILY_TARGET}
+            {todayCount < DAILY_TARGET && todayCount >= DAILY_TARGET - 2
+              ? `${DAILY_TARGET - todayCount} to go`
+              : `${todayCount}/${DAILY_TARGET}`}
           </span>
         </div>
         <div className="flex justify-between gap-2">
@@ -203,6 +229,10 @@ function SprintTakeover({
   remaining,
   label,
   focusName,
+  canExtend,
+  onExtend,
+  parkNote,
+  onParkNote,
   onPause,
   onResume,
   onStop,
@@ -233,6 +263,16 @@ function SprintTakeover({
           {mm}:{ss}
         </div>
 
+        {mode === 'break' && status === 'running' && (
+          <p className="mt-6 max-w-xs text-center text-sm text-muted">
+            Skip the feed — screens don’t recharge focus. Get outside · look far · stretch.
+          </p>
+        )}
+
+        {mode === 'sprint' && running && remaining > 0 && remaining <= 30 && (
+          <p className="mt-6 max-w-xs text-center text-sm text-muted">Wrap it up — land on a stopping point.</p>
+        )}
+
         {/* Controls */}
         {!finished && (
           <div className="mt-10 flex w-full max-w-xs flex-col gap-3">
@@ -261,6 +301,16 @@ function SprintTakeover({
               End {mode === 'break' ? 'break' : 'sprint'}
             </button>
 
+            {canExtend && (
+              <button
+                type="button"
+                onClick={onExtend}
+                className="w-full rounded-2xl border border-line py-3 text-sm text-muted"
+              >
+                +5 — finish this thought
+              </button>
+            )}
+
             {mode === 'sprint' && (
               <button
                 type="button"
@@ -281,6 +331,12 @@ function SprintTakeover({
             </p>
             {mode === 'sprint' ? (
               <>
+                <input
+                  value={parkNote}
+                  onChange={(e) => onParkNote(e.target.value)}
+                  placeholder="Next sprint starts here…"
+                  className="w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+                />
                 <button
                   type="button"
                   onClick={onStartBreak}

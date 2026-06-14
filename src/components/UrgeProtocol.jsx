@@ -13,7 +13,7 @@ import {
 } from '../lib/browser.js'
 
 const DURATION = 15 * 60 // seconds
-const TEXT_BODY = 'Urge hit. Doing the protocol. Check on me in 15.'
+const TEXT_BODY = 'Urge hit — texting you before I act, like I said I would. Doing the protocol. Check on me in 15.'
 
 export default function UrgeProtocol({ onClose }) {
   const { settings, logUrgeSurvived } = useStore()
@@ -59,10 +59,10 @@ export default function UrgeProtocol({ onClose }) {
 
   const steps = [
     'Put the phone down. Leave the room.',
-    '20 pushups. Now.',
+    '20 pushups — or a hard 2-min effort, or step outside and move. Now.',
     null, // rendered specially — the text button
     'Get outside for 10 minutes.',
-    'The urge crests and dies in 10–15 min. Outlast it.',
+    'Urges crest and pass — give it time. Ride it out.',
   ]
 
   return (

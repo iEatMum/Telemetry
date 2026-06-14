@@ -68,9 +68,10 @@ export function computeNextDue(fromKey, recurrence) {
   }
 }
 
-// Is this task due to show on Today right now?
+// Is this task due to show on Today right now? Not-done AND scheduled on/before
+// today — so a one-time task pushed to tomorrow (nextDue bumped) hides until then.
 export function isDue(task, todayKey) {
-  if (!task || task.recurrence?.type === 'none') return !task.done
+  if (!task || task.done) return false
   return (task.nextDue || todayKey) <= todayKey
 }
 
@@ -97,7 +98,7 @@ export function seedTasks(todayKey = dateKey()) {
   return [
     {
       id: id('creatine'),
-      title: 'Creatine + supplements',
+      title: 'After breakfast → creatine + supplements',
       cat: 'Body',
       recurrence: { type: 'daily' },
       nextDue: todayKey,

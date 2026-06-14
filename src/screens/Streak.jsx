@@ -27,7 +27,21 @@ export default function Streak({ onOpenUrge }) {
     <div className="space-y-5 pb-24 pt-3">
       <h1 className="text-2xl font-semibold">Streak</h1>
 
-      {/* The scoreboard */}
+      {/* Lifetime piles — permanent, only grow. A reset can't touch these
+          numbers (mental accounting + loss aversion: Thaler / Kahneman). They
+          sit ABOVE the running clock so a day-0 is never the only number. */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="px-4 py-5 text-center">
+          <div className="font-clock tnum text-4xl text-accent scoreboard">{streak.cleanDates.length}</div>
+          <div className="mt-1 text-[11px] uppercase tracking-wide text-muted">Clean days · lifetime</div>
+        </Card>
+        <Card className="px-4 py-5 text-center">
+          <div className="font-clock tnum text-4xl text-accent scoreboard">{streak.urgesSurvived.length}</div>
+          <div className="mt-1 text-[11px] uppercase tracking-wide text-muted">Urges outlasted</div>
+        </Card>
+      </div>
+
+      {/* The current run — honest, zeros on a reset */}
       <Card className="px-4 py-7">
         <div className="mb-5 flex items-center justify-center gap-2">
           <span className="animate-pulse-accent text-lg" aria-hidden>🔥</span>
@@ -93,8 +107,8 @@ function SurvivedButton({ onLog, count }) {
       onClick={handle}
       className="rounded-2xl border border-line bg-surface px-4 py-4 text-sm font-medium text-ink"
     >
-      {justLogged ? 'Logged. That’s a win.' : 'Survived an urge'}
-      <span className="mt-0.5 block font-clock tnum text-xs text-muted">{count} total</span>
+      {justLogged ? 'Logged. One more in the bank.' : 'Survived an urge'}
+      <span className="mt-0.5 block font-clock tnum text-xs text-muted">Outlasted {count}×</span>
     </button>
   )
 }
@@ -221,6 +235,7 @@ function ResetSheet({ onClose }) {
   const [place, setPlace] = useState('')
   const [device, setDevice] = useState('')
   const [feeling, setFeeling] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
 
   // The forced 20-second pause. Confirm is blocked until it reaches 0.
   const [remaining, setRemaining] = useState(20)
@@ -233,7 +248,30 @@ function ResetSheet({ onClose }) {
   function confirm() {
     if (remaining > 0) return
     logReset({ time, place, device, feeling })
-    onClose()
+    setConfirmed(true) // show the anti-AVE close screen instead of vanishing
+  }
+
+  // Post-reset close screen — the structural firewall against the Abstinence
+  // Violation Effect (Marlatt). The day is NOT over; the lifetime totals didn't move.
+  if (confirmed) {
+    return (
+      <Sheet onClose={onClose} title="Logged">
+        <div className="space-y-3 py-3 text-center">
+          <p className="text-lg font-semibold text-ink">Logged. The clock restarts; the work doesn’t.</p>
+          <p className="text-sm text-muted">
+            Everyone resets. One data point, not a verdict on you — your lifetime clean days and wins didn’t move.
+          </p>
+          <p className="text-sm text-muted">Next rep: leave the room. Today’s protocol is still on the board.</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-2 w-full rounded-2xl bg-accent py-3.5 font-medium text-accent-ink"
+        >
+          Back
+        </button>
+      </Sheet>
+    )
   }
 
   return (
@@ -265,7 +303,7 @@ function ResetSheet({ onClose }) {
         <ChipRow options={DEVICES} value={device} onChange={setDevice} />
       </Field>
 
-      <Field label="What was the feeling?">
+      <Field label="What state were you in?">
         <ChipRow options={FEELINGS} value={feeling} onChange={setFeeling} />
       </Field>
 

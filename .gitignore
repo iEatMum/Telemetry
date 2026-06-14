@@ -6,3 +6,4 @@ dist-ssr
 .vercel
 dev-dist
 *.log
+supabase/.temp/

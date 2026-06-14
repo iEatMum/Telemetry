@@ -5,8 +5,9 @@
 // persist through storage.js (so it survives a reload). Screens never touch
 // storage.js directly — they call these actions.
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import * as storage from './storage.js'
+import * as sync from './sync.js'
 import { appDayKey, dateKey } from './dates.js'
 import { computeNextDue, seedTasks } from './tasks.js'
 
@@ -77,6 +78,33 @@ export function StoreProvider({ children }) {
   const [runs, setRuns] = useState(() => storage.get('runs'))
   const [reviews, setReviews] = useState(() => storage.get('reviews'))
   const [reading, setReading] = useState(() => storage.get('reading'))
+  const [wellness, setWellness] = useState(() => storage.get('wellness'))
+
+  // ---- Sync (Phase 3) -----------------------------------------------------
+  // Local-first stays local-first: the engine only does anything when Supabase
+  // is configured AND signed in. When a pull brings down newer data from another
+  // device, it writes through storage.js silently and calls back here so React
+  // re-reads the affected slices. sync.start() is idempotent (StrictMode-safe).
+  useEffect(() => {
+    const setters = {
+      settings: setSettings,
+      streak: setStreak,
+      sprints: setSprints,
+      checklist: setChecklist,
+      tasks: setTasks,
+      income: setIncome,
+      runs: setRuns,
+      reviews: setReviews,
+      reading: setReading,
+      wellness: setWellness,
+    }
+    sync.start((names) => {
+      for (const name of names) {
+        const apply = setters[name]
+        if (apply) apply(storage.get(name))
+      }
+    })
+  }, [])
 
   function commit(name, setter, recompute) {
     setter((prev) => {
@@ -220,6 +248,27 @@ export function StoreProvider({ children }) {
   function deleteTask(id) {
     commit('tasks', setTasks, (prev) => prev.filter((t) => t.id !== id))
   }
+  // Defer a one-time task to tomorrow — ONCE. Honest data (logs a 'pushed'),
+  // keeps the list clean, and never available for Run tasks (training doesn't
+  // get pushed) or recurring tasks (those use skip).
+  function pushTask(id) {
+    const today = dateKey()
+    const t = new Date()
+    t.setDate(t.getDate() + 1)
+    const tomorrow = dateKey(t)
+    commit('tasks', setTasks, (prev) =>
+      prev.map((task) => {
+        if (task.id !== id) return task
+        if (task.recurrence?.type !== 'none' || task.cat === 'Run' || task.pushedOnce) return task
+        return {
+          ...task,
+          nextDue: tomorrow,
+          pushedOnce: true,
+          history: [...task.history, { date: today, status: 'pushed' }],
+        }
+      })
+    )
+  }
 
   // ---- Income -------------------------------------------------------------
   function addIncome({ amount, source, date }) {
@@ -284,9 +333,33 @@ export function StoreProvider({ children }) {
     commit('reading', setReading, (prev) => ({ ...prev, plan: [...prev.plan, l] }))
   }
 
+  // ---- Readiness check-in -------------------------------------------------
+  function saveWellness(day, patch) {
+    commit('wellness', setWellness, (prev) => ({
+      ...prev,
+      [day]: { ...(prev[day] || {}), ...patch, at: new Date().toISOString() },
+    }))
+  }
+
   // ---- Data tools ---------------------------------------------------------
   function exportData() {
     return storage.exportAll()
+  }
+  // Restore from an exported blob. Reads slices raw (no re-seeding) so the
+  // imported data lands exactly as backed up.
+  function importData(blob) {
+    if (!storage.importAll(blob)) return false
+    setSettings(storage.get('settings'))
+    setStreak(storage.get('streak'))
+    setSprints(storage.get('sprints'))
+    setChecklist(storage.get('checklist'))
+    setTasks(storage.get('tasks'))
+    setIncome(storage.get('income'))
+    setRuns(storage.get('runs'))
+    setReviews(storage.get('reviews'))
+    setReading(storage.get('reading'))
+    setWellness(storage.get('wellness'))
+    return true
   }
   function wipeData() {
     storage.wipeAll()
@@ -299,6 +372,7 @@ export function StoreProvider({ children }) {
     setRuns(storage.get('runs'))
     setReviews(storage.get('reviews'))
     setReading(storage.get('reading'))
+    setWellness(storage.get('wellness'))
   }
 
   const value = {
@@ -311,6 +385,7 @@ export function StoreProvider({ children }) {
     runs,
     reviews,
     reading,
+    wellness,
     updateSettings,
     addPartner,
     removePartner,
@@ -325,6 +400,7 @@ export function StoreProvider({ children }) {
     completeTask,
     missTask,
     deleteTask,
+    pushTask,
     addIncome,
     deleteIncome,
     addRun,
@@ -332,7 +408,9 @@ export function StoreProvider({ children }) {
     saveReview,
     advanceReading,
     addReadingSection,
+    saveWellness,
     exportData,
+    importData,
     wipeData,
   }
 

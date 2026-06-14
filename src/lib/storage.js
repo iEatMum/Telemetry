@@ -58,6 +58,12 @@ export const DEFAULTS = {
   // { '2026-06-11': { wake:'done', prayer:'missed', run:undefined, phone:'done' } }
   checklist: {},
 
+  // Morning readiness check-in, keyed by app-day ('YYYY-MM-DD', rolls at 3am).
+  // A fast self-report — sleep/legs/mind each 1–5, optional resting HR. Not a
+  // sleep-hours pass/fail (that re-imports all-or-nothing); a charge readout.
+  // { '2026-06-13': { sleep:4, legs:3, mind:5, rhr:48, at:'…' } }
+  wellness: {},
+
   // A reading plan you move through one section at a time (Ian's ask).
   // index points at the current section; advancing logs to history.
   reading: {
@@ -73,6 +79,28 @@ export const DEFAULTS = {
 
 function keyOf(name) {
   return PREFIX + name
+}
+
+// --- change notifications (the sync engine's only hook into storage) -------
+// sync.js doesn't reach into this file; it subscribes. Every non-silent write
+// notifies subscribers with (name, nextValue, prevValue). Reads and writes stay
+// synchronous — the notification is the LAST thing set() does, never a blocker.
+const subscribers = new Set()
+export function subscribe(fn) {
+  subscribers.add(fn)
+  return () => subscribers.delete(fn)
+}
+
+// The currently-stored value, parsed but NOT sanitized — lets a subscriber diff
+// exactly what changed. Falls back to the slice's default shape.
+function readRaw(name) {
+  try {
+    const raw = localStorage.getItem(keyOf(name))
+    if (raw != null) return JSON.parse(raw)
+  } catch {
+    /* fall through to default */
+  }
+  return structuredClone(DEFAULTS[name])
 }
 
 // Read a value. Always returns something usable — the stored value if present
@@ -104,12 +132,26 @@ export function get(name) {
 }
 
 // Write a value. Returns the value so callers can chain.
-export function set(name, value) {
+//
+// `opts.silent` skips the change notification — the sync engine uses it when it
+// applies data pulled from the server, so a pull can't echo back out as a push.
+export function set(name, value, opts = {}) {
+  const announce = !opts.silent && subscribers.size > 0
+  const prev = announce ? readRaw(name) : undefined
   try {
     localStorage.setItem(keyOf(name), JSON.stringify(value))
   } catch (err) {
     // Quota or private-mode failures shouldn't crash the app.
     console.warn(`[storage] could not write "${name}"`, err)
+  }
+  if (announce) {
+    for (const fn of subscribers) {
+      try {
+        fn(name, value, prev)
+      } catch (err) {
+        console.warn('[storage] write subscriber failed', err)
+      }
+    }
   }
   return value
 }

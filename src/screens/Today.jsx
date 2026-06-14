@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { Card, SectionLabel, Stat } from '../components/ui.jsx'
+import WellnessSheet from '../components/WellnessSheet.jsx'
 import { verseForDay } from '../lib/verses.js'
+import { readiness } from '../lib/wellness.js'
 import { isDue, recurrenceLabel, RECURRENCE_PRESETS, CATEGORIES } from '../lib/tasks.js'
 import {
   appDayKey,
+  appDayDate,
   dateKey,
+  daysUntil,
   greeting,
   longDate,
   isAppSunday,
@@ -18,6 +22,8 @@ export default function Today({ onOpenSettings, onOpenReview }) {
 
   const days = streakDays(streak.startedAt)
   const verse = verseForDay()
+  const toFresno = daysUntil(settings.reportDate) // fresh-start landmark (Dai/Milkman 2014)
+  const [wellnessOpen, setWellnessOpen] = useState(false)
 
   const today = dateKey()
   const sprintsToday = sprints.find((s) => s.date === today)?.count || 0
@@ -36,6 +42,9 @@ export default function Today({ onOpenSettings, onOpenReview }) {
       <header className="flex items-start justify-between">
         <div>
           <div className="text-sm text-muted">{longDate()}</div>
+          {toFresno != null && toFresno > 0 && (
+            <div className="text-[11px] text-muted">{toFresno} days to Fresno State</div>
+          )}
           <h1 className="text-2xl font-semibold leading-tight">
             {greeting()}
             {settings.name ? `, ${settings.name.split(' ')[0]}` : ''}.
@@ -88,6 +97,9 @@ export default function Today({ onOpenSettings, onOpenReview }) {
       {/* Morning protocol */}
       <MorningChecklist wakeTime={settings.wakeTime} bedTime={settings.bedTime} />
 
+      {/* Morning readiness */}
+      <ReadinessCard onOpen={() => setWellnessOpen(true)} />
+
       {/* Today's tasks (recurring engine) */}
       <TaskList />
 
@@ -100,6 +112,8 @@ export default function Today({ onOpenSettings, onOpenReview }) {
       </Card>
 
       <p className="pb-2 text-center text-xs text-muted">A reset is data, not failure.</p>
+
+      {wellnessOpen && <WellnessSheet onClose={() => setWellnessOpen(false)} />}
     </div>
   )
 }
@@ -136,27 +150,68 @@ function ReadingCard() {
   )
 }
 
+// ---- Morning readiness check-in --------------------------------------------
+function ReadinessCard({ onOpen }) {
+  const { wellness } = useStore()
+  const r = readiness(wellness[appDayKey()])
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="block w-full rounded-2xl border border-line bg-surface p-4 text-left"
+    >
+      <div className="flex items-center justify-between">
+        <SectionLabel>Morning readiness</SectionLabel>
+        {r && (
+          <span className="flex items-center gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} className={`h-3 w-1.5 rounded-sm ${i < r.score ? 'bg-accent' : 'bg-accent/20'}`} />
+            ))}
+          </span>
+        )}
+      </div>
+      {r ? (
+        <div className="mt-1.5 text-[15px]">
+          <span className="text-ink">{r.label}.</span> <span className="text-muted">{r.cue}</span>
+        </div>
+      ) : (
+        <div className="mt-1 text-sm text-muted">10-second check-in — how charged are you? →</div>
+      )}
+    </button>
+  )
+}
+
 // ---- Morning checklist (tri-state: done / missed) --------------------------
 function MorningChecklist({ wakeTime, bedTime }) {
   const { checklist, cycleChecklistItem } = useStore()
   const today = checklist[appDayKey()] || {}
+  // Yesterday's app-day, to spot a SECOND consecutive miss — the real risk;
+  // one miss is noise (Lally 2010). appDayDate is noon-anchored so DST is safe.
+  const ad = appDayDate()
+  const yest = checklist[dateKey(new Date(ad.getFullYear(), ad.getMonth(), ad.getDate() - 1))] || {}
 
+  // If-then implementation intentions, each anchored to the prior step
+  // (Gollwitzer & Sheeran 2006; habit stacking, Wood & Neal 2007).
   const items = [
-    { key: 'wake', label: `Wake ${wakeTime || '06:45'}`, tag: null },
-    { key: 'prayer', label: 'Prayer + Bible · 15 min', tag: null },
-    { key: 'run', label: 'Morning run', tag: null },
-    { key: 'phone', label: 'Phone out of bedroom', tag: fmt12(bedTime || '22:15') },
+    { key: 'wake', label: `Wake ${wakeTime || '06:45'} — feet on floor`, tag: null },
+    { key: 'prayer', label: 'Then sit down → prayer + Bible, 15 min', tag: null },
+    { key: 'run', label: 'Then shoes on → morning run', tag: null },
+    { key: 'phone', label: 'Alarm fires → phone out of the room', tag: fmt12(bedTime || '22:15') },
   ]
 
   const doneCount = items.filter((i) => normalize(today[i.key]) === 'done').length
+  const allDone = doneCount === items.length
+  // Fires only on the 2nd consecutive miss of the same item — silent after one.
+  const twiceMissed = items.some(
+    (i) => normalize(today[i.key]) === 'missed' && normalize(yest[i.key]) === 'missed'
+  )
+  const counter = allDone ? '✓' : doneCount > 0 ? `${items.length - doneCount} to go` : `${doneCount}/${items.length}`
 
   return (
     <section>
       <div className="mb-2 flex items-center justify-between px-1">
         <SectionLabel>Morning protocol</SectionLabel>
-        <span className="font-clock tnum text-xs text-muted">
-          {doneCount}/{items.length}
-        </span>
+        <span className="font-clock tnum text-xs text-muted">{counter}</span>
       </div>
       <Card className="divide-y divide-line">
         {items.map((item) => (
@@ -169,7 +224,13 @@ function MorningChecklist({ wakeTime, bedTime }) {
           />
         ))}
       </Card>
-      <p className="mt-1.5 px-1 text-[11px] text-muted">Tap: ✓ done · again: ✕ missed · again: clear</p>
+      {twiceMissed ? (
+        <p className="mt-1.5 px-1 text-[11px] text-muted">Twice now. Reset tomorrow — never miss the same one twice.</p>
+      ) : allDone ? (
+        <p className="mt-1.5 px-1 text-[11px] text-muted">This is who you are now.</p>
+      ) : (
+        <p className="mt-1.5 px-1 text-[11px] text-muted">Tap: ✓ done · again: ✕ missed · again: clear</p>
+      )}
     </section>
   )
 }
@@ -235,7 +296,7 @@ function Box({ state }) {
 
 // ---- Today's tasks (recurring engine) --------------------------------------
 function TaskList() {
-  const { tasks, addTask, completeTask, missTask, deleteTask } = useStore()
+  const { tasks, addTask, completeTask, missTask, deleteTask, pushTask } = useStore()
   const [draft, setDraft] = useState('')
   const [recIdx, setRecIdx] = useState(0)
   const [cat, setCat] = useState('Life')
@@ -328,16 +389,28 @@ function TaskList() {
                       skip
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => deleteTask(t.id)}
-                      aria-label="Delete task"
-                      className="px-1 text-muted hover:text-ink"
-                    >
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                        <path d="M6 6l12 12M18 6L6 18" />
-                      </svg>
-                    </button>
+                    <>
+                      {/* Push to tomorrow — once, and not for Run tasks */}
+                      {!t.done && !t.pushedOnce && t.cat !== 'Run' && (
+                        <button
+                          type="button"
+                          onClick={() => pushTask(t.id)}
+                          className="text-[11px] uppercase tracking-wide text-muted"
+                        >
+                          → tmrw
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => deleteTask(t.id)}
+                        aria-label="Delete task"
+                        className="flex h-9 w-9 items-center justify-center text-muted hover:text-ink"
+                      >
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                      </button>
+                    </>
                   )}
                 </li>
               )

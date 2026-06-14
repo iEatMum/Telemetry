@@ -5,10 +5,10 @@
 import { useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
-import { startOfWeek, dateKey, streakDays, appDayDate } from '../lib/dates.js'
+import { startOfWeek, dateKey, streakDays, appDayDate, daysUntil } from '../lib/dates.js'
 
 export default function WeeklyReview({ onClose }) {
-  const { streak, sprints, income, runs, reviews, saveReview } = useStore()
+  const { streak, sprints, income, runs, reviews, saveReview, settings, exportData, updateSettings } = useStore()
 
   // Anchor the week to the 3am app-day so a clean log made Sun 12–3am (stamped
   // to Saturday by appDayKey) still lands in this week's window.
@@ -17,11 +17,17 @@ export default function WeeklyReview({ onClose }) {
   const weekEnd = dateKey(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + 6))
   const inWeek = (d) => d >= weekOf && d <= weekEnd
 
+  // Fresh-start landmark (Dai/Milkman 2014): the season as a countdown.
+  const daysToFresno = daysUntil(settings.reportDate)
+  const weeksToFresno = daysToFresno != null && daysToFresno > 0 ? Math.ceil(daysToFresno / 7) : null
+
   const stats = {
     cleanDays: streak.cleanDates.filter(inWeek).length,
     sprints: sprints.filter((s) => inWeek(s.date)).reduce((a, s) => a + s.count, 0),
     money: income.filter((e) => inWeek(e.date)).reduce((a, e) => a + e.amount, 0),
     miles: runs.filter((r) => inWeek(r.date)).reduce((a, r) => a + (r.miles || 0), 0),
+    // The long run anchors a base-building week — track it, not just total volume.
+    longRun: runs.some((r) => inWeek(r.date) && r.type === 'Long'),
   }
 
   // Last week's "one change" (most recent prior review).
@@ -35,11 +41,27 @@ export default function WeeklyReview({ onClose }) {
   const [broke, setBroke] = useState(existing?.broke || '')
   const [oneChange, setOneChange] = useState(existing?.oneChange || '')
   const [saved, setSaved] = useState(false)
+  const [backedUp, setBackedUp] = useState(false)
 
   function save() {
     saveReview({ weekOf, stats, worked, broke, oneChange })
     setSaved(true)
     setTimeout(onClose, 800)
+  }
+
+  // Weekly backup rides the weekly habit — one tap, never a blocking gate.
+  function backup() {
+    const blob = new Blob([JSON.stringify(exportData(), null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `locked-in-backup-${weekOf}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    updateSettings({ lastBackupAt: new Date().toISOString() })
+    setBackedUp(true)
   }
 
   return (
@@ -58,12 +80,21 @@ export default function WeeklyReview({ onClose }) {
         <DebriefStat value={stats.miles.toFixed(stats.miles % 1 ? 1 : 0)} label="Miles" />
       </div>
       <p className="text-center text-xs text-muted">
-        ${Math.round(stats.money).toLocaleString()} logged this week.
+        ${Math.round(stats.money).toLocaleString()} logged this week ·{' '}
+        <span className={stats.longRun ? 'text-accent' : 'text-muted'}>
+          {stats.longRun ? 'long run ✓' : 'no long run'}
+        </span>
       </p>
+      {weeksToFresno != null && (
+        <p className="text-center text-xs text-accent">{weeksToFresno} weeks until you report to Fresno State.</p>
+      )}
 
       <Question label="What worked?" value={worked} onChange={setWorked} />
       <Question label="What broke?" value={broke} onChange={setBroke} />
-      <Question label="One change for next week" value={oneChange} onChange={setOneChange} />
+      <Question label="One change — the kind of man you're becoming" value={oneChange} onChange={setOneChange} />
+      {oneChange.trim() && (
+        <p className="text-center text-xs text-accent">New week. One change. Go.</p>
+      )}
 
       <button
         type="button"
@@ -71,6 +102,13 @@ export default function WeeklyReview({ onClose }) {
         className="w-full rounded-2xl bg-accent py-3.5 font-medium text-accent-ink"
       >
         {saved ? 'Saved ✓' : 'Save debrief'}
+      </button>
+      <button type="button" onClick={backup} className="w-full py-1 text-xs text-muted">
+        {backedUp
+          ? 'Backup downloaded ✓'
+          : `Download this week's backup${
+              settings.lastBackupAt ? ` · last ${settings.lastBackupAt.slice(0, 10)}` : ''
+            }`}
       </button>
     </Sheet>
   )

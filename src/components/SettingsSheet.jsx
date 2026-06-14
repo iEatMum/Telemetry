@@ -3,7 +3,7 @@
 // (multiple — they power the HELP button) · shoes · reading · Focus shortcut ·
 // export JSON · wipe all (double-confirmed).
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
 import { dateKey } from '../lib/dates.js'
@@ -30,6 +30,7 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
     removeShoe,
     addReadingSection,
     exportData,
+    importData,
     wipeData,
   } = useStore()
 
@@ -43,10 +44,15 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
         <Row label="Wake time">
           <input type="time" value={settings.wakeTime} onChange={(e) => updateSettings({ wakeTime: e.target.value })} className="input font-clock" />
         </Row>
-        <Row label="Phone down by">
+        <Row label="Phone out by">
           <input type="time" value={settings.bedTime} onChange={(e) => updateSettings({ bedTime: e.target.value })} className="input font-clock" />
         </Row>
       </div>
+      <p className="-mt-1 px-1 text-[11px] leading-relaxed text-muted">
+        Lock the wake time; let bedtime float to meet it. Up by ~7:00 still counts — forgiving clock,
+        firm cue. Phone out = bed is for sleep only (and a recovery guardrail). Banked sleep runs
+        faster — college sprinters ~0.7s (Mah 2011).
+      </p>
 
       <div className="flex gap-3">
         <Row label="Monthly goal">
@@ -111,6 +117,7 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
         <button type="button" onClick={() => downloadJSON(exportData())} className="w-full rounded-2xl border border-line bg-surface2 py-3 text-sm text-ink">
           Export all data (JSON backup)
         </button>
+        <ImportButton onImport={importData} />
         <WipeButton onWipe={wipeData} />
       </div>
 

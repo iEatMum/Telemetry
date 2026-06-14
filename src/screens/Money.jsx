@@ -60,7 +60,7 @@ export default function Money() {
           <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <Mini label="Remaining" value={money(remaining)} />
+          <Mini label="To go" value={money(remaining)} />
           <Mini label="Days left" value={daysLeft} />
           <Mini label="Need / day" value={money(requiredPace)} accent />
         </div>

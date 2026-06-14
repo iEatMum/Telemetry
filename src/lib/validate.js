@@ -20,7 +20,32 @@ function num(v, { min = -Infinity, max = Infinity, fallback = 0 } = {}) {
   return Math.min(max, Math.max(min, n))
 }
 
+// A readiness dimension: 1–5, or undefined if unset/garbage.
+const level = (v) => {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return undefined
+  return Math.min(5, Math.max(1, Math.round(n)))
+}
+
 const sanitizers = {
+  // Readiness check-in: object keyed by app-day, each a small self-report.
+  wellness(obj) {
+    if (!isObj(obj)) return {}
+    const out = {}
+    for (const [day, e] of Object.entries(obj)) {
+      if (!isObj(e)) continue
+      const rhr = Number(e.rhr)
+      out[day] = {
+        ...e,
+        sleep: level(e.sleep),
+        legs: level(e.legs),
+        mind: level(e.mind),
+        rhr: Number.isFinite(rhr) && rhr > 0 ? Math.min(220, Math.max(20, Math.round(rhr))) : undefined,
+      }
+    }
+    return out
+  },
+
   settings(s) {
     if (!isObj(s)) return s
     return {
