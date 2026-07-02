@@ -27,6 +27,11 @@ const level = (v) => {
   return Math.min(5, Math.max(1, Math.round(n)))
 }
 
+// The known theme skins (mirrors THEMES in theme.jsx — kept inline so validate.js
+// stays dependency-free). A corrupt/unknown value is dropped to undefined so it
+// can never reach the data-theme attribute; ThemeProvider then uses the default.
+const THEME_SKINS = ['terminal', 'zen', 'night_ops']
+
 const sanitizers = {
   // Readiness check-in: object keyed by app-day, each a small self-report.
   wellness(obj) {
@@ -53,6 +58,7 @@ const sanitizers = {
       name: str(s.name, 60),
       moneyGoal: num(s.moneyGoal, { min: 0, max: 10_000_000, fallback: 3500 }),
       focusShortcutName: str(s.focusShortcutName, 60) || 'Sprint',
+      theme: THEME_SKINS.includes(s.theme) ? s.theme : undefined,
       partners: asArr(s.partners)
         .filter(isObj)
         .slice(0, 50)
@@ -126,6 +132,43 @@ const sanitizers = {
         history: asArr(t.history).filter(isObj),
         done: !!t.done,
       }))
+  },
+
+  // The Guardian's Handover. Caps everything hard — drafts hold pasted reports,
+  // so an uncapped body could blow the localStorage quota and brick a read.
+  handover(h) {
+    if (!isObj(h)) return { drafts: [], considerations: [] }
+    const drafts = asArr(h.drafts)
+      .filter(isObj)
+      .slice(0, 50)
+      .map((d) => ({
+        id: str(d.id, 40),
+        kind: str(d.kind, 20) || 'note',
+        body: str(d.body, 5000),
+        attachments: asArr(d.attachments)
+          .filter(isObj)
+          .slice(0, 20)
+          .map((a) => ({ name: str(a.name, 200), size: num(a.size, { min: 0, max: 1e9 }), type: str(a.type, 80) })),
+        createdAt: str(d.createdAt, 40),
+        updatedAt: str(d.updatedAt, 40),
+      }))
+    const considerations = asArr(h.considerations)
+      .filter(isObj)
+      .slice(0, 200)
+      .map((c) => ({
+        id: str(c.id, 40),
+        heading: str(c.heading, 40) || 'Consider',
+        source: str(c.source, 20),
+        text: str(c.text, 2000),
+        synthesis: str(c.synthesis, 20),
+        at: str(c.at, 40),
+        dismissed: !!c.dismissed,
+      }))
+    const counselAck = asArr(h.counselAck)
+      .filter(isObj)
+      .slice(0, 100)
+      .map((a) => ({ key: str(a.key, 40), day: str(a.day, 10) }))
+    return { drafts, considerations, counselAck }
   },
 }
 

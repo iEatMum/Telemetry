@@ -3,37 +3,123 @@
 @tailwind utilities;
 
 /* ----------------------------------------------------------------------------
-   Design tokens. Dark is the default (he opens this at 6:45am and 10:15pm).
-   The light block only kicks in if the system is set to light.
-   One accent — a deep gold (#F5A623). Used ONLY for the streak flame, the
-   active timer, and primary actions. Everything else stays quiet.
+   Terminal design tokens (Phase 3 — the "perps" pivot).
+   High-contrast, dark-first command-center palette. The old still-water gold is
+   gone: the primary action color is an electric terminal green, and the app now
+   speaks strict green-up / red-down semantic state like a trading terminal.
+
+   One source of truth: components reference semantic Tailwind names
+   (bg / surface / ink / accent / pos / neg / …) that resolve to these vars — so
+   re-skinning the whole app is editing THIS file, not the components.
 ---------------------------------------------------------------------------- */
 :root {
-  --bg: #0a0b0d;
-  --surface: #141619;
-  --surface-2: #1c1f24;
-  --line: #2a2e35;
-  --text: #f3f4f6;
-  --muted: #8b919c;
-  --accent: #f5a623;
-  --accent-deep: #d98e0b;
-  --accent-ink: #1a1206;
-  --accent-glow: rgba(245, 166, 35, 0.45);
+  color-scheme: dark;
+
+  /* Surface stack — bg → surface → surface-2 (near-black, stepping up) */
+  --bg: #06080b;
+  --surface: #0e1217;
+  --surface-2: #161b22;
+  --line: #232a33;
+
+  /* Text */
+  --text: #e8ecf2;
+  --muted: #707b8c;
+
+  /* Primary action — electric terminal green. Dark ink rides on top. */
+  --accent: #16f08b;
+  --accent-deep: #0bc673;
+  --accent-ink: #04140b;
+  --accent-glow: rgba(22, 240, 139, 0.45);
+  --glow-strength: 1;
+
+  /* Semantic state — strict up / down, plus a caution amber. */
+  --pos: #16f08b;
+  --neg: #ff4d5e;
+  --warn: #f5b114;
+  --pos-soft: rgba(22, 240, 139, 0.14);
+  --neg-soft: rgba(255, 77, 94, 0.14);
+  --warn-soft: rgba(245, 177, 20, 0.14);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f6f6f4;
-    --surface: #ffffff;
-    --surface-2: #efefec;
-    --line: #e3e3dd;
-    --text: #15171b;
-    --muted: #5c636e;
-    --accent: #b97d08; /* deeper gold so it stays legible on white */
-    --accent-deep: #9a6606;
-    --accent-ink: #ffffff;
-    --accent-glow: rgba(185, 125, 8, 0.3);
-  }
+/* ── Themes — the ONE appearance axis ─────────────────────────────────────────
+   ThemeProvider (src/lib/theme.jsx) sets data-theme on <html>, so body, the
+   safe-area gutters, ::selection and native form controls all inherit it — a
+   nested <div> would leave <body> stranded on the base palette.
+
+   Each theme is a COMPLETE palette: it never inherits tokens from another block,
+   so a skin can't half-apply and leave (say) dark text on a dark surface. The old
+   dark/light `data-theme` axis + the prefers-color-scheme override were removed —
+   "light" now lives in the Zen theme. --glow-strength lets a theme dial the
+   readout glow (Terminal 1 · Night Ops .7 · Zen 0).
+------------------------------------------------------------------------------- */
+
+/* Terminal — primary. Perps-desk, high-signal, electric green on near-black. */
+[data-theme='terminal'] {
+  color-scheme: dark;
+  --bg: #06080b;
+  --surface: #0e1217;
+  --surface-2: #161b22;
+  --line: #232a33;
+  --text: #e8ecf2;
+  --muted: #707b8c;
+  --accent: #16f08b;
+  --accent-deep: #0bc673;
+  --accent-ink: #04140b;
+  --accent-glow: rgba(22, 240, 139, 0.45);
+  --pos: #16f08b;
+  --neg: #ff4d5e;
+  --warn: #f5b114;
+  --pos-soft: rgba(22, 240, 139, 0.14);
+  --neg-soft: rgba(255, 77, 94, 0.14);
+  --warn-soft: rgba(245, 177, 20, 0.14);
+  --glow-strength: 1;
+}
+
+/* Zen — calm, light, minimal; doubles as the light / high-contrast mode. Body
+   contrast ≈ 15:1 (AAA). Greens/reds darkened so they stay legible on white. */
+[data-theme='zen'] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --line: #dde3ea;
+  --text: #141a22;
+  --muted: #5b6572;
+  --accent: #2f6df0;
+  --accent-deep: #2358c8;
+  --accent-ink: #ffffff;
+  --accent-glow: rgba(47, 109, 240, 0.22);
+  --pos: #0a8f52;
+  --neg: #d23049;
+  --warn: #b5730a;
+  --pos-soft: rgba(10, 143, 82, 0.12);
+  --neg-soft: rgba(210, 48, 73, 0.12);
+  --warn-soft: rgba(181, 115, 10, 0.12);
+  --glow-strength: 0;
+}
+
+/* Night Ops — deep black, low-light focus. Body text is a dim warm-grey (NOT
+   full red — pure-red body copy is an eye-strain problem); red is reserved for
+   the accent + `neg`. Up/down semantics stay green/red. */
+[data-theme='night_ops'] {
+  color-scheme: dark;
+  --bg: #04060a;
+  --surface: #0a0e15;
+  --surface-2: #111722;
+  --line: #1b2430;
+  --text: #c2ccd6;
+  --muted: #5a6673;
+  --accent: #ff5a5f;
+  --accent-deep: #d83f45;
+  --accent-ink: #160406;
+  --accent-glow: rgba(255, 90, 95, 0.35);
+  --pos: #37d99b;
+  --neg: #ff5a5f;
+  --warn: #e0a63a;
+  --pos-soft: rgba(55, 217, 155, 0.12);
+  --neg-soft: rgba(255, 90, 95, 0.14);
+  --warn-soft: rgba(224, 166, 58, 0.12);
+  --glow-strength: 0.7;
 }
 
 @layer base {
@@ -54,11 +140,11 @@
     overscroll-behavior-y: none;
   }
 
-  /* Keyboard users get a clear, gold focus ring on desktop. */
+  /* Keyboard users get a clear, green focus ring. */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 3px;
   }
 
   ::selection {
@@ -71,23 +157,43 @@
   }
 }
 
+/* Theme switch: cross-fade the palette-driven properties. Switching is a rare,
+   deliberate act, so this is scoped to what actually changes color. Auto-disabled
+   by the reduced-motion block near the bottom of this file. */
+@media (prefers-reduced-motion: no-preference) {
+  body,
+  nav,
+  main,
+  header,
+  section,
+  button,
+  [class*='bg-surface'],
+  [class*='border-line'] {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+}
+
 @layer components {
   /* Shared text-input look. */
   .input {
-    @apply w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none;
+    @apply w-full rounded-md border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none;
   }
 }
 
 @layer utilities {
-  /* The stopwatch numerals: every digit the same width so numbers don't jitter. */
+  /* Tabular numerals: every digit the same width so readouts don't jitter. */
   .tnum {
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
   }
 
-  /* The scoreboard glow — static, so it's fine with reduced motion. */
+  /* The readout glow — static, so it's fine with reduced motion. */
   .scoreboard {
     text-shadow: 0 0 18px var(--accent-glow);
+  }
+  /* Zen (--glow-strength: 0) dials the readout glow off entirely. */
+  [data-theme='zen'] .scoreboard {
+    text-shadow: none;
   }
 
   /* iOS safe areas (notch / home indicator). */
@@ -97,9 +203,24 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* Scroll tracks must clear the pinned bottom chrome — the nav bar (4rem) and,
+     above it, the floating HELP NOW pill — plus the home indicator, so the last
+     element is never trapped underneath. The Sync & Refactor bar is IN the deck's
+     scroll flow now (LayoutHost footer), so it needs no clearance of its own. */
+  .pb-deck {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 8rem);
+  }
+  .pb-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
+  }
+  /* HELP NOW floats just above the nav bar; folds in the home-indicator inset so
+     they rise together on notched devices. */
+  .bottom-help {
+    bottom: calc(env(safe-area-inset-bottom) + 5rem);
+  }
 }
 
-/* The active-timer / flame pulse — disabled entirely under reduced motion. */
+/* The active-state pulse — disabled entirely under reduced motion. */
 @keyframes pulse-accent {
   0%,
   100% {
@@ -112,6 +233,78 @@
 
 .animate-pulse-accent {
   animation: pulse-accent 2s ease-in-out infinite;
+}
+
+/* ── Terminal motion tokens — "Mechanical & Snappy" (from the design canvas) ──
+   data-stream  = staggered deal-in for cards/rows (the "deal")
+   pulse-live   = hard-edged live blink (no soft fade)
+   flash-action = 150ms confirm flash on a high-impact tap
+   typewriter + tw-caret = stepped reveal + blinking cursor for AI/driver text
+   mark-breathe = hard-snap breath for a running marker
+   All are disabled by the reduced-motion block below. */
+@keyframes data-stream {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes flash-action {
+  0% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes pulse-live {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.16;
+  }
+}
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+@keyframes tw-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes mark-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.animate-data-stream {
+  animation: data-stream 160ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.animate-pulse-live {
+  animation: pulse-live 1.3s linear infinite;
+}
+.animate-flash {
+  animation: flash-action 150ms linear forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

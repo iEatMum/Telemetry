@@ -22,6 +22,8 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { adjudicate, partnerMessage, type Telemetry } from '../_shared/adjudicate.ts'
+import { sendPushToUser } from '../_shared/push.ts'
+import { pulseFor } from '../_shared/guardianVoice.ts'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -55,18 +57,24 @@ async function notifyPartners(partners: Partner[], message: string) {
     return { sent: false, stubbed: true, recipients, message }
   }
 
-  const results: Array<{ to: string; ok: boolean; status: number }> = []
+  const results: Array<{ to: string; ok: boolean; status?: number; error?: string }> = []
   for (const to of recipients) {
     const form = new URLSearchParams({ To: to, From: from, Body: message })
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
-      method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + btoa(`${sid}:${token}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: form,
-    })
-    results.push({ to, ok: res.ok, status: res.status })
+    // Per-recipient guard: one bad number / network blip can't abort the batch
+    // (and can't propagate out to abort the verdict log upstream).
+    try {
+      const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + btoa(`${sid}:${token}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: form,
+      })
+      results.push({ to, ok: res.ok, status: res.status })
+    } catch (err) {
+      results.push({ to, ok: false, error: (err as Error)?.message })
+    }
   }
   return { sent: true, results, message }
 }
@@ -108,11 +116,31 @@ Deno.serve(async (req: Request) => {
   const adj = adjudicate(payload, settings)
   if (!adj.ok) return json({ error: adj.error }, 422)
 
-  // 5) On a negative verdict, alert the partners (Twilio, or stub).
+  // 5) On a negative verdict, alert the partners (Twilio, or stub) AND send the
+  //    Guardian's Pulse — a Web Push to the user's own phone, in the Guardian's
+  //    voice, routing to the Morning (wake) or Examen (bedtime) face. The Pulse
+  //    is screened for shame: if a hand-edited template carries a banned word, it
+  //    is refused rather than sent. Push failure never breaks the verdict log.
   let notify: unknown = null
+  let pulse: unknown = null
   if (adj.verdict !== 'hit') {
     const partners = (Array.isArray(settings.partners) ? settings.partners : []) as Partner[]
-    notify = await notifyPartners(partners, partnerMessage(String(settings.name ?? ''), adj))
+    // Guard the SMS path too — a Twilio network error must never abort the
+    // handler before the checkpoint is logged (append-only accountability).
+    try {
+      notify = await notifyPartners(partners, partnerMessage(String(settings.name ?? ''), adj))
+    } catch (err) {
+      notify = { sent: false, reason: 'notify-error', detail: (err as Error)?.message }
+    }
+
+    try {
+      const p = pulseFor(String(adj.kind), String(adj.verdict))
+      pulse = p.ok
+        ? await sendPushToUser(supabase, userId, { title: p.title, body: p.body, url: p.url, tag: p.tag })
+        : { sent: false, reason: 'blocked', banned: p.banned }
+    } catch (err) {
+      pulse = { sent: false, reason: 'pulse-error', detail: (err as Error)?.message }
+    }
   }
 
   // 6) Log the verdict. Append-only; only the service role can write here.
@@ -123,7 +151,7 @@ Deno.serve(async (req: Request) => {
     actual: adj.actual,
     at: payload.at ?? new Date().toISOString(),
     verdict: adj.verdict,
-    detail: { payload, delta_min: adj.deltaMin, notify },
+    detail: { payload, delta_min: adj.deltaMin, notify, pulse },
   })
   if (insErr) return json({ error: 'could not log checkpoint', detail: insErr.message }, 500)
 
@@ -134,5 +162,6 @@ Deno.serve(async (req: Request) => {
     target: adj.target,
     actual: adj.actual,
     notified: notify != null,
+    pulsed: pulse != null,
   })
 })

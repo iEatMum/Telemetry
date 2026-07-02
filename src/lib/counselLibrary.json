@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "_README": "The Guardian's Library — your shelf. Add a resource by appending one object to `resources`: { id (unique), type: 'video'|'book'|'essay', title, by (author/channel), url (paste the link; leave '' and the card will say 'link pending'), note (one line, optional), tags (which drift patterns it speaks to) }. The Counsel pattern-detector picks the best-tagged resource for the drift it sees in your witnessed checkpoints. No code change needed — just edit this file. The starter entries below are real titles with the url left blank for you to fill from a source you trust.",
+
+  "patterns": {
+    "late-wake": "Waking past the line, repeatedly",
+    "missed-bedtime": "Phone-down coming late at night",
+    "evening-drift": "The late-night high-risk window opening up",
+    "consistency": "General slippage across the protocol",
+    "general": "Default — discipline / identity"
+  },
+
+  "resources": [
+    {
+      "id": "huberman-morning",
+      "type": "video",
+      "title": "Morning light, wake time, and the circadian system",
+      "by": "Huberman Lab",
+      "url": "",
+      "note": "Why a fixed wake + light beats a fixed bedtime — sell it to yourself as a performance lever.",
+      "tags": ["late-wake", "missed-bedtime"]
+    },
+    {
+      "id": "clear-never-twice",
+      "type": "book",
+      "title": "Atomic Habits — “never miss twice”",
+      "by": "James Clear",
+      "url": "",
+      "note": "One miss is noise; two in a row is the start of a new habit. Hold the second day.",
+      "tags": ["consistency", "late-wake"]
+    },
+    {
+      "id": "urge-surfing",
+      "type": "essay",
+      "title": "Urge surfing — riding the wave instead of fighting it",
+      "by": "Marlatt / MBRP",
+      "url": "",
+      "note": "The urge crests and passes if you don't act. For the late-night window.",
+      "tags": ["evening-drift"]
+    },
+    {
+      "id": "jocko-discipline",
+      "type": "book",
+      "title": "Discipline Equals Freedom",
+      "by": "Jocko Willink",
+      "url": "",
+      "note": "When motivation is gone, the protocol carries you. Short, blunt, on-voice.",
+      "tags": ["consistency", "general"]
+    },
+    {
+      "id": "phone-out-bedroom",
+      "type": "essay",
+      "title": "Stimulus control: the phone leaves the bedroom",
+      "by": "CBT-I basics",
+      "url": "",
+      "note": "Bed = sleep only. The single highest-leverage change for the night cutoff.",
+      "tags": ["missed-bedtime", "evening-drift"]
+    }
+  ]
+}

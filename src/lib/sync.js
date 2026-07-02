@@ -302,6 +302,45 @@ function cycle() {
     .catch((e) => console.warn('[sync] cycle failed:', e?.message || e))
 }
 
+// ---- realtime: pull the instant a sibling device writes ------------------
+// 0010_realtime.sql opts the synced tables into the `supabase_realtime`
+// publication; here we subscribe. RLS scopes the stream to the user's OWN rows,
+// so any event means "one of my records changed elsewhere" → pull it in through
+// the same Last-Write-Wins merge. Debounced so a burst of row changes (or the
+// echo of our own push) collapses into a single pull instead of a storm.
+let realtimeChannel = null
+let realtimePullTimer = null
+
+function scheduleRealtimePull() {
+  if (realtimePullTimer) clearTimeout(realtimePullTimer)
+  realtimePullTimer = setTimeout(() => {
+    realtimePullTimer = null
+    if (!ready()) return
+    pullAll().catch((e) => console.warn('[sync] realtime pull failed:', e?.message || e))
+  }, 500)
+}
+
+function subscribeRealtime() {
+  if (realtimeChannel || !isSupabaseConfigured || !session) return
+  // No table filter: listen across the whole public schema and let RLS decide
+  // which rows we're allowed to see (matches SLICES exactly under the policies).
+  realtimeChannel = supabase
+    .channel('sync')
+    .on('postgres_changes', { event: '*', schema: 'public' }, scheduleRealtimePull)
+    .subscribe()
+}
+
+function unsubscribeRealtime() {
+  if (realtimePullTimer) {
+    clearTimeout(realtimePullTimer)
+    realtimePullTimer = null
+  }
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel)
+    realtimeChannel = null
+  }
+}
+
 // ---- lifecycle -----------------------------------------------------------
 // Idempotent: safe to call on every StoreProvider mount (React StrictMode
 // invokes effects more than once in dev). The latest onApply always wins.
@@ -315,13 +354,21 @@ export function start(onApply) {
 
   supabase.auth.getSession().then(({ data }) => {
     session = data.session
-    if (session) cycle()
+    if (session) {
+      cycle()
+      subscribeRealtime() // stream sibling-device writes for the rest of the session
+    }
   })
 
   const { data } = supabase.auth.onAuthStateChange((_event, s) => {
     const wasSignedIn = !!session
     session = s
-    if (s && !wasSignedIn) cycle() // just signed in: pull, then push local-only
+    if (s && !wasSignedIn) {
+      cycle() // just signed in: pull, then push local-only
+      subscribeRealtime()
+    } else if (!s && wasSignedIn) {
+      unsubscribeRealtime() // signed out: drop the channel (RLS token is gone)
+    }
   })
   authSub = data.subscription
 
@@ -339,6 +386,7 @@ export function stop() {
   if (storageUnsub) storageUnsub()
   if (authSub) authSub.unsubscribe()
   if (onlineHandler && typeof window !== 'undefined') window.removeEventListener('online', onlineHandler)
+  unsubscribeRealtime()
   storageUnsub = authSub = onlineHandler = null
   started = false
 }

@@ -6,10 +6,21 @@ import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
 import { appDayKey, lastNDates } from '../lib/dates.js'
 import { DIMS, readiness, rhrTrend } from '../lib/wellness.js'
+import { readToday, toReadinessInputs } from '../lib/health.js'
 
 export default function WellnessSheet({ onClose }) {
   const { wellness, saveWellness } = useStore()
   const day = appDayKey()
+
+  // "Fill from Health" — pull today's Apple Health / Health Connect snapshot and
+  // merge-patch the objective dims (sleep band + resting HR), leaving legs/head
+  // for manual taps. Fail-soft: off-native readToday() returns null →
+  // toReadinessInputs(null) → null → no-op, so nothing breaks on web/simulator.
+  const fillFromHealth = async () => {
+    const snap = await readToday()
+    const inputs = toReadinessInputs(snap)
+    if (inputs) saveWellness(day, inputs)
+  }
   const entry = wellness[day] || {}
   const r = readiness(entry)
   const hr = rhrTrend(wellness, day, entry.rhr)
@@ -66,6 +77,13 @@ export default function WellnessSheet({ onClose }) {
             HR’s up ({hr.rhr} vs ~{hr.baseline}). Body’s working on something — respect it today.
           </span>
         )}
+        <button
+          type="button"
+          onClick={fillFromHealth}
+          className="self-start rounded-xl border border-line bg-surface2 px-3 py-2 text-xs text-muted"
+        >
+          Fill from Health
+        </button>
       </label>
 
       {/* Readiness read-out — the hook: a charge + how to train */}

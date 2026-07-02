@@ -1,20 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="terminal">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0"
     />
-    <meta name="theme-color" content="#0A0B0D" />
+    <meta name="theme-color" content="#06080b" />
     <!-- iOS: let it run like a real app from the home screen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="LOCKED IN" />
+    <meta name="apple-mobile-web-app-title" content="Telemetry" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" />
-    <title>LOCKED IN</title>
+    <title>Telemetry</title>
+    <script>
+      // Apply the persisted theme before first paint so there's no flash of the
+      // default skin. ThemeProvider (src/lib/theme.jsx) takes over once React mounts.
+      try {
+        var s = JSON.parse(localStorage.getItem('lockedin:settings') || '{}')
+        if (['terminal', 'zen', 'night_ops'].indexOf(s.theme) !== -1) {
+          document.documentElement.dataset.theme = s.theme
+          document.documentElement.style.colorScheme = s.theme === 'zen' ? 'light' : 'dark'
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

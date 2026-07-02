@@ -17,7 +17,7 @@ import Login from './Login.jsx'
 
 function Splash() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0B0D] text-white/40 text-sm">
+    <div className="min-h-screen flex items-center justify-center bg-bg text-muted text-sm">
       …
     </div>
   )

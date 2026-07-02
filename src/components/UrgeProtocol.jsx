@@ -1,10 +1,21 @@
 // UrgeProtocol.jsx — the most important screen in the app. A full-screen
-// takeover that must be reachable in 2 taps (Streak → HELP NOW). A 15:00 clock
-// starts automatically; the steps are fixed and in order; texting the
-// accountability partner is one tap. Finishing logs a WIN, not a loss.
+// takeover that must be reachable in 2 taps (HELP NOW). A 15:00 clock starts
+// automatically; texting the accountability partner is one tap. Finishing logs
+// a WIN, not a loss.
+//
+// The steps are no longer fixed: protocolForge deals a personalized sequence
+// (interrupt → downshift → reframe → commit) weighted by which steps have been
+// on the field for this user's survived urges — and benches the hand they
+// slipped on. The deal is logged as an invocation (guardianEngine sidecar); the
+// WIN writes the step ids into streak.urgesSurvived so the learning syncs.
+// Copy is mirrored to the user's motivational profile via the tone engine.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
+import { forgeProtocol } from '../lib/protocolForge.js'
+import { recordInvocation, getInvocations } from '../lib/guardianEngine.js'
+import { voice } from '../lib/toneEngine.js'
+import { streakDays } from '../lib/dates.js'
 import {
   smsLink,
   requestWakeLock,
@@ -15,11 +26,36 @@ import {
 const DURATION = 15 * 60 // seconds
 const TEXT_BODY = 'Urge hit — texting you before I act, like I said I would. Doing the protocol. Check on me in 15.'
 
-export default function UrgeProtocol({ onClose }) {
-  const { settings, logUrgeSurvived } = useStore()
+export default function UrgeProtocol({ onClose, severity = 'normal' }) {
+  const { settings, streak, logUrgeSurvived } = useStore()
   const [remaining, setRemaining] = useState(DURATION)
-  const [done, setDone] = useState([false, false, false, false, false])
   const endRef = useRef(null)
+
+  const partners = (settings.partners || []).filter((p) => p.phone)
+
+  // Deal the hand ONCE per open (useMemo, not per render) and log the invocation
+  // so the forge can attribute tonight's outcome to exactly these steps.
+  const protocol = useMemo(() => {
+    const dealt = forgeProtocol({
+      severity,
+      invocations: getInvocations(),
+      streak,
+      modules: settings.modules || {},
+      hasPartner: partners.length > 0,
+    })
+    recordInvocation({ steps: dealt.steps.map((s) => s.id), severity })
+    return dealt
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const [done, setDone] = useState(() => protocol.steps.map(() => false))
+
+  // Profile for the tone engine + its params.
+  const profile = { streakModel: settings.streakModel, theme: settings.theme }
+  const params = {
+    days: streakDays(streak.startedAt),
+    wins: (streak.urgesSurvived || []).length,
+    winsNext: (streak.urgesSurvived || []).length + 1,
+  }
 
   // Auto-start countdown + keep the screen on. The clock is WALL-CLOCK anchored:
   // the protocol literally sends the user away from the phone, and iOS suspends
@@ -47,23 +83,14 @@ export default function UrgeProtocol({ onClose }) {
   const passed = remaining === 0
 
   function finish() {
-    logUrgeSurvived()
+    // The WIN carries the protocol fingerprint — this is how the forge learns.
+    logUrgeSurvived({ steps: protocol.steps.map((s) => s.id), severity })
     onClose()
   }
 
   function toggle(i) {
     setDone((d) => d.map((v, idx) => (idx === i ? !v : v)))
   }
-
-  const partners = (settings.partners || []).filter((p) => p.phone)
-
-  const steps = [
-    'Put the phone down. Leave the room.',
-    '20 pushups — or a hard 2-min effort, or step outside and move. Now.',
-    null, // rendered specially — the text button
-    'Get outside for 10 minutes.',
-    'Urges crest and pass — give it time. Ride it out.',
-  ]
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg pt-safe">
@@ -81,52 +108,45 @@ export default function UrgeProtocol({ onClose }) {
             {mm}:{ss}
           </div>
           <p className="mx-auto mt-3 max-w-xs text-sm text-muted">
-            {passed
-              ? 'The urge crested and passed. That was always going to happen. You stayed.'
-              : 'You are not your urge. Work the steps top to bottom.'}
+            {passed ? voice(profile, 'urge.survived', params) : voice(profile, 'urge.open', params)}
           </p>
         </div>
 
-        {/* Steps */}
+        {/* Steps — the forged hand, in arc order */}
         <ol className="mt-8 space-y-3">
-          {steps.map((text, i) => {
-            if (i === 2) {
+          {protocol.steps.map((step, i) => {
+            if (step.special === 'partner') {
               return (
-                <li key="text" className="rounded-2xl border border-accent bg-accent/5 p-4">
+                <li key={step.id} className="rounded-2xl border border-accent bg-accent/5 p-4">
                   <div className="flex gap-3">
-                    <StepNum n={3} on={done[2]} onClick={() => toggle(2)} />
+                    <StepNum n={i + 1} on={done[i]} onClick={() => toggle(i)} />
                     <div className="flex-1">
                       <div className="text-[15px] text-ink">
                         Text {partners.length === 1 ? partners[0].name : 'someone in your corner'}.
                       </div>
-                      {partners.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {partners.map((p) => (
-                            <a
-                              key={p.id}
-                              href={smsLink(p.phone, TEXT_BODY)}
-                              onClick={() => toggle(2)}
-                              className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-ink"
-                            >
-                              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" />
-                              </svg>
-                              Text {p.name}
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-1 text-xs text-muted">
-                          Add a partner's number in Settings for one-tap texting.
-                        </div>
-                      )}
+                      <div className="mt-0.5 text-xs text-muted">{voice(profile, 'step.commit', params)}</div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {partners.map((p) => (
+                          <a
+                            key={p.id}
+                            href={smsLink(p.phone, TEXT_BODY)}
+                            onClick={() => toggle(i)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 font-medium text-accent-ink"
+                          >
+                            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" />
+                            </svg>
+                            Text {p.name}
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </li>
               )
             }
             return (
-              <li key={i}>
+              <li key={step.id}>
                 <button
                   type="button"
                   onClick={() => toggle(i)}
@@ -134,7 +154,7 @@ export default function UrgeProtocol({ onClose }) {
                 >
                   <StepNum n={i + 1} on={done[i]} />
                   <span className={`text-[15px] ${done[i] ? 'text-muted line-through' : 'text-ink'}`}>
-                    {text}
+                    {step.label}
                   </span>
                 </button>
               </li>

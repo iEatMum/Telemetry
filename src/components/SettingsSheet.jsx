@@ -6,6 +6,7 @@
 import { useRef, useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
+import { useTheme } from '../lib/theme.jsx'
 import { dateKey } from '../lib/dates.js'
 
 function downloadJSON(data) {
@@ -53,6 +54,8 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
         firm cue. Phone out = bed is for sleep only (and a recovery guardrail). Banked sleep runs
         faster — college sprinters ~0.7s (Mah 2011).
       </p>
+
+      <ThemePicker />
 
       <div className="flex gap-3">
         <Row label="Monthly goal">
@@ -132,6 +135,42 @@ function Row({ label, children }) {
       <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
       {children}
     </label>
+  )
+}
+
+const THEME_OPTIONS = [
+  { key: 'terminal', label: 'Terminal', sub: 'electric green · high signal' },
+  { key: 'zen', label: 'Zen', sub: 'calm · light · minimal' },
+  { key: 'night_ops', label: 'Night Ops', sub: 'deep black · low-light' },
+]
+
+// Live theme switcher. Writes settings.theme (persisted locally + synced across
+// devices via the settings slice); ThemeProvider repaints <html> on next render.
+function ThemePicker() {
+  const { theme, setTheme } = useTheme()
+  return (
+    <Section title="Interface" hint="Your deck's visual system. Syncs across your devices.">
+      <div className="grid grid-cols-3 gap-2">
+        {THEME_OPTIONS.map((o) => {
+          const on = theme === o.key
+          return (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => setTheme(o.key)}
+              aria-pressed={on}
+              className={
+                'rounded-lg border p-3 text-left transition-colors ' +
+                (on ? 'border-accent bg-pos-soft' : 'border-line bg-surface2')
+              }
+            >
+              <span className="block text-sm text-ink">{o.label}</span>
+              <span className="mt-1 block text-[11px] leading-snug text-muted">{o.sub}</span>
+            </button>
+          )
+        })}
+      </div>
+    </Section>
   )
 }
 

@@ -10,6 +10,7 @@ import * as storage from './storage.js'
 import * as sync from './sync.js'
 import { appDayKey, dateKey } from './dates.js'
 import { computeNextDue, seedTasks } from './tasks.js'
+import { synthesizeConsideration } from './guardian.js'
 
 const StoreContext = createContext(null)
 
@@ -79,6 +80,7 @@ export function StoreProvider({ children }) {
   const [reviews, setReviews] = useState(() => storage.get('reviews'))
   const [reading, setReading] = useState(() => storage.get('reading'))
   const [wellness, setWellness] = useState(() => storage.get('wellness'))
+  const [handover, setHandover] = useState(() => storage.get('handover'))
 
   // ---- Sync (Phase 3) -----------------------------------------------------
   // Local-first stays local-first: the engine only does anything when Supabase
@@ -168,10 +170,13 @@ export function StoreProvider({ children }) {
       }
     })
   }
-  function logUrgeSurvived() {
+  // `meta` (optional) carries the forged protocol's fingerprint — { steps:[ids],
+  // severity } — so the win syncs WITH what worked (protocolForge learns from
+  // these entries on every device). Zero-arg callers keep the old shape.
+  function logUrgeSurvived(meta) {
     commit('streak', setStreak, (prev) => ({
       ...prev,
-      urgesSurvived: [...prev.urgesSurvived, { at: new Date().toISOString() }],
+      urgesSurvived: [...prev.urgesSurvived, { at: new Date().toISOString(), ...(meta || {}) }],
     }))
   }
 
@@ -341,6 +346,70 @@ export function StoreProvider({ children }) {
     }))
   }
 
+  // ---- Handover (the Guardian) --------------------------------------------
+  // Drafts are private to this device (the slice isn't synced). Saving one lets
+  // you come back to it; it never leaves the phone.
+  function saveHandoverDraft({ kind = 'note', body = '', attachments = [] } = {}) {
+    const id = newId()
+    const now = new Date().toISOString()
+    commit('handover', setHandover, (prev) => ({
+      ...prev,
+      drafts: [{ id, kind, body, attachments, createdAt: now, updatedAt: now }, ...prev.drafts],
+    }))
+    return id
+  }
+  function updateHandoverDraft(id, patch) {
+    commit('handover', setHandover, (prev) => ({
+      ...prev,
+      drafts: prev.drafts.map((d) =>
+        d.id === id ? { ...d, ...patch, updatedAt: new Date().toISOString() } : d
+      ),
+    }))
+  }
+  function discardHandoverDraft(id) {
+    commit('handover', setHandover, (prev) => ({
+      ...prev,
+      drafts: prev.drafts.filter((d) => d.id !== id),
+    }))
+  }
+  // The ritual. Turn raw content into a Consideration for the Evening Examen, and
+  // let go of the draft. Returns the Consideration so the UI can show it at once.
+  // (Synthesis is a placeholder until the AI Counsel step — see guardian.js.)
+  function surrenderHandover(content, draftId) {
+    const consideration = {
+      id: newId(),
+      at: new Date().toISOString(),
+      dismissed: false,
+      ...synthesizeConsideration(content),
+    }
+    commit('handover', setHandover, (prev) => ({
+      ...prev,
+      considerations: [consideration, ...prev.considerations],
+      drafts: draftId ? prev.drafts.filter((d) => d.id !== draftId) : prev.drafts,
+    }))
+    return consideration
+  }
+  function dismissConsideration(id) {
+    commit('handover', setHandover, (prev) => ({
+      ...prev,
+      considerations: prev.considerations.map((c) =>
+        c.id === id ? { ...c, dismissed: true } : c
+      ),
+    }))
+  }
+  // "Let it go" on a pattern-detected Counsel card — suppresses re-showing the
+  // same pattern for the rest of the app-day, so a drift you've consciously taken
+  // on doesn't re-indict you nightly.
+  function dismissCounsel(patternKey) {
+    if (!patternKey) return
+    const day = appDayKey()
+    commit('handover', setHandover, (prev) => {
+      const ack = prev.counselAck || []
+      if (ack.some((a) => a.key === patternKey && a.day === day)) return prev
+      return { ...prev, counselAck: [...ack, { key: patternKey, day }] }
+    })
+  }
+
   // ---- Data tools ---------------------------------------------------------
   function exportData() {
     return storage.exportAll()
@@ -359,6 +428,7 @@ export function StoreProvider({ children }) {
     setReviews(storage.get('reviews'))
     setReading(storage.get('reading'))
     setWellness(storage.get('wellness'))
+    setHandover(storage.get('handover'))
     return true
   }
   function wipeData() {
@@ -373,6 +443,7 @@ export function StoreProvider({ children }) {
     setReviews(storage.get('reviews'))
     setReading(storage.get('reading'))
     setWellness(storage.get('wellness'))
+    setHandover(storage.get('handover'))
   }
 
   const value = {
@@ -386,6 +457,7 @@ export function StoreProvider({ children }) {
     reviews,
     reading,
     wellness,
+    handover,
     updateSettings,
     addPartner,
     removePartner,
@@ -409,6 +481,12 @@ export function StoreProvider({ children }) {
     advanceReading,
     addReadingSection,
     saveWellness,
+    saveHandoverDraft,
+    updateHandoverDraft,
+    discardHandoverDraft,
+    surrenderHandover,
+    dismissConsideration,
+    dismissCounsel,
     exportData,
     importData,
     wipeData,

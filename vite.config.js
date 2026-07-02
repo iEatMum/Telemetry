@@ -9,13 +9,24 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // We own the service worker now (src/sw.js) so it can receive Web Push and
+      // show the Guardian's notifications. injectManifest bundles our worker and
+      // injects the precache list into it. (Workbox 7 is already installed.)
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       includeAssets: ['icons/apple-touch-icon-180.png', 'sounds/sprint-end.wav'],
+      injectManifest: {
+        // Keep the exact precache coverage the old generateSW config had — incl.
+        // the sprint-end .wav — so offline-first behaviour is unchanged.
+        globPatterns: ['**/*.{js,css,html,png,svg,wav,woff2}'],
+      },
       manifest: {
-        name: 'LOCKED IN',
-        short_name: 'LOCKED IN',
-        description: 'Personal daily discipline. Verse, streak, sprints — built for one.',
-        theme_color: '#0A0B0D',
-        background_color: '#0A0B0D',
+        name: 'Telemetry',
+        short_name: 'Telemetry',
+        description: 'Discipline, measured. Your day, streaks, and readiness — tracked in one terminal.',
+        theme_color: '#06080b',
+        background_color: '#06080b',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -30,11 +41,6 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
-      },
-      workbox: {
-        // Offline-first: precache the app shell so it opens with no network.
-        globPatterns: ['**/*.{js,css,html,png,svg,wav,woff2}'],
-        navigateFallback: '/index.html',
       },
       devOptions: {
         enabled: false, // keep the SW out of the way during `npm run dev`

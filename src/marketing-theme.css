@@ -1,0 +1,22 @@
+/* TELEMETRY — MARKETING THEME (command center)
+   Scoped to marketing surfaces (landing/waitlist). Kept SEPARATE from the
+   app's witness/terminal tokens in index.css so red-for-miss + leaderboard
+   mechanics never leak into the recovery screens. Imported ONLY by the waitlist
+   route (src/pages/Waitlist.jsx). These --m-* vars are inert in the app — no app
+   component uses the m* Tailwind utilities. */
+:root {
+  --m-bg: #06070a;
+  --m-bg-2: #0b0e13;
+  --m-panel: var(--surface);
+  --m-panel-2: #141a22;
+  --m-line: var(--line);
+  --m-line-bright: #2a3540;
+  --m-ink: #e8edf2;
+  --m-muted: #7c8794;
+  --m-faint: #4a5663;
+  --m-green: var(--accent);
+  --m-green-ink: var(--accent-ink);
+  --m-green-glow: var(--accent-glow);
+  --m-amber: #ffb020;
+  --m-red: var(--neg);
+}

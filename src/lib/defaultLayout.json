@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "defaultTab": "today",
+  "tabs": [
+    {
+      "key": "today",
+      "label": "Today",
+      "blocks": [
+        {
+          "type": "DailyBriefing",
+          "id": "today-briefing",
+          "config": {
+            "date": "Day 1",
+            "stats": [
+              { "label": "Impact", "value": "—", "tone": "muted" },
+              { "label": "Engaged", "value": "—", "tone": "muted" },
+              { "label": "Cards", "value": "—", "tone": "muted" }
+            ],
+            "drivers": [
+              { "tone": "muted", "text": "First day — running your survey baseline. Finish today and tomorrow's deck adapts to what you actually used." }
+            ]
+          }
+        },
+        {
+          "type": "ScheduleMatrix",
+          "id": "today-sched",
+          "config": {
+            "title": "Today",
+            "rows": [
+              { "time": "05:30", "block": "Wake", "status": "hit", "delta": { "value": "0m", "dir": "flat" } },
+              { "time": "06:00", "block": "Run · 6 mi", "status": "done", "delta": { "value": "-40s/mi", "dir": "up" } },
+              { "time": "09:00", "block": "Deep Work", "status": "open", "impact": "high" },
+              { "time": "12:30", "block": "Lift", "status": "done", "delta": { "value": "0m", "dir": "flat" } },
+              { "time": "15:00", "block": "Class", "status": "done" },
+              { "time": "18:30", "block": "Film study", "status": "open", "impact": "high" },
+              { "time": "22:15", "block": "Phone down", "status": "late", "delta": { "value": "-18m", "dir": "down" } }
+            ]
+          }
+        },
+        {
+          "type": "KpiGrid",
+          "id": "today-kpis",
+          "config": {
+            "title": "Pulse",
+            "cols": 2,
+            "items": [
+              { "label": "Wake Streak", "value": "23", "unit": "days", "delta": 12, "deltaSuffix": "%", "accent": true, "spark": [2, 3, 3, 5, 4, 6, 7, 8, 8, 11] },
+              { "label": "Deep Work", "value": "4.5", "unit": "hrs", "delta": 18, "deltaSuffix": "%", "accent": true, "spark": [4, 6, 5, 7, 6, 8, 5, 9, 7, 10] },
+              { "label": "Discipline", "value": "92", "unit": "%", "delta": -3, "deltaSuffix": "%", "sparkTone": "neg", "spark": [9, 8, 8, 6, 7, 5, 5, 4, 3, 3] },
+              { "label": "Sleep", "value": "7.2", "unit": "hrs", "delta": 5, "deltaSuffix": "%", "spark": [5, 5, 6, 5, 6, 5, 6, 6, 5, 6] }
+            ]
+          }
+        },
+        {
+          "type": "GoalProgress",
+          "id": "today-goals",
+          "config": {
+            "title": "Targets",
+            "items": [
+              { "label": "Monthly income", "value": 2400, "max": 3500, "right": "$2,400 / $3,500", "tone": "accent" },
+              { "label": "Weekly mileage", "value": 28, "max": 35, "right": "28 / 35 mi", "tone": "pos" },
+              { "label": "Readiness", "value": 4, "max": 5, "right": "4 / 5", "tone": "pos" },
+              { "label": "Recovery debt", "value": 2.5, "max": 5, "right": "elevated", "tone": "warn" }
+            ]
+          }
+        },
+        {
+          "type": "DeepWorkTimer",
+          "id": "today-focus",
+          "config": {
+            "label": "Next · Deep Work",
+            "minutes": 90,
+            "highImpact": true,
+            "note": "Phone in the other room. 9:00–10:30."
+          }
+        }
+      ]
+    },
+    {
+      "key": "trends",
+      "label": "Trends",
+      "blocks": [
+        {
+          "type": "EnergyTrendLine",
+          "id": "trend-energy",
+          "config": {
+            "label": "Energy · Today",
+            "unit": "/100",
+            "tone": "auto",
+            "open": 52,
+            "avg": 64,
+            "now": 12,
+            "ticks": 6,
+            "caption": true,
+            "height": 150,
+            "points": [
+              { "t": "6a", "v": 48 },
+              { "t": "7a", "v": 61 },
+              { "t": "8a", "v": 78 },
+              { "t": "9a", "v": 91 },
+              { "t": "10a", "v": 86 },
+              { "t": "11a", "v": 74 },
+              { "t": "12p", "v": 69 },
+              { "t": "1p", "v": 58 },
+              { "t": "2p", "v": 44 },
+              { "t": "3p", "v": 38 },
+              { "t": "4p", "v": 47 },
+              { "t": "5p", "v": 63 },
+              { "t": "6p", "v": 72 },
+              { "t": "7p", "v": 66 },
+              { "t": "8p", "v": 55 },
+              { "t": "9p", "v": 41 }
+            ]
+          }
+        },
+        {
+          "type": "MarketSentimentWidget",
+          "id": "trend-sentiment",
+          "config": {
+            "label": "Market Sentiment",
+            "status": "Live",
+            "sentiment": { "score": 72 },
+            "tickers": [
+              { "symbol": "BTC", "last": "67,420", "changePct": 2.4 },
+              { "symbol": "S&P 500", "last": "5,210", "changePct": -0.6 },
+              { "symbol": "My Focus", "last": "92", "changePct": 8.0, "focus": true }
+            ]
+          }
+        },
+        {
+          "type": "KpiGrid",
+          "id": "trend-kpis",
+          "config": {
+            "cols": 2,
+            "items": [
+              { "label": "7-day clean", "value": "7", "unit": "days", "delta": 2, "accent": true, "spark": [3, 4, 4, 5, 6, 6, 7] },
+              { "label": "Avg sleep", "value": "7.1", "unit": "hrs", "delta": 4, "deltaSuffix": "%", "spark": [6.5, 6.8, 7, 6.9, 7.2, 7.1, 7.3] }
+            ]
+          }
+        },
+        {
+          "type": "BiometricChart",
+          "id": "trend-sleep",
+          "config": {
+            "label": "Sleep · 14d",
+            "value": "7.1",
+            "unit": "hrs avg",
+            "delta": 4,
+            "deltaSuffix": "%",
+            "tone": "accent",
+            "data": [6.2, 6.8, 7, 6.5, 7.2, 7.4, 6.9, 7.1, 7.5, 7, 7.3, 7.2, 7.4, 7.1]
+          }
+        },
+        {
+          "type": "BiometricChart",
+          "id": "trend-discipline",
+          "config": {
+            "label": "Discipline · 14d",
+            "value": "89",
+            "unit": "% avg",
+            "delta": -3,
+            "deltaSuffix": "%",
+            "tone": "neg",
+            "data": [95, 94, 92, 93, 90, 91, 88, 90, 87, 89, 86, 88, 90, 89]
+          }
+        }
+      ]
+    },
+    {
+      "key": "mind",
+      "label": "Mind",
+      "blocks": [
+        {
+          "type": "InsightCard",
+          "id": "mind-counsel",
+          "config": {
+            "heading": "Counsel",
+            "source": "pattern · late phone-down",
+            "text": "Three of the last five nights the phone went down late. That's not a character flaw, it's a cue gap. Put the charger outside the bedroom tonight — the distance does the work willpower won't.",
+            "tone": "warn"
+          }
+        },
+        {
+          "type": "StatRow",
+          "id": "mind-stats",
+          "config": {
+            "title": "This week",
+            "cols": 3,
+            "items": [
+              { "label": "Sprints", "value": "18", "delta": 3, "accent": true },
+              { "label": "Clean days", "value": "23", "delta": 7 },
+              { "label": "Best streak", "value": "31" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

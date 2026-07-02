@@ -1,42 +1,34 @@
-// TabBar.jsx — the 5 bottom tabs. Fixed to the bottom, thumb-reachable,
-// 44px+ targets, with the iOS home-indicator safe area respected.
-// Inline SVG icons (no icon library) so there are no extra dependencies.
+// TabBar.jsx — three faces, three tabs. Morning (commitment) · Examen (the
+// evening reckoning) · Offerings (the spiritual life, un-scored). The heavier
+// surfaces (Streak, Sprint, Money, Train) open as sub-views under Morning, so
+// the bottom nav stays calm. Inline SVG icons, no icon library.
 
 const ICONS = {
-  today: (
-    <path d="M12 3v2M4.9 6.3 6.3 7.7M19.1 6.3 17.7 7.7M3 12h2M19 12h2M12 8a4 4 0 100 8 4 4 0 000-8z" />
-  ),
-  streak: (
-    // a flame
-    <path d="M12 3c.5 3-1.8 4.2-2.7 5.7C8.2 10.6 8 12 8 13a4 4 0 008 0c0-1.4-.6-2.7-1.4-3.7.3 1.2-.2 2.2-1 2.6.4-1.6-.2-3.5-1.6-4.8C12.9 5.7 13 4.2 12 3z" />
-  ),
-  sprint: (
-    // a stopwatch
+  morning: (
+    // a sun rising over the horizon
     <>
-      <path d="M12 8v4l2 2" />
-      <circle cx="12" cy="13" r="7" />
-      <path d="M9 2h6M12 2v2" />
+      <path d="M3 18h18" />
+      <path d="M16 18a4 4 0 0 0-8 0" />
+      <path d="M12 4v4M5.5 9.5 7 11M18.5 9.5 17 11M3 14h2M19 14h2" />
     </>
   ),
-  money: (
-    // bars + value
-    <path d="M5 20V10M12 20V4M19 20v-7M3 20h18" />
+  examen: (
+    // a crescent moon — the evening
+    <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8z" />
   ),
-  train: (
-    // a running track
+  offerings: (
+    // an open book
     <>
-      <rect x="3" y="7" width="18" height="10" rx="5" />
-      <path d="M8 12h8" />
+      <path d="M12 6C10 4.5 6.5 4.5 4 6v13c2.5-1.5 6-1.5 8 0 2-1.5 5.5-1.5 8 0V6c-2.5-1.5-6-1.5-8 0z" />
+      <path d="M12 6v13" />
     </>
   ),
 }
 
 const TABS = [
-  { id: 'today', label: 'Today' },
-  { id: 'streak', label: 'Streak' },
-  { id: 'sprint', label: 'Sprint' },
-  { id: 'money', label: 'Money' },
-  { id: 'train', label: 'Train' },
+  { id: 'morning', label: 'Morning' },
+  { id: 'examen', label: 'Examen' },
+  { id: 'offerings', label: 'Offerings' },
 ]
 
 export default function TabBar({ active, onChange }) {
@@ -67,11 +59,7 @@ export default function TabBar({ active, onChange }) {
                 >
                   {ICONS[t.id]}
                 </svg>
-                <span
-                  className={`text-[11px] ${on ? 'text-ink font-medium' : 'text-muted'}`}
-                >
-                  {t.label}
-                </span>
+                <span className={`text-[11px] ${on ? 'text-ink font-medium' : 'text-muted'}`}>{t.label}</span>
               </button>
             </li>
           )

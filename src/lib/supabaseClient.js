@@ -20,6 +20,14 @@
 // (Project Settings → API). .env.local is gitignored, so secrets never commit.
 
 import { createClient } from '@supabase/supabase-js'
+import { Capacitor } from '@capacitor/core'
+
+// On the web the magic link returns to an https URL the browser owns, so
+// supabase-js can read the token straight off `window.location` (detectSessionInUrl).
+// Inside the native WKWebView the link instead returns via a custom URL scheme
+// that the browser never parses — we catch it in `appUrlOpen` (see nativeAuth.js)
+// and call verifyOtp by hand. So native must NOT auto-detect, or it races us.
+const isNative = Capacitor.isNativePlatform()
 
 // `import.meta.env` is always present under Vite; the `?? {}` keeps this module
 // importable in plain Node too (unit tests, a future edge function) where it isn't.
@@ -36,11 +44,14 @@ export const supabase = isSupabaseConfigured
       auth: {
         // Persist the session in localStorage and re-hydrate on load, so a
         // returning (already-authenticated) user opens straight into the app —
-        // even with no network. Magic-link tokens arrive in the URL on redirect;
-        // detectSessionInUrl picks them up automatically.
+        // even with no network.
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        // Web: token rides back on the redirect URL → let supabase-js read it.
+        // Native: the token arrives via the custom scheme and we verify it
+        // manually in nativeAuth.js, so disable auto-detection here.
+        detectSessionInUrl: !isNative,
+        flowType: 'pkce',
       },
     })
   : null

@@ -5,10 +5,23 @@
 // follows you across devices. (Implementation Intention framing: the cue
 // "open the app" binds to one clean response, "you're you.")
 //
-// Deliberately minimal styling — the visual layer is a later, UI-sprint concern.
+// Styled on the terminal token system (Phase 3): near-black surface, electric
+// green action. No hardcoded colors — it tracks the theme like everything else.
 
 import { useState } from 'react'
+import { Capacitor } from '@capacitor/core'
 import { supabase } from '../lib/supabaseClient.js'
+
+// Where the magic link should send the user back to. On the web that's just the
+// origin (localhost in dev, Vercel in prod) and supabase-js reads the token off
+// the URL. On native there's no https origin the WKWebView owns, so we redirect
+// to a custom URL scheme that iOS hands back to the app via `appUrlOpen`. The
+// scheme (`telemetry`) must match CFBundleURLTypes in Info.plist AND be added to
+// Supabase's Auth → URL Configuration → Redirect URLs allow-list, or the link
+// falls back to the Site URL and never reaches the app.
+const REDIRECT_TO = Capacitor.isNativePlatform()
+  ? 'telemetry://auth-callback'
+  : window.location.origin
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -24,9 +37,7 @@ export default function Login() {
     const { error: err } = await supabase.auth.signInWithOtp({
       email: addr,
       options: {
-        // Come back to wherever the app actually runs (localhost in dev, the
-        // Vercel URL in prod). supabase-js reads the token off the URL on return.
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: REDIRECT_TO,
       },
     })
     if (err) {
@@ -38,18 +49,18 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 bg-[#0A0B0D] text-white">
+    <div className="min-h-screen flex items-center justify-center px-6 bg-bg text-ink">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold tracking-tight">LOCKED IN</h1>
-        <p className="mt-1 text-sm text-white/60">Sign in to sync. Your data follows you.</p>
+        <h1 className="font-clock text-2xl font-semibold uppercase tracking-widest2">TELEMETRY</h1>
+        <p className="mt-1 text-sm text-muted">Sign in to sync. Your data follows you.</p>
 
         {status === 'sent' ? (
-          <div className="mt-6 rounded-xl border border-white/10 p-4 text-sm leading-relaxed">
+          <div className="mt-6 rounded-md border border-line bg-surface p-4 text-sm leading-relaxed text-ink">
             Check <span className="font-medium">{email.trim()}</span> for a sign-in link, then
             open it on this device.
             <button
               type="button"
-              className="mt-3 block text-white/60 underline"
+              className="mt-3 block text-muted underline"
               onClick={() => setStatus('idle')}
             >
               Use a different email
@@ -66,16 +77,16 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@email.com"
-              className="w-full rounded-xl border border-white/15 bg-transparent px-4 py-3 outline-none focus:border-white/40"
+              className="w-full rounded-md border border-line bg-surface2 px-4 py-3 text-ink placeholder:text-muted outline-none focus:border-accent"
             />
             <button
               type="submit"
               disabled={status === 'sending'}
-              className="w-full rounded-xl bg-white text-black font-medium py-3 disabled:opacity-50"
+              className="w-full rounded-md bg-accent py-3 font-semibold text-accent-ink shadow-glow-sm disabled:opacity-50"
             >
               {status === 'sending' ? 'Sending…' : 'Send magic link'}
             </button>
-            {status === 'error' && <p className="text-sm text-red-400">{error}</p>}
+            {status === 'error' && <p className="text-sm text-neg">{error}</p>}
           </form>
         )}
       </div>

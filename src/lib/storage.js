@@ -64,6 +64,18 @@ export const DEFAULTS = {
   // { '2026-06-13': { sleep:4, legs:3, mind:5, rhr:48, at:'…' } }
   wellness: {},
 
+  // The Guardian's Handover (Phase 4). PRIVATE BY CONSTRUCTION: this slice is
+  // deliberately NOT in sync.js's SLICES map, so a draft can never be pushed to
+  // the server — the sync engine doesn't even know it exists. A draft is what
+  // you're still holding; on "Surrender" it becomes a Consideration (the
+  // Guardian's insight for the Evening Examen) and the raw draft is let go. The
+  // raw input never leaves the device.
+  handover: {
+    drafts: [], // [{ id, kind, body, attachments:[{name,size,type}], createdAt, updatedAt }]
+    considerations: [], // [{ id, heading, source, text, synthesis, at, dismissed }]
+    counselAck: [], // [{ key, day }] — Counsel patterns acknowledged ("let go") for that app-day
+  },
+
   // A reading plan you move through one section at a time (Ian's ask).
   // index points at the current section; advancing logs to history.
   reading: {
@@ -165,6 +177,11 @@ export function update(name, fn) {
 export function exportAll() {
   const out = { exportedAt: nowISO(), schemaVersion: SCHEMA_VERSION, data: {} }
   for (const name of Object.keys(DEFAULTS)) out.data[name] = get(name)
+  // Raw Handover drafts (untransformed input — possibly a relapse confession)
+  // are deliberately kept OUT of a portable backup that could land in iCloud /
+  // Files / a shared file. Considerations (derived, never quoting the raw words)
+  // stay. Drafts are meant to be surrendered, not archived.
+  if (out.data.handover) out.data.handover = { ...out.data.handover, drafts: [] }
   return out
 }
 
