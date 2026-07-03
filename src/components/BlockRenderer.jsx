@@ -109,7 +109,9 @@ export function LayoutHost({ layout, footer }) {
   return (
     <div className="min-h-screen bg-bg text-ink">
       <div className="mx-auto max-w-app">
-        <nav className="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-line bg-bg/90 px-2 pt-safe backdrop-blur">
+        {/* Sticks BELOW the shell's fixed LED strip (safe-area inset + 1.75rem),
+            so the payload tabs never slide under it mid-scroll. */}
+        <nav className="sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-10 flex gap-1 overflow-x-auto border-b border-line bg-bg/90 px-2 backdrop-blur">
           {tabs.map((t) => (
             <button
               key={t.key}

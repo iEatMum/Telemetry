@@ -185,7 +185,12 @@ throw-on-first-error loop for every slice behind it).
 - Glow follows `--glow-strength` (terminal 1 / night_ops .7 / zen 0) — zen is the
   no-glow proof that hierarchy can't depend on glow.
 
-### 6b · Profile-adaptive emphasis (which number dominates)
+### 6b · Profile-adaptive emphasis (which number dominates) — TARGET STATE, not yet built
+
+*(Verifier finding 2026-07-02: nothing implements this table yet — `streakModel`
+drives copy only. Mechanism when built: GuardianPanel/HealthPanel read the profile
+for pile ordering; the deck's emphasis belongs to the architect prompt, not client
+hacks. Until then this section is a directive, not a description.)*
 
 | Profile | DECK hero | GUARDIAN hero | Post-slip (all profiles) |
 |---|---|---|---|
@@ -223,9 +228,36 @@ throw-on-first-error loop for every slice behind it).
 - **P-7 (deferred pair).** Cry-wolf tracking (suppress the pre-window notification for
   3 days after 2 consecutive unacknowledged alerts) + critical deck reflow (R9) —
   both after real-world band calibration.
-- **P-8.** UrgeProtocol post-finish screen: surface the tone-mirrored `urge.survived`
-  line *with* the lifetime outlasted count adjacent — the win lands next to the pile
-  it grew.
+- **P-8.** ✅ *(applied 2026-07-02)* UrgeProtocol post-finish: `urge.survived` line +
+  lifetime outlasted count adjacent — the win lands next to the pile it grew.
+
+*Verifier round (2026-07-02) — adversarial pass findings, with rulings:*
+
+- **P-9 (was BLOCKING).** ✅ `ScheduleMatrix` STATUS_TONE painted `missed`/`late`
+  red — a hard-rule violation live on the hero widget. Ruled: `missed` → muted
+  (the word carries the fact), `late` → warn (forgiving clock, firm cue).
+- **P-10.** ✅ Market conceit boundary ruling: the sentiment gauge + score/100 are
+  *exempt* from R8 (market-frame data, not the Guardian's risk composite) — but the
+  **MY FOCUS ticker is the person**: a down day renders muted, never `--neg`.
+- **P-11.** ✅ `EnergyTrendLine` LOW ZONE red → warn: body telemetry never gets a
+  red/green pass-fail (the sleep-tracker ban, applied to energy).
+- **P-12.** ✅ night_ops `--accent` == `--neg` collision: InsightCard's neg tone is
+  now **weight**-disambiguated (`border-l-4` vs `-2`) — semantics survive without hue.
+- **P-13.** ✅ HealthPanel honesty: no snapshot → band shows `—` + "no signal", never
+  a claimed "moderate"; removed the pointer to a nonexistent wellness sheet. The
+  *real* fix — mounting WellnessSheet from a live surface — is open (engine-adjacent).
+- **P-14 (open).** `--glow-strength` is a dead token (nothing consumes it; glow runs
+  on `--accent-glow` + a hard-coded zen override). Either wire it or strike it from
+  the token docs.
+- **P-15 (open, engine files — excluded from the visual pass by constraint).** P-1
+  (post-slip loss-frame guard in toneEngine), P-2 (bedtime notification clamp in
+  guardianEngine), P-4 (ε=0 at high severity in protocolForge). **These are the top
+  of the next engine pass** — P-1/P-2 are doctrine-grade.
+- **Exclusions, ruled:** overlay radius normalization (global radius scale already
+  compresses `rounded-2xl` to 8px; the slightly softer corners on the crisis screen
+  are intentional calm) · marketing surfaces (Waitlist/Onboarding) keep their scoped
+  theme, out of polish scope · Login/Splash render pre-ThemeProvider in base
+  terminal palette — accepted for v1.
 
 ### 6e · Hard rules, restated for the new surfaces (violations block ship)
 

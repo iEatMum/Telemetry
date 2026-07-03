@@ -105,7 +105,9 @@ export default function GuardianPanel() {
             <div className="divide-y divide-line/50">
               {timeline.map((e, i) => (
                 <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                  <span className={`font-clock text-[11px] uppercase tracking-widest2 ${e.kind === 'outlasted' ? 'text-accent' : 'text-muted'}`}>
+                  {/* Ledger, not scoreboard: win and reset rows carry IDENTICAL
+                      visual weight — only the word differs (BLUEPRINT P-6). */}
+                  <span className="font-clock text-[11px] uppercase tracking-widest2 text-muted">
                     {e.kind}
                   </span>
                   <span className="font-clock tnum text-xs text-muted">

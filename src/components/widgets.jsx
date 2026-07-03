@@ -26,11 +26,14 @@ import { registerImpact, completeImpact } from '../lib/engagement.js'
 
 // Shared status vocab for schedule/protocol rows. Literal class strings so the
 // Tailwind scanner keeps them.
+// HARD RULE (PSYCHOLOGY.md §1, BLUEPRINT §6a): red never lands on a person's
+// behavior. A miss is neutral muted — the word carries the fact; color would
+// carry the verdict. Late is amber caution data (forgiving clock, firm cue).
 const STATUS_TONE = {
   hit: 'text-pos',
   done: 'text-pos',
-  late: 'text-neg',
-  missed: 'text-neg',
+  late: 'text-warn',
+  missed: 'text-muted',
   open: 'text-muted',
   skip: 'text-muted',
 }
@@ -305,15 +308,18 @@ export function DeepWorkTimer({ config = {}, block }) {
 // config: { heading?, source?, text, tone? }
 // ─────────────────────────────────────────────
 export function InsightCard({ config = {} }) {
+  // The neg tone is WEIGHT-disambiguated (border-l-4 vs -2), not just hue:
+  // night_ops resolves --accent and --neg to the same red, so a critical
+  // Guardian card must read different from an accent card without color.
   const accentBorder =
     config.tone === 'neg'
-      ? 'border-neg'
+      ? 'border-l-4 border-neg'
       : config.tone === 'warn'
-        ? 'border-warn'
-        : 'border-accent'
+        ? 'border-l-2 border-warn'
+        : 'border-l-2 border-accent'
   return (
     <Card className="p-4">
-      <div className={`border-l-2 pl-3 ${accentBorder}`}>
+      <div className={`pl-3 ${accentBorder}`}>
         <div className="font-clock text-[10px] uppercase tracking-widest2 text-muted">
           {config.heading || 'Insight'}
           {config.source ? ` · ${config.source}` : ''}

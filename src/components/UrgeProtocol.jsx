@@ -110,6 +110,15 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
           <p className="mx-auto mt-3 max-w-xs text-sm text-muted">
             {passed ? voice(profile, 'urge.survived', params) : voice(profile, 'urge.open', params)}
           </p>
+          {/* The win lands beside the pile it grows (BLUEPRINT P-8) — the
+              lifetime number is the one a reset can never touch. */}
+          {passed && (
+            <div className="mt-4 flex items-baseline justify-center gap-2 font-clock text-[11px] uppercase tracking-widest2 text-muted">
+              <span>Urges outlasted</span>
+              <span className="tnum text-base text-accent">{params.wins}</span>
+              <span>· this one makes {params.winsNext}</span>
+            </div>
+          )}
         </div>
 
         {/* Steps — the forged hand, in arc order */}

@@ -38,7 +38,9 @@ export default function HealthPanel() {
 
   const baselines = readGuardian().baselines || {}
   const today = wellness[appDayKey()] || null
-  const readiness = snap ? calculateReadinessScore(snap.sleepHours, snap.hrv) : 'moderate'
+  // No snapshot → no band. Claiming "moderate" with zero data would be a
+  // verdict without evidence — the readout stays honest and says so.
+  const readiness = snap ? calculateReadinessScore(snap.sleepHours, snap.hrv) : null
 
   const delta = (val, base) =>
     val != null && base != null ? Math.round((val - base) * 10) / 10 : undefined
@@ -50,12 +52,14 @@ export default function HealthPanel() {
         <SectionLabel className="mb-2 px-1">Readiness</SectionLabel>
         <Card className="p-4">
           <div className="flex items-baseline justify-between">
-            <span className={`font-clock text-lg font-semibold uppercase tracking-widest2 ${READY_TONE[readiness]}`}>
-              {readiness}
+            <span className={`font-clock text-lg font-semibold uppercase tracking-widest2 ${readiness ? READY_TONE[readiness] : 'text-muted'}`}>
+              {readiness || '—'}
             </span>
             <span className="text-[11px] text-muted">sleep + HRV</span>
           </div>
-          <p className="mt-2 text-[13px] leading-relaxed text-muted">{READY_LINE[readiness]}</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-muted">
+            {readiness ? READY_LINE[readiness] : 'No biometric signal on this build — the band waits for real data.'}
+          </p>
         </Card>
       </div>
 
@@ -90,7 +94,7 @@ export default function HealthPanel() {
             {today.rhr != null && <Stat label="RHR" value={today.rhr} />}
           </Card>
         ) : (
-          <LedgerNotice>No check-in yet today. The wellness sheet on the deck takes 20 seconds.</LedgerNotice>
+          <LedgerNotice>No check-in yet today.</LedgerNotice>
         )}
       </div>
     </div>

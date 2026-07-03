@@ -84,13 +84,18 @@ export function MarketSentimentWidget({ config = {} }) {
               const pct = typeof t.changePct === 'number' ? t.changePct : 0
               const dir = t.dir || dirOf(pct)
               const focus = !!t.focus
+              // The market conceit stops at the person: BTC may bleed red, but
+              // MY FOCUS (the user's own behavior) is never a red loss — a down
+              // day mutes to data (PSYCHOLOGY.md: no red on behavior, ever).
+              const pctTone = focus && dir === 'down' ? 'text-muted' : TONE[dir]
+              const dotColor = focus && dir === 'down' ? 'var(--muted)' : DOT[dir]
               return (
                 <div
                   key={t.symbol ?? i}
                   className={`flex items-center justify-between py-2 ${i > 0 ? 'border-t border-line/60' : ''}`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: DOT[dir] }} />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: dotColor }} />
                     {focus && (
                       <span className="text-accent" aria-hidden>
                         ◆
@@ -102,7 +107,7 @@ export function MarketSentimentWidget({ config = {} }) {
                   </span>
                   <span className="flex items-baseline gap-3">
                     <span className="font-clock tnum text-[13px] text-ink">{t.last}</span>
-                    <span className={`w-20 text-right font-clock tnum text-[12px] ${TONE[dir]}`}>
+                    <span className={`w-20 text-right font-clock tnum text-[12px] ${pctTone}`}>
                       {ARROW[dir]} {pct > 0 ? '+' : ''}
                       {pct}%
                     </span>

@@ -77,11 +77,13 @@ export function EnergyTrendLine({ config = {} }) {
   const open = typeof config.open === 'number' ? config.open : pts[0].v
   const deltaPct = open ? Math.round(((nowV - open) / open) * 100) : 0
 
-  // Binary state: at/above the day's average = HIGH (green), else LOW (red).
+  // Binary state: at/above the day's average = HIGH (green), else LOW — amber,
+  // never red: energy is body telemetry, and a red/green pass-fail on the body
+  // is the exact framing PSYCHOLOGY.md §3 bans for sleep. Low = caution data.
   const state =
     config.tone === 'pos' ? 'high' : config.tone === 'neg' ? 'low' : nowV >= avg ? 'high' : 'low'
-  const toneClass = state === 'high' ? 'text-pos' : 'text-neg'
-  const haloClass = state === 'high' ? 'bg-pos-soft' : 'bg-neg-soft'
+  const toneClass = state === 'high' ? 'text-pos' : 'text-warn'
+  const haloClass = state === 'high' ? 'bg-pos-soft' : 'bg-warn-soft'
   const zone = state === 'high' ? 'PEAK ZONE' : 'LOW ZONE'
 
   const trend =
