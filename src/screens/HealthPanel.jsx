@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
-import { readToday } from '../lib/health.js'
+import { readToday, requestHealthAuth, isHealthAvailable } from '../lib/health.js'
 import { readGuardian } from '../lib/guardianEngine.js'
 import { calculateReadinessScore } from '../lib/readiness.js'
 import { appDayKey } from '../lib/dates.js'
@@ -26,15 +26,31 @@ const READY_LINE = {
 export default function HealthPanel() {
   const { wellness } = useStore()
   const [snap, setSnap] = useState(undefined) // undefined = loading, null = unavailable
+  const [available, setAvailable] = useState(false)
+  const [asking, setAsking] = useState(false)
   useEffect(() => {
     let alive = true
     readToday()
       .then((s) => alive && setSnap(s))
       .catch(() => alive && setSnap(null))
+    isHealthAvailable().then((ok) => alive && setAvailable(ok))
     return () => {
       alive = false
     }
   }, [])
+
+  // First-run on a real device: HealthKit read access must be REQUESTED once —
+  // nothing else in the app fires the native permission sheet. All-null fields
+  // with the SDK available is the "never asked" signature.
+  const neverAsked =
+    available && snap && snap.steps == null && snap.sleepHours == null && snap.hrv == null && snap.restingHR == null
+  async function enableHealth() {
+    setAsking(true)
+    await requestHealthAuth() // fail-soft; iOS shows the grant sheet
+    const fresh = await readToday().catch(() => null)
+    setSnap(fresh)
+    setAsking(false)
+  }
 
   const baselines = readGuardian().baselines || {}
   const today = wellness[appDayKey()] || null
@@ -66,7 +82,16 @@ export default function HealthPanel() {
       {/* Today's native snapshot vs personal baseline */}
       <div>
         <SectionLabel className="mb-2 px-1">Today · vs your baseline</SectionLabel>
-        {snap === undefined ? (
+        {neverAsked ? (
+          <button
+            type="button"
+            onClick={enableHealth}
+            disabled={asking}
+            className="w-full rounded-md border border-accent px-4 py-3.5 font-clock text-xs font-semibold uppercase tracking-widest2 text-accent"
+          >
+            {asking ? 'Requesting…' : 'Enable Health access'}
+          </button>
+        ) : snap === undefined ? (
           <LedgerNotice>Reading HealthKit…</LedgerNotice>
         ) : snap === null ? (
           <LedgerNotice>
