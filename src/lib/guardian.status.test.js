@@ -34,6 +34,26 @@ describe('pre-window notification fires EXACTLY 30 min before the vulnerability 
     expect(a.window.warnAt.getHours()).toBe(13)
     expect(a.window.warnAt.getMinutes()).toBe(50)
   })
+  it('peakHour 0 (midnight) wraps to 23:30 — never yesterday, never silent', () => {
+    // The old math computed setHours(-1, 30) = YESTERDAY 23:30 → warnAt<now →
+    // null: the warning could never fire for the midnight-area windows this
+    // app's late-night users actually have.
+    const now = new Date(2026, 5, 25, 20, 0, 0)
+    const a = assessDrift({ now, streak: {}, guardianSeed: { temporalPrior: { peakHour: 0 } } })
+    expect(a.window.warnAt).not.toBeNull()
+    expect(a.window.warnAt.getHours()).toBe(23)
+    expect(a.window.warnAt.getMinutes()).toBe(30)
+    expect(a.window.warnAt > now).toBe(true) // tonight, not last night
+  })
+  it('a warn time already past today arms TOMORROW instead of going silent', () => {
+    const now = new Date(2026, 5, 25, 23, 0, 0) // 23:00 — past a 22:30 warn
+    const a = assessDrift({ now, streak: {}, guardianSeed: { temporalPrior: { peakHour: 23.0 } } })
+    expect(a.window.warnAt).not.toBeNull()
+    expect(a.window.warnAt > now).toBe(true)
+    expect(a.window.warnAt.getDate()).toBe(26) // rolled to the 26th
+    expect(a.window.warnAt.getHours()).toBe(22)
+    expect(a.window.warnAt.getMinutes()).toBe(30)
+  })
 })
 
 describe('verifyGuardianStatus — the loop self-check', () => {
