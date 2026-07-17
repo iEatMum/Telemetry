@@ -33,6 +33,10 @@ export const DEFAULTS = {
     reportDate: '2026-08-15', // "Report to Fresno State" — editable in Settings
     focusShortcutName: 'Sprint', // iOS Shortcut the Sprint screen can trigger
     seededTasks: false, // set true once starter tasks are seeded — see store.jsx
+    // The DICTATED day — blocks the user wrote themselves (onboarding's
+    // "dictate your day" step and the day-plan editor). The book takes
+    // dictation; it never invents a life. [{ id, time:'HH:MM'|'', block, impact:'high'|undefined }]
+    dayBlocks: [],
     schemaVersion: SCHEMA_VERSION,
   },
 
@@ -189,16 +193,46 @@ export function exportAll() {
 export function importAll(blob) {
   if (!blob || !blob.data) return false
   for (const name of Object.keys(DEFAULTS)) {
-    if (name in blob.data) set(name, blob.data[name])
+    if (!(name in blob.data)) continue
+    // Drafts are DEVICE-PRIVATE by construction: exportAll strips them, so a
+    // backup's handover always carries drafts:[]. Writing that verbatim used to
+    // delete the live device's drafts on restore — possibly a relapse
+    // confession, gone from the surface labeled fail-soft. The current device's
+    // drafts survive an import; everything else in the slice is replaced.
+    if (name === 'handover') {
+      const current = get('handover')
+      set('handover', { ...blob.data.handover, drafts: current?.drafts || [] })
+      continue
+    }
+    set(name, blob.data[name])
   }
   return true
 }
 
-// The "wipe all data" button (double-confirmed in the UI).
+// The "wipe all data" button (double-confirmed in the UI). Clears the whole book
+// AND every behavioral sidecar under the lockedin: prefix — the Guardian's
+// learned danger-hour histogram + urge history (__guardian), engagement/metrics
+// telemetry, the sync queue, the survey, share milestones, cached layout, etc.
+// A "fresh start" must not leave a profile of the user's worst hours behind on a
+// shared or handed-down phone. The lone survivor is the entitlement (__coach):
+// it's Apple's truth, not the user's data, so a data wipe must not forfeit a paid
+// subscription (and refreshEntitlement re-mirrors it on next launch anyway).
 export function wipeAll() {
-  for (const name of Object.keys(DEFAULTS)) {
+  const keep = new Set([keyOf('__coach')])
+  const doomed = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(PREFIX) && !keep.has(k)) doomed.push(k)
+    }
+  } catch {
+    /* enumeration unavailable — fall back to the known model keys below */
+  }
+  // Fallback: if enumeration found nothing (or threw), at least clear the model.
+  if (!doomed.length) for (const name of Object.keys(DEFAULTS)) doomed.push(keyOf(name))
+  for (const k of doomed) {
     try {
-      localStorage.removeItem(keyOf(name))
+      localStorage.removeItem(k)
     } catch {
       /* ignore */
     }

@@ -15,6 +15,7 @@ import { readGuardian } from '../lib/guardianEngine.js'
 import { calculateReadinessScore } from '../lib/readiness.js'
 import { appDayKey } from '../lib/dates.js'
 import { Card, SectionLabel, Grid, KpiTile, LedgerNotice, Stat } from '../components/ui.jsx'
+import WellnessSheet from '../components/WellnessSheet.jsx'
 
 const READY_TONE = { low: 'text-warn', moderate: 'text-ink', high: 'text-accent' }
 const READY_LINE = {
@@ -24,10 +25,14 @@ const READY_LINE = {
 }
 
 export default function HealthPanel() {
-  const { wellness } = useStore()
+  const { wellness, settings, updateSettings } = useStore()
   const [snap, setSnap] = useState(undefined) // undefined = loading, null = unavailable
   const [available, setAvailable] = useState(false)
   const [asking, setAsking] = useState(false)
+  // The manual check-in input (WellnessSheet) mounts HERE now — this surface is
+  // its only live door since the Morning screen retired (M2). Without it the
+  // panel promised a check-in "below" that nothing could actually enter.
+  const [checkinOpen, setCheckinOpen] = useState(false)
   useEffect(() => {
     let alive = true
     readToday()
@@ -52,6 +57,36 @@ export default function HealthPanel() {
     setAsking(false)
   }
 
+  // The connect switch this surface was missing: a user who skipped (or never
+  // saw) onboarding's health step had NO path to link later — the Trends
+  // biometrics card just said "not linked" at them forever. Linking writes the
+  // same settings.healthIntegration record onboarding writes, and on a real
+  // device fires the HealthKit grant sheet; on web/sim the mock streams stand
+  // in so the readouts are still walkable.
+  const linked = !!settings.healthIntegration?.linked
+  async function connectHealth() {
+    setAsking(true)
+    const hi = {
+      ...settings.healthIntegration,
+      linked: true,
+      providers: ['apple-health'],
+      synchronizedMetrics: ['sleep', 'activity', 'heart-rate'],
+    }
+    try {
+      hi.nativeAvailable = await isHealthAvailable()
+      hi.authorized = hi.nativeAvailable ? !!(await requestHealthAuth())?.ok : false
+    } catch {
+      hi.authorized = false
+    }
+    updateSettings({ healthIntegration: hi })
+    const fresh = await readToday().catch(() => null)
+    setSnap(fresh)
+    setAsking(false)
+  }
+  function disconnectHealth() {
+    updateSettings({ healthIntegration: { ...settings.healthIntegration, linked: false } })
+  }
+
   const baselines = readGuardian().baselines || {}
   const today = wellness[appDayKey()] || null
   // No snapshot → no band. Claiming "moderate" with zero data would be a
@@ -63,6 +98,37 @@ export default function HealthPanel() {
 
   return (
     <div className="space-y-5">
+      {/* Apple Health — the connect/disconnect seam for the whole surface */}
+      <div>
+        <SectionLabel className="mb-2 px-1">Apple Health</SectionLabel>
+        {linked ? (
+          <Card className="flex items-center justify-between px-4 py-3">
+            <span className="text-[13px] text-ink">
+              Connected — sleep, activity, heart-rate
+              {settings.healthIntegration?.nativeAvailable === false && (
+                <span className="block text-[11px] text-muted">real streams arrive on the phone build</span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={disconnectHealth}
+              className="font-clock text-[10px] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+            >
+              Disconnect
+            </button>
+          </Card>
+        ) : (
+          <button
+            type="button"
+            onClick={connectHealth}
+            disabled={asking}
+            className="w-full rounded-md border border-accent px-4 py-3.5 font-clock text-xs font-semibold uppercase tracking-widest2 text-accent"
+          >
+            {asking ? 'Connecting…' : 'Connect Apple Health'}
+          </button>
+        )}
+      </div>
+
       {/* Readiness — the band that drives the Forgiveness Protocol */}
       <div>
         <SectionLabel className="mb-2 px-1">Readiness</SectionLabel>
@@ -121,7 +187,16 @@ export default function HealthPanel() {
         ) : (
           <LedgerNotice>No check-in yet today.</LedgerNotice>
         )}
+        <button
+          type="button"
+          onClick={() => setCheckinOpen(true)}
+          className="mt-2 w-full rounded-md border border-line bg-surface px-4 py-3 text-left text-[14px] text-ink"
+        >
+          {today ? 'Update today’s check-in' : 'Log this morning’s check-in'}
+        </button>
       </div>
+
+      {checkinOpen && <WellnessSheet onClose={() => setCheckinOpen(false)} />}
     </div>
   )
 }

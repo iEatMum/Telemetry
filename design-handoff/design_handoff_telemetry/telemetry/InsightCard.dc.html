@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;font-family:var(--font-sans)">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--line)">
+    <span style="display:inline-flex;align-items:center;gap:7px">
+      <dc-import name="StatusLED" tone="{{ ledTone }}" label="" hint-size="12px,12px"></dc-import>
+      <span style="font-family:var(--font-clock);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:500;color:{{ hColor }};text-shadow:{{ hGlow }}">{{ heading }}</span>
+    </span>
+    <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.08em;color:var(--muted)">{{ source }}</span>
+  </div>
+  <div style="font-size:15px;line-height:1.5;color:var(--text)">{{ text }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:150},&quot;heading&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Counsel&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;source&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;AI · TELEMETRY&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;text&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;You logged the miss and still ran the next block. That is the whole game — the number resets, the discipline compounds. Line up 06:10 tomorrow and let the streak speak for itself.&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;tone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;accent&quot;,&quot;warn&quot;,&quot;neg&quot;],&quot;default&quot;:&quot;accent&quot;,&quot;tsType&quot;:&quot;\&quot;accent\&quot; | \&quot;warn\&quot; | \&quot;neg\&quot;&quot;}}">
+const DEFAULT_TEXT = "You logged the miss and still ran the next block. That is the whole game \u2014 the number resets, the discipline compounds. Line up 06:10 tomorrow and let the streak speak for itself.";
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const tone = p.tone || "accent";
+    const toneC = { accent: "var(--accent)", warn: "var(--warn)", neg: "var(--neg)" };
+    const toneG = { accent: "var(--num-glow)", warn: "var(--warn-glow)", neg: "var(--neg-glow)" };
+    return {
+      heading: p.heading || "Counsel",
+      source: p.source || "AI \u00b7 TELEMETRY",
+      text: p.text || DEFAULT_TEXT,
+      hColor: toneC[tone] || "var(--accent)",
+      hGlow: toneG[tone] || "var(--num-glow)",
+      ledTone: tone,
+    };
+  }
+}
+</script>
+</body>
+</html>

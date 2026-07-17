@@ -1,40 +1,33 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { Capacitor } from '@capacitor/core'
 import App from './App.jsx'
-import AuthGate from './components/AuthGate.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import RequireSurvey from './components/RequireSurvey.jsx'
-import Deck from './screens/Deck.jsx'
-import LayoutDemo from './screens/LayoutDemo.jsx'
 import Waitlist from './pages/Waitlist.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 import { StoreProvider } from './lib/store.jsx'
 import { ThemeProvider } from './lib/theme.jsx'
+// The stopwatch face (Split Ledger data type). Bundled so the WKWebView never
+// falls back to a different mono between devices; 400/500 are the only weights
+// the design sanctions.
+import '@fontsource/ibm-plex-mono/400.css'
+import '@fontsource/ibm-plex-mono/500.css'
 import './index.css'
 
-// TEMP (P3.1 / P3.2): demo routes that bypass auth so the new UI can be reviewed
-// without a magic-link session. Remove these (and the Deck/LayoutDemo screens)
-// once the work is signed off.
-//   /?demo         → the P3.1 widget-primitive gallery
-//   /?demo=layout  → the P3.2 Server-Driven UI rendering defaultLayout.json
-let demoMode = null
+// DEV-ONLY (CONSTITUTION M1): /?demo=live mounts the real app without the auth
+// gate so the deck is reviewable/E2E-testable against the dev server. Gated on
+// import.meta.env.DEV so no store build ever ships an auth bypass. (The old
+// /?demo widget-gallery and /?demo=layout routes are gone with their screens.)
+let demoLive = false
 let isWaitlist = false
 let isOnboarding = false
 try {
   const p = new URLSearchParams(window.location.search)
-  if (p.has('demo')) demoMode = p.get('demo') || 'widgets'
+  demoLive = import.meta.env.DEV && p.get('demo') === 'live'
   if (p.has('waitlist')) isWaitlist = true
   if (p.has('onboarding')) isOnboarding = true
 } catch {
   /* no window / bad URL — fall through to the real app */
-}
-
-// On device, start listening for the magic-link deep link before first paint, so
-// a tap on the email link is caught the moment iOS hands the URL to the app. The
-// module (and its native @capacitor/app dependency) is loaded only on native, so
-// the web build never touches it.
-if (Capacitor.isNativePlatform()) {
-  import('./lib/nativeAuth.js').then(({ initNativeAuth }) => initNativeAuth())
 }
 
 function Root() {
@@ -42,9 +35,7 @@ function Root() {
   if (isOnboarding) return <Onboarding />
   // /?waitlist → the marketing landing page (its own scoped theme, no auth/store).
   if (isWaitlist) return <Waitlist />
-  // /?demo=live → the REAL app shell (App) wrapped in the store but WITHOUT the
-  // auth gate, so the live-data deck is reviewable without a magic-link session.
-  if (demoMode === 'live') {
+  if (demoLive) {
     return (
       <StoreProvider>
         <ThemeProvider>
@@ -53,20 +44,17 @@ function Root() {
       </StoreProvider>
     )
   }
-  if (demoMode === 'layout') return <LayoutDemo />
-  if (demoMode) return <Deck />
-  // The real app: authenticate, then hard-gate on a survey baseline (local or DB)
-  // before the deck. A user with no survey can't reach App — they land in intake.
+  // The real funnel (CONSTITUTION M0.1/M2): no accounts, no email door. First
+  // run → RequireSurvey finds no baseline → onboarding ("opening your book")
+  // → the deck. A returning user passes the local survey check instantly.
   return (
-    <AuthGate>
-      <StoreProvider>
-        <ThemeProvider>
-          <RequireSurvey>
-            <App />
-          </RequireSurvey>
-        </ThemeProvider>
-      </StoreProvider>
-    </AuthGate>
+    <StoreProvider>
+      <ThemeProvider>
+        <RequireSurvey>
+          <App />
+        </RequireSurvey>
+      </ThemeProvider>
+    </StoreProvider>
   )
 }
 
@@ -76,6 +64,8 @@ const container = document.getElementById('root')
 const root = container._reactRoot || (container._reactRoot = ReactDOM.createRoot(container))
 root.render(
   <React.StrictMode>
-    <Root />
+    <ErrorBoundary>
+      <Root />
+    </ErrorBoundary>
   </React.StrictMode>
 )

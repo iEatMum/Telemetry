@@ -2,19 +2,33 @@ import { useEffect, useState } from 'react'
 import LiveDeck from './components/LiveDeck.jsx'
 import NavBar from './components/NavBar.jsx'
 import UrgeProtocol from './components/UrgeProtocol.jsx'
+import Paywall from './components/Paywall.jsx'
+import { LegalOverlay } from './components/LegalSheet.jsx'
 import SettingsSheet from './components/SettingsSheet.jsx'
+import DayPlanSheet from './components/DayPlanSheet.jsx'
+import TourSheet, { tourSeen } from './components/TourSheet.jsx'
+import Toast from './components/Toast.jsx'
 import WeeklyReview from './components/WeeklyReview.jsx'
 import Sprint from './screens/Sprint.jsx'
 import HealthPanel from './screens/HealthPanel.jsx'
 import GuardianPanel from './screens/GuardianPanel.jsx'
 import CommandPanel from './screens/CommandPanel.jsx'
 import { useEngagementSummary } from './lib/engagement.js'
+import { trackDailyOpen } from './lib/analytics.js'
 import { syncDailyBriefingWidget } from './lib/widgets.js'
-import { isSupabaseConfigured } from './lib/supabaseClient.js'
+import { refreshEntitlement } from './lib/purchases.js'
+import { initDynamicType } from './lib/dynamicType.js'
+import { queuedCount, status as syncStatus } from './lib/sync.js'
+import * as storage from './lib/storage.js'
+import { StatusLED } from './components/ui.jsx'
 
-// A quiet, honest read for the status LED: LOCAL when there's no backend wired
-// up, OFFLINE when configured but the network's down, else LIVE. Reactive to the
-// browser's online/offline events; safe off-DOM.
+// A quiet, honest read for the status LED. v1 is local-first BY DESIGN
+// (CONSTITUTION M0.1): the book living on this device is the healthy state —
+// ON DEVICE, calm-positive, never a warning. Connectivity semantics (LIVE /
+// OFFLINE) are earned only by a sync session that actually exists — configured
+// keys alone don't make the book live anywhere but here, and printing LIVE on
+// a device-only book is a lie. OFFLINE stays muted-still: edits queue and
+// catch up; silence is content, not an alarm.
 function useConnState() {
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
   useEffect(() => {
@@ -27,23 +41,61 @@ function useConnState() {
       window.removeEventListener('offline', off)
     }
   }, [])
-  if (!isSupabaseConfigured) return { label: 'LOCAL', tone: 'muted' }
-  return online ? { label: 'LIVE', tone: 'accent' } : { label: 'OFFLINE', tone: 'warn' }
+  const sync = syncStatus()
+  if (!sync.configured || !sync.signedIn) return { label: 'ON DEVICE', tone: 'pos' }
+  return online ? { label: 'LIVE', tone: 'accent' } : { label: 'OFFLINE', tone: 'muted' }
+}
+
+// Mono clock for the strip — minute resolution, wall-clock true.
+function useClock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 20_000)
+    return () => clearInterval(id)
+  }, [])
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
+// 'queued n' beside the LED while OFFLINE — data, not warning (muted). Re-reads
+// on every local write; clears itself the moment the LED goes LIVE.
+function useQueued(active) {
+  const [n, setN] = useState(() => queuedCount())
+  useEffect(() => {
+    if (!active) return undefined
+    setN(queuedCount())
+    return storage.subscribe(() => setN(queuedCount()))
+  }, [active])
+  return n
 }
 
 // The shell: five SURFACES on a bottom nav — DECK (the generative deck, whose
 // payload-driven tab strip stays the AI's), SPRINTS (the deep-work cockpit),
-// HEALTH (biometrics), GUARDIAN (drift review), COMMAND (config hub). Two
-// globals float as overlays because they aren't "data on a card": HELP NOW
-// (the crisis path — one tap from ANY surface) and the sheets. The Sync &
-// Refactor control now lives IN the deck's scroll flow (LayoutHost footer), so
-// nothing is ever trapped beneath a floating banner.
+// HEALTH (biometrics), GUARDIAN (drift review), COMMAND (config hub) — plus
+// HELP, the crisis path, docked as the nav's sixth slot (one tap from ANY
+// surface, and never floating over content). The sheets are the only overlays.
+// The Sync & Refactor control lives IN the deck's scroll flow (LayoutHost
+// footer), so nothing is ever trapped beneath a floating banner.
 export default function App() {
   const [surface, setSurface] = useState('deck')
   const [urgeOpen, setUrgeOpen] = useState(false)
+  const [paywallOpen, setPaywallOpen] = useState(false)
+  const [dayPlanOpen, setDayPlanOpen] = useState(false)
+  // The tour auto-opens exactly once: the shell only mounts past RequireSurvey,
+  // so "no tour flag yet" means "first minute on the deck, fresh off intake".
+  // The survey check guards the one surveyless mount (the DEV ?demo=live route)
+  // — a demo/E2E deck shouldn't boot into a first-run ritual.
+  const [tourOpen, setTourOpen] = useState(() => {
+    try {
+      return !tourSeen() && !!localStorage.getItem('lockedin:__survey')
+    } catch {
+      return false
+    }
+  })
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
   const conn = useConnState()
+  const clock = useClock()
+  const queued = useQueued(conn.label === 'OFFLINE')
 
   // Keep the native home-screen widget in lockstep with the live deck's DAILY
   // BRIEFING numbers. Deps are primitives so it only fires when a stat changes
@@ -53,30 +105,92 @@ export default function App() {
   const engagedPercent = summary.engagementRate ?? 0
   const cardsEngaged = (summary.used || []).length
   useEffect(() => {
-    syncDailyBriefingWidget(impactDone, engagedPercent, cardsEngaged)
+    // The manila widget heroes "DAYS ON THE BOOK" — read the days total from
+    // storage at push time (native-only; a no-op on web).
+    const daysOnBook = (storage.get('streak')?.cleanDates || []).length
+    syncDailyBriefingWidget(impactDone, engagedPercent, cardsEngaged, daysOnBook)
   }, [impactDone, engagedPercent, cardsEngaged])
+
+  // The deck's in-flow "Open the night page" line routes here — the urge
+  // overlay is owned by the shell (it must cover every surface), so deep
+  // children reach it by event rather than prop-drilling through LayoutHost.
+  // The paywall uses the same idiom: every CoachGate opens the one sheet.
+  useEffect(() => {
+    const openUrge = () => setUrgeOpen(true)
+    const openPaywall = () => setPaywallOpen(true)
+    const openDayPlan = () => setDayPlanOpen(true)
+    const openTour = () => setTourOpen(true)
+    window.addEventListener('telemetry:open-urge', openUrge)
+    window.addEventListener('telemetry:open-paywall', openPaywall)
+    window.addEventListener('telemetry:open-dayplan', openDayPlan)
+    window.addEventListener('telemetry:open-tour', openTour)
+    return () => {
+      window.removeEventListener('telemetry:open-urge', openUrge)
+      window.removeEventListener('telemetry:open-paywall', openPaywall)
+      window.removeEventListener('telemetry:open-dayplan', openDayPlan)
+      window.removeEventListener('telemetry:open-tour', openTour)
+    }
+  }, [])
+
+  // The private tally: one open-count per app day (counts only, on-device only).
+  useEffect(() => {
+    trackDailyOpen()
+  }, [])
+
+  // Dynamic Type seam: listen for the native content-size hook and scale the
+  // root type accordingly. No-op on web (the event never fires there).
+  useEffect(() => initDynamicType(), [])
+
+  // Re-mirror Apple's entitlement on launch and every foreground return. Without
+  // this the local __coach cache only ever refreshes on a Paywall tap, so a
+  // cancelled or expired subscription would keep the coach unlocked forever (and
+  // the winback page could never fire). Fail-soft + native-only — a no-op on web.
+  useEffect(() => {
+    refreshEntitlement()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refreshEntitlement()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
 
   return (
     <div className="min-h-full bg-bg text-ink">
-      {/* Status LED strip — pt-safe keeps it below the notch/Dynamic Island */}
-      <div className="fixed inset-x-0 top-0 z-40 flex items-center gap-3 border-b border-line bg-bg/95 px-3 py-1 font-clock text-[10px] uppercase tracking-widest2 backdrop-blur pt-safe">
-        <div
-          className={`flex items-center gap-1.5 ${
-            conn.tone === 'accent' ? 'text-accent' : conn.tone === 'warn' ? 'text-warn' : 'text-muted'
-          }`}
-        >
-          <div
-            className={`h-1.5 w-1.5 rounded-full ${
-              conn.tone === 'accent' ? 'bg-accent animate-pulse-live' : conn.tone === 'warn' ? 'bg-warn' : 'bg-muted'
-            }`}
-          />
-          {conn.label}
+      {/* StatusStrip — LED + queue chip left; signal bars + mono clock right.
+          Connectivity truth ONLY, never guardian severity (an ambient threat
+          light would make the whole app an anxiety dashboard). pt-safe keeps it
+          below the notch/Dynamic Island. */}
+      <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-3 border-b border-line bg-bg/95 px-3 py-1 backdrop-blur pt-safe">
+        <div className="flex items-center gap-2.5">
+          <StatusLED status={conn.label} />
+          {conn.label === 'OFFLINE' && queued > 0 && (
+            <span className="font-clock tnum text-[10px] uppercase tracking-widest2 text-muted">
+              queued {queued}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2.5">
+          <span className="flex items-end gap-[2px]" aria-hidden>
+            {[3, 5, 7, 9].map((h, i) => (
+              <span
+                key={h}
+                className={`w-[3px] rounded-sm ${
+                  i < (conn.label === 'OFFLINE' ? 1 : 4) ? 'bg-muted' : 'bg-line'
+                }`}
+                style={{ height: h }}
+              />
+            ))}
+          </span>
+          <span className="font-clock tnum text-[11px] tracking-widest2 text-muted">{clock}</span>
         </div>
       </div>
 
       {/* The active surface. DECK owns its own scroll padding (LayoutHost's
-          pb-deck); the others get the shared centered track with nav clearance. */}
-      <div className="pt-7">
+          pb-deck); the others get the shared centered track with nav clearance.
+          The offset must carry the SAME safe-area inset the fixed strip pads
+          itself down by, or on a notched phone the first ~48px of every surface
+          (the Day-one hero) renders trapped beneath the strip. */}
+      <div className="pt-[calc(env(safe-area-inset-top)+1.75rem)]">
         {surface === 'deck' ? (
           <LiveDeck />
         ) : (
@@ -95,24 +209,13 @@ export default function App() {
         )}
       </div>
 
-      {/* HELP NOW — global crisis path, floating just above the nav */}
-      {!urgeOpen && (
-        <div className="bottom-help pointer-events-none fixed left-1/2 z-40 w-full max-w-app -translate-x-1/2 px-4">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setUrgeOpen(true)}
-              className="pointer-events-auto flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-accent-ink shadow-glow"
-            >
-              Help now
-            </button>
-          </div>
-        </div>
-      )}
-
-      <NavBar active={surface} onChange={setSurface} />
+      {/* HELP lives IN the nav (M2) — a docked slot can never float over content */}
+      <NavBar active={surface} onChange={setSurface} onHelp={() => setUrgeOpen(true)} />
 
       {urgeOpen && <UrgeProtocol onClose={() => setUrgeOpen(false)} />}
+      {paywallOpen && <Paywall onClose={() => setPaywallOpen(false)} />}
+      {/* The fine print rides above every sheet (the paywall links into it). */}
+      <LegalOverlay />
       {settingsOpen && (
         <SettingsSheet
           onClose={() => setSettingsOpen(false)}
@@ -123,6 +226,13 @@ export default function App() {
         />
       )}
       {reviewOpen && <WeeklyReview onClose={() => setReviewOpen(false)} />}
+      {/* Mounted AFTER Settings so it stacks above when opened from there
+          (same z tier; DOM order decides). */}
+      {dayPlanOpen && <DayPlanSheet onClose={() => setDayPlanOpen(false)} />}
+      {/* The tour rides last: on first run it must cover the whole shell, and a
+          Settings replay must land above the Settings sheet. */}
+      {tourOpen && <TourSheet onClose={() => setTourOpen(false)} />}
+      <Toast />
     </div>
   )
 }

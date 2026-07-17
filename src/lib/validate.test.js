@@ -23,19 +23,40 @@ describe('sanitize — settings', () => {
   })
 
   it('keeps a valid theme and preserves the psych-profile fields', () => {
-    const s = sanitize('settings', { theme: 'night_ops', streakModel: 'avoidance', stake: { preference: 'social' } })
-    expect(s.theme).toBe('night_ops')
+    const s = sanitize('settings', { theme: 'lamplight', streakModel: 'avoidance', stake: { preference: 'social' } })
+    expect(s.theme).toBe('lamplight')
     expect(s.streakModel).toBe('avoidance')
     expect(s.stake).toEqual({ preference: 'social' })
   })
 
+  it('maps legacy (pre-Split-Ledger) theme keys to their descendants', () => {
+    expect(sanitize('settings', { theme: 'zen' }).theme).toBe('split_book')
+    expect(sanitize('settings', { theme: 'night_ops' }).theme).toBe('lamplight')
+    expect(sanitize('settings', { theme: 'terminal' }).theme).toBe('carbon')
+  })
+
   it('drops an unknown/corrupt theme to undefined', () => {
     expect(sanitize('settings', { theme: 'hacker' }).theme).toBeUndefined()
+    expect(sanitize('settings', { theme: 'toString' }).theme).toBeUndefined()
     expect(sanitize('settings', {}).theme).toBeUndefined()
   })
 
   it('never throws on a non-object', () => {
     expect(() => sanitize('settings', null)).not.toThrow()
+  })
+
+  it('cleans dictated dayBlocks: caps, drops empty lines, normalizes impact', () => {
+    const s = sanitize('settings', {
+      dayBlocks: [
+        { id: 'a', time: '09:00', block: 'Chem — study block', impact: 'high' },
+        { id: 'b', time: '', block: '', impact: 'high' }, // empty line drops
+        { id: 'c', block: 'Call home', impact: 'ultra' }, // unknown impact drops to undefined
+        'not-an-object',
+      ],
+    })
+    expect(s.dayBlocks).toHaveLength(2)
+    expect(s.dayBlocks[0]).toEqual({ id: 'a', time: '09:00', block: 'Chem — study block', impact: 'high' })
+    expect(s.dayBlocks[1].impact).toBeUndefined()
   })
 })
 

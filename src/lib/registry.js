@@ -14,9 +14,13 @@ import {
   DeepWorkTimer,
   InsightCard,
   DailyBriefing,
+  EmptyState,
+  FaithCard,
+  WeekGrid,
 } from '../components/widgets.jsx'
 import { EnergyTrendLine } from '../components/widgets/EnergyTrendLine.jsx'
-import { MarketSentimentWidget } from '../components/widgets/MarketSentimentWidget.jsx'
+// MarketSentimentWidget retired 2026-07-11 (M2 de-perps) — a payload carrying
+// its type now renders BlockRenderer's safe placeholder, by design.
 
 export const REGISTRY = {
   ScheduleMatrix,
@@ -28,7 +32,9 @@ export const REGISTRY = {
   InsightCard,
   DailyBriefing,
   EnergyTrendLine,
-  MarketSentimentWidget,
+  EmptyState,
+  FaithCard,
+  WeekGrid,
 }
 
 /** The component for a type, or null if the type isn't allow-listed. */

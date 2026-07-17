@@ -16,6 +16,15 @@ const MODEL_LABEL = {
   engagement: 'Just show up · daily contact',
 }
 
+// Human names only on this surface — raw keys and dev diagnostics never print
+// (CONSTITUTION M2: "Split Book", not split_book; "on this device", not
+// "signed out").
+const THEME_LABEL = {
+  split_book: 'Split Book',
+  lamplight: 'Lamplight',
+  carbon: 'Carbon',
+}
+
 function DiagRow({ label, value, tone = 'text-ink' }) {
   return (
     <div className="flex items-baseline justify-between px-4 py-2.5">
@@ -37,29 +46,34 @@ export default function CommandPanel({ conn, onOpenSettings, onOpenReview }) {
         <Card>
           <DiagRow label="Name" value={settings.name || '—'} />
           <div className="border-t border-line/50" />
-          <DiagRow label="Engine type" value={MODEL_LABEL[settings.streakModel] || 'not set — run the survey'} />
+          <DiagRow label="Engine type" value={MODEL_LABEL[settings.streakModel] || 'not set yet'} />
           <div className="border-t border-line/50" />
-          <DiagRow label="Theme" value={settings.theme || 'terminal'} />
+          <DiagRow label="Interface" value={THEME_LABEL[settings.theme] || 'Split Book'} />
           <div className="border-t border-line/50" />
           <DiagRow label="Wake anchor" value={settings.wakeTime} />
         </Card>
       </div>
 
-      {/* System sync health */}
+      {/* Where the book lives. v1 is local-first (CONSTITUTION M0.1): the honest
+          line is "on this device" — sync copy only appears once it exists. */}
       <div>
-        <SectionLabel className="mb-2 px-1">System</SectionLabel>
+        <SectionLabel className="mb-2 px-1">Your book</SectionLabel>
         <Card>
           <DiagRow
-            label="Link"
-            value={conn.label}
-            tone={conn.tone === 'accent' ? 'text-accent' : conn.tone === 'warn' ? 'text-warn' : 'text-muted'}
+            label="Connection"
+            value={conn.label === 'LOCAL' || conn.label === 'ON DEVICE' ? 'on this device' : conn.label.toLowerCase()}
+            tone={conn.tone === 'accent' ? 'text-pos' : 'text-muted'}
           />
           <div className="border-t border-line/50" />
-          <DiagRow label="Backend" value={sync.configured ? (sync.signedIn ? 'signed in' : 'signed out') : 'local-only'} />
-          <div className="border-t border-line/50" />
           <DiagRow
-            label="Last pull"
-            value={sync.pulledAt ? new Date(sync.pulledAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : 'never'}
+            label="Sync"
+            value={
+              sync.configured && sync.signedIn
+                ? sync.pulledAt
+                  ? new Date(sync.pulledAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+                  : 'not yet synced'
+                : 'every entry stays on this device'
+            }
           />
         </Card>
       </div>

@@ -404,6 +404,17 @@ export function status() {
   }
 }
 
+/**
+ * Read-only: how many local records are queued (dirty) awaiting a push. The
+ * status-strip chip reads this on storage events — data, not a warning; it
+ * never touches sync state.
+ */
+export function queuedCount() {
+  let n = 0
+  for (const keys of Object.values(meta.dirty || {})) n += Object.keys(keys).length
+  return n
+}
+
 // Exposed for unit tests only — NOT part of the public API. Lets tests drive the
 // pure translation + LWW merge without a live Supabase or a browser.
 export const _internals = {

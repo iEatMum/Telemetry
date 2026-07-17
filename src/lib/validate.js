@@ -28,9 +28,18 @@ const level = (v) => {
 }
 
 // The known theme skins (mirrors THEMES in theme.jsx — kept inline so validate.js
-// stays dependency-free). A corrupt/unknown value is dropped to undefined so it
-// can never reach the data-theme attribute; ThemeProvider then uses the default.
-const THEME_SKINS = ['terminal', 'zen', 'night_ops']
+// stays dependency-free). Pre-Split-Ledger keys are MAPPED here rather than
+// dropped: this sanitizer runs on every storage read, so if it discarded a
+// legacy value ThemeProvider would never get the chance to migrate it. A
+// corrupt/unknown value is dropped to undefined so it can never reach the
+// data-theme attribute; ThemeProvider then uses the default.
+const THEME_SKINS = ['split_book', 'lamplight', 'carbon']
+const LEGACY_SKINS = { zen: 'split_book', night_ops: 'lamplight', terminal: 'carbon' }
+function themeKey(v) {
+  if (THEME_SKINS.includes(v)) return v
+  if (Object.prototype.hasOwnProperty.call(LEGACY_SKINS, v)) return LEGACY_SKINS[v]
+  return undefined
+}
 
 const sanitizers = {
   // Readiness check-in: object keyed by app-day, each a small self-report.
@@ -58,7 +67,7 @@ const sanitizers = {
       name: str(s.name, 60),
       moneyGoal: num(s.moneyGoal, { min: 0, max: 10_000_000, fallback: 3500 }),
       focusShortcutName: str(s.focusShortcutName, 60) || 'Sprint',
-      theme: THEME_SKINS.includes(s.theme) ? s.theme : undefined,
+      theme: themeKey(s.theme),
       partners: asArr(s.partners)
         .filter(isObj)
         .slice(0, 50)
@@ -67,6 +76,18 @@ const sanitizers = {
         .filter((x) => typeof x === 'string')
         .slice(0, 100)
         .map((x) => str(x, 60)),
+      // Dictated day blocks — user-authored, so cleaned like any import: a
+      // block with no label is an empty line and drops.
+      dayBlocks: asArr(s.dayBlocks)
+        .filter(isObj)
+        .slice(0, 12)
+        .map((b) => ({
+          id: str(b.id, 40),
+          time: str(b.time, 5),
+          block: str(b.block, 80),
+          impact: b.impact === 'high' ? 'high' : undefined,
+        }))
+        .filter((b) => b.block),
     }
   },
 

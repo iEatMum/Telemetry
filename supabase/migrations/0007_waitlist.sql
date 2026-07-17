@@ -19,7 +19,14 @@ create policy "anon can join" on public.waitlist
   for insert to anon with check (true);
 
 -- Rank = signup order, minus 100 spots per confirmed referral (floored at 1).
-create or replace view public.waitlist_rank as
+-- security_invoker is LOAD-BEARING (2026-07-17 security tournament + live fix):
+-- a default (definer) view runs with the owner's privileges and BYPASSES the
+-- table's RLS — the anon key could dump every signup email through it. With
+-- invoker rights the caller's RLS applies (INSERT-only ⇒ anon reads nothing).
+-- The client never reads this view; expose rank later via a SECURITY DEFINER
+-- RPC that takes a referral_code and returns ONLY an integer.
+create or replace view public.waitlist_rank
+with (security_invoker = true) as
 select w.id, w.email, w.referral_code,
   greatest(1,
     (select count(*) from public.waitlist x where x.created_at <= w.created_at)

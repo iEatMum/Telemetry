@@ -58,10 +58,12 @@ function write(state) {
   notify()
 }
 function emptyDay() {
-  return { widgets: {}, impact: {}, closed: false, closedAt: null }
+  return { widgets: {}, impact: {}, posted: {}, closed: false, closedAt: null }
 }
 function dayRec(state, day) {
   if (!state.days[day]) state.days[day] = emptyDay()
+  // Days written before the posted-rows record existed lack the map.
+  if (!state.days[day].posted) state.days[day].posted = {}
   return state.days[day]
 }
 
@@ -117,6 +119,51 @@ export function completeImpact(id, day = appDayKey()) {
   write(s)
 }
 
+/**
+ * Walk a completion back to pending — the undo for a mis-tap (M3). Refused on
+ * a sealed day: once closeDay() has attested the record, the tape is final.
+ */
+export function uncompleteImpact(id, day = appDayKey()) {
+  if (!id) return
+  const s = read()
+  const d = dayRec(s, day)
+  if (d.closed || !d.impact[id] || d.impact[id].status !== 'done') return
+  d.impact[id].status = 'pending'
+  d.impact[id].at = null
+  write(s)
+}
+
+// --- posted rows (the heat sheet's ink) --------------------------------------
+// A posted schedule row is an ENTRY IN THE BOOK, so it must survive a relaunch.
+// ScheduleMatrix used to keep posts in component state only — every posted row
+// silently reverted to open on reload, which read as the app losing the user's
+// day. The day-keyed record lives here beside impact for the same lifecycle:
+// sealed days refuse un-posting, and the day's record simply ages out.
+
+/** A schedule row was posted. */
+export function recordPost(id, day = appDayKey()) {
+  if (!id) return
+  const s = read()
+  dayRec(s, day).posted[id] = true
+  write(s)
+}
+
+/** Walk a post back (mis-tap undo). Refused once the day is sealed. */
+export function unrecordPost(id, day = appDayKey()) {
+  if (!id) return
+  const s = read()
+  const d = dayRec(s, day)
+  if (d.closed) return
+  delete d.posted[id]
+  write(s)
+}
+
+/** The row ids posted on `day` — ScheduleMatrix seeds its state from this. */
+export function postedIds(day = appDayKey()) {
+  const s = read()
+  return Object.keys((s.days[day] && s.days[day].posted) || {})
+}
+
 // --- analysis ---------------------------------------------------------------
 
 function summarizeFrom(state, day) {
@@ -163,16 +210,28 @@ export function summarizeDay(day = appDayKey()) {
 export function refactorSignals(sum) {
   const out = []
   const imp = sum.impact
+  // The tape can't judge behavior that hasn't happened: until something is
+  // posted, missed, or used today, the only honest line is a blank-page one.
+  const acted = imp.done > 0 || imp.missed > 0 || (sum.usedTypes || []).length > 0
+  if (!acted && !sum.closed) {
+    out.push({ tone: 'muted', text: 'Nothing on the book yet — the first posted block opens the day.' })
+    return out
+  }
   if (imp.total && imp.done === imp.total) {
     out.push({ tone: 'pos', text: `All ${imp.total} high-impact blocks hit. Holding the structure and raising the target.` })
-  } else if (imp.total) {
-    const label = imp.missedLabels[0] || imp.pendingLabels[0] || 'high-impact work'
+  } else if (imp.missed) {
+    const label = imp.missedLabels[0] || 'high-impact work'
     out.push({
       tone: 'neg',
       text: `${imp.done}/${imp.total} high-impact blocks completed (missed: ${label}). Shifting to shorter, front-loaded 90-min bursts tomorrow.`,
     })
+  } else if (imp.total) {
+    // Mid-day, nothing missed yet — open blocks are still open, not failures.
+    const label = imp.pendingLabels[0] || 'the next block'
+    out.push({ tone: 'muted', text: `${imp.done}/${imp.total} high-impact blocks posted. Still open: ${label}.` })
   }
-  if (sum.ignoredTypes.length) {
+  // Ignoring is a verdict about a finished day; mid-day it's just "not yet".
+  if (sum.ignoredTypes.length && sum.closed) {
     out.push({ tone: 'warn', text: `Ignored: ${sum.ignoredTypes.join(', ')}. Demoting low-engagement cards down the deck.` })
   }
   if (sum.usedTypes.length) {
@@ -240,7 +299,13 @@ export function closeDay(day = appDayKey()) {
 
 export function getRefactorState() {
   const s = read()
-  return { pending: !!s.refactorPending, lastClosedDay: s.lastClosedDay }
+  // `pending` is a statement about TODAY — "this day is sealed; tomorrow's page
+  // arrives at rollover" — so it expires with the day it sealed. Stored as a
+  // bare boolean it outlived its day (nothing ever called clearRefactor), which
+  // left "Rule off the day" permanently disabled from day 2: the core daily
+  // loop was dead. Scoping it to lastClosedDay makes rollover itself the reset.
+  const pending = !!s.refactorPending && s.lastClosedDay === appDayKey()
+  return { pending, lastClosedDay: s.lastClosedDay }
 }
 export function clearRefactor() {
   const s = read()

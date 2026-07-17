@@ -68,13 +68,10 @@ export function BlockRenderer({ block, index = 0 }) {
 
   // Capture-phase click = ENGAGEMENT with this card. Any tap inside it counts,
   // so passive readouts get credited too without instrumenting every widget.
-  // The wrapper also "deals" the card in (data-stream), staggered by index.
+  // (The old deal-in animation is gone — the motion ceiling sanctions only the
+  // LED pulse, the running-clock breath, and the two hold sweeps.)
   return (
-    <div
-      className="animate-data-stream"
-      style={{ animationDelay: `${Math.min(index, 8) * 55}ms` }}
-      onClickCapture={() => recordUse(block)}
-    >
+    <div onClickCapture={() => recordUse(block)}>
       <BlockBoundary type={block.type}>
         <Widget config={block.config || {}} block={block} track={track} />
       </BlockBoundary>
@@ -86,10 +83,12 @@ export function BlockRenderer({ block, index = 0 }) {
  * Render a whole normalized layout: a top tab strip + the active tab's blocks.
  * `defaultTab` (or the first tab) is selected on mount. Stateless beyond which
  * tab is active — the payload drives everything else.
+ * `header` renders above the tab strip (the deck's book header — hero figures,
+ * not a block, so it never competes with the payload).
  * `footer` renders INSIDE the scroll flow after the blocks (the Sync & Refactor
  * control lives here) — in-flow content can never trap anything beneath it.
  */
-export function LayoutHost({ layout, footer }) {
+export function LayoutHost({ layout, header, footer }) {
   const tabs = (layout && layout.tabs) || []
   const [active, setActive] = useState(
     layout?.defaultTab && tabs.some((t) => t.key === layout.defaultTab)
@@ -109,6 +108,7 @@ export function LayoutHost({ layout, footer }) {
   return (
     <div className="min-h-screen bg-bg text-ink">
       <div className="mx-auto max-w-app">
+        {header}
         {/* Sticks BELOW the shell's fixed LED strip (safe-area inset + 1.75rem),
             so the payload tabs never slide under it mid-scroll. */}
         <nav className="sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-10 flex gap-1 overflow-x-auto border-b border-line bg-bg/90 px-2 backdrop-blur">
@@ -116,9 +116,13 @@ export function LayoutHost({ layout, footer }) {
             <button
               key={t.key}
               type="button"
-              onClick={() => setActive(t.key)}
-              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-3 font-clock text-xs uppercase tracking-widest2 transition-colors ${
-                t.key === active ? 'border-accent text-accent' : 'border-transparent text-muted'
+              onClick={() => {
+                setActive(t.key)
+                // Contract: deck scroll position resets on a tab switch.
+                window.scrollTo(0, 0)
+              }}
+              className={`-mb-px min-h-[44px] whitespace-nowrap border-b-2 px-3 py-3 font-clock text-xs uppercase tracking-widest2 transition-colors duration-quick ${
+                t.key === active ? 'border-accent text-ink' : 'border-transparent text-muted'
               }`}
             >
               {t.label}
@@ -126,7 +130,8 @@ export function LayoutHost({ layout, footer }) {
           ))}
         </nav>
 
-        <main className="pb-deck space-y-4 px-4 pt-5">
+        {/* gap rides the theme token so Zen's extra air applies as a token. */}
+        <main className="pb-deck flex flex-col px-4 pt-5" style={{ gap: 'var(--gap-widget)' }}>
           {(current?.blocks || []).map((b, i) => (
             <BlockRenderer key={b.id ?? i} block={b} index={i} />
           ))}

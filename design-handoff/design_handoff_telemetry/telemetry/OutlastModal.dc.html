@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div data-theme="night_ops" data-screen-label="OUTLAST IT override" style="position:absolute;inset:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);display:flex;flex-direction:column;padding:58px 20px 30px;overflow-y:auto">
+
+  <sc-if value="{{ isActive }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px">
+      <span style="display:flex;align-items:center;gap:8px">
+        <span class="tl-led-pulse" style="width:7px;height:7px;border-radius:999px;background:var(--accent);--_led:var(--accent-glow);box-shadow:0 0 6px var(--accent-glow)"></span>
+        <span style="font-family:var(--font-clock);font-size:12px;letter-spacing:.22em;color:var(--text)">OUTLAST IT</span>
+      </span>
+      <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.14em;color:var(--muted)">URGE PROTOCOL</span>
+    </div>
+
+    <div style="text-align:center;margin-bottom:6px">
+      <span class="tl-breathe" style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:64px;line-height:1;font-weight:500;color:var(--accent);text-shadow:0 0 18px var(--accent-glow)">{{ clock }}</span>
+    </div>
+    <div style="text-align:center;font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.5">{{ voiceLine }}</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:auto">
+      <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+        <button onClick="{{ s.tap }}" style="display:flex;align-items:center;gap:12px;text-align:left;background:{{ s.bg }};border:1px solid {{ s.border }};border-radius:var(--r-5);padding:13px 14px;cursor:pointer;min-height:48px">
+          <span style="flex:none;font-family:var(--font-clock);font-size:10px;letter-spacing:.1em;color:{{ s.numColor }}">{{ s.num }}</span>
+          <span style="flex:1;font-family:var(--font-clock);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:{{ s.color }}">{{ s.label }}</span>
+          <sc-if value="{{ s.done }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+          <sc-if value="{{ s.isNow }}"><span style="flex:none;font-family:var(--font-clock);font-size:9px;letter-spacing:.14em;color:var(--accent)">NOW</span></sc-if>
+        </button>
+      </sc-for>
+    </div>
+
+    <button onClick="{{ stayed }}" style="width:100%;font-family:var(--font-clock);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--accent-ink);background:var(--accent);border:none;border-radius:var(--r-5);padding:14px;cursor:pointer;box-shadow:0 0 14px var(--accent-glow);margin:22px 0 10px">I stayed &#8212; close this</button>
+
+    <button onPointerDown="{{ holdStart }}" onPointerUp="{{ holdEnd }}" onPointerLeave="{{ holdEnd }}" onPointerCancel="{{ holdEnd }}" style="position:relative;width:100%;font-family:var(--font-clock);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-5);padding:13px;cursor:pointer;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none">
+      <span style="position:absolute;inset:0;width:{{ holdPct }};background:var(--surface-2);border-right:1px solid var(--line)"></span>
+      <span style="position:relative">Hold to surrender &#183; release cancels</span>
+    </button>
+  </sc-if>
+
+  <sc-if value="{{ isStayed }}">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px">
+      <span style="font-family:var(--font-clock);font-size:11px;letter-spacing:.22em;color:var(--muted)">POSITION HELD</span>
+      <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:56px;line-height:1;color:var(--accent);text-shadow:0 0 18px var(--accent-glow)">{{ pileAfterWin }}</span>
+      <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.18em;color:var(--muted)">OUTLASTED &#183; LIFETIME</span>
+      <span style="font-size:15px;color:var(--text);max-width:280px;line-height:1.5">Urges crest and pass &#8212; you stayed.</span>
+      <button onClick="{{ close }}" style="font-family:var(--font-clock);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-5);padding:13px 26px;cursor:pointer;margin-top:8px">Return to deck</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSlipped }}">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px">
+      <span style="font-family:var(--font-clock);font-size:11px;letter-spacing:.22em;color:var(--muted)">POSITION CLOSED &#183; DATA LOGGED</span>
+      <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:56px;line-height:1;color:var(--text)">{{ pile }}</span>
+      <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.18em;color:var(--muted)">OUTLASTED &#183; LIFETIME &#183; STILL YOURS</span>
+      <span style="font-size:15px;color:var(--text);max-width:280px;line-height:1.5">Logged. The clock restarts; the work does not.</span>
+      <button onClick="{{ close }}" style="font-family:var(--font-clock);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-5);padding:13px 26px;cursor:pointer;margin-top:8px">Return to deck</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:760},&quot;minutes&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:15,&quot;min&quot;:1,&quot;max&quot;:60,&quot;unit&quot;:&quot;min&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;voiceLine&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;All you owe the next 15 minutes is staying.&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;outlastedCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:128,&quot;tsType&quot;:&quot;number&quot;},&quot;onClose&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(result: \&quot;active\&quot; | \&quot;stayed\&quot; | \&quot;slipped\&quot;) =&gt; void&quot;}}">
+const STEPS = ["Leave the room", "20 pushups", "Text your partner", "Get outside", "Ride it out"];
+class Component extends DCLogic {
+  state = { phase: "active", remaining: null, stepDone: 0, hold: 0 };
+  componentDidMount() {
+    this._tick = setInterval(() => {
+      this.setState(s => {
+        if (s.phase !== "active") return {};
+        const r = (s.remaining == null ? (this.props.minutes ?? 15) * 60 : s.remaining) - 1;
+        if (r <= 0) return { phase: "stayed", remaining: 0 };
+        return { remaining: r };
+      });
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._tick); clearInterval(this._hold); }
+  holdStart() {
+    const t0 = performance.now();
+    clearInterval(this._hold);
+    this._hold = setInterval(() => {
+      const p = (performance.now() - t0) / 1200;
+      if (p >= 1) { clearInterval(this._hold); this.setState({ phase: "slipped", hold: 0 }); }
+      else this.setState({ hold: p });
+    }, 24);
+  }
+  holdEnd() { clearInterval(this._hold); this.setState({ hold: 0 }); }
+  close() {
+    const result = this.state.phase;
+    if (this.props.onClose) this.props.onClose(result);
+    else this.setState({ phase: "active", remaining: null, stepDone: 0, hold: 0 });
+  }
+  renderVals() {
+    const p = this.props;
+    const total = (p.minutes ?? 15) * 60;
+    const rem = this.state.remaining == null ? total : this.state.remaining;
+    const mm = String(Math.floor(rem / 60)).padStart(2, "0");
+    const ss = String(rem % 60).padStart(2, "0");
+    const doneN = this.state.stepDone;
+    const steps = STEPS.map((label, i) => {
+      const done = i < doneN, isNow = i === doneN;
+      return {
+        label, num: "0" + (i + 1), done, isNow,
+        bg: isNow ? "var(--surface-2)" : "var(--surface)",
+        border: isNow ? "var(--accent-deep)" : "var(--line)",
+        color: done ? "var(--muted)" : "var(--text)",
+        numColor: isNow ? "var(--accent)" : "var(--muted)",
+        tap: () => { if (i === this.state.stepDone) this.setState({ stepDone: i + 1 }); },
+      };
+    });
+    const pile = p.outlastedCount ?? 128;
+    return {
+      isActive: this.state.phase === "active",
+      isStayed: this.state.phase === "stayed",
+      isSlipped: this.state.phase === "slipped",
+      clock: mm + ":" + ss,
+      voiceLine: p.voiceLine || "All you owe the next 15 minutes is staying.",
+      steps,
+      holdPct: (Math.min(1, this.state.hold) * 100).toFixed(1) + "%",
+      holdStart: () => this.holdStart(),
+      holdEnd: () => this.holdEnd(),
+      stayed: () => this.setState({ phase: "stayed" }),
+      close: () => this.close(),
+      pile: String(pile),
+      pileAfterWin: String(pile + 1),
+    };
+  }
+}
+</script>
+</body>
+</html>

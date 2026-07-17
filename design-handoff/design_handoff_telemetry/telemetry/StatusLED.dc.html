@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<span style="display:inline-flex;align-items:center;gap:6px">
+  <span class="{{ pulseClass }}" style="width:7px;height:7px;border-radius:999px;flex:none;background:{{ color }};--_led:{{ color }};box-shadow:0 0 6px {{ color }}"></span>
+  <sc-if value="{{ showLabel }}" hint-placeholder-val="{{ true }}">
+    <span style="font-family:var(--font-clock);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);line-height:1">{{ label }}</span>
+  </sc-if>
+</span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:120,&quot;height&quot;:24},&quot;status&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;LIVE&quot;,&quot;LOCAL&quot;,&quot;OFFLINE&quot;],&quot;default&quot;:&quot;LIVE&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;LIVE&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;tone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;&quot;,&quot;pos&quot;,&quot;neg&quot;,&quot;warn&quot;,&quot;accent&quot;,&quot;muted&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const status = p.status ?? "LIVE";
+    const key = String(status).toUpperCase();
+    const smap = { LIVE: "var(--led-live)", LOCAL: "var(--led-local)", OFFLINE: "var(--led-offline)" };
+    const tmap = { pos: "var(--pos)", neg: "var(--neg)", warn: "var(--warn)", accent: "var(--accent)", muted: "var(--muted)" };
+    const color = p.tone ? (tmap[p.tone] || "var(--accent)") : (smap[key] || "var(--accent)");
+    const pulse = p.pulse !== undefined ? !!p.pulse : key !== "OFFLINE";
+    const label = p.label !== undefined ? p.label : status;
+    return { color, pulseClass: pulse ? "tl-led-pulse" : "", label, showLabel: label !== "" && label != null };
+  }
+}
+</script>
+</body>
+</html>

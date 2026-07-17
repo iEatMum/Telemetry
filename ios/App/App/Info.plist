@@ -76,5 +76,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- iOS 26 (temporary, v1 — removed in Xcode 27): opt native controls OUT of
+	     automatic Liquid Glass so the paper surfaces stay on-brand. The app's
+	     surfaces are designed to harmonize with glass for that eventual handoff.
+	     Design handoff G1 / 05 §F. -->
+	<key>UIDesignRequiresCompatibility</key>
+	<true/>
 </dict>
 </plist>

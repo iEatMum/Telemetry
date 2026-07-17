@@ -46,7 +46,7 @@ export default function WellnessSheet({ onClose }) {
                   key={opt}
                   type="button"
                   onClick={() => saveWellness(day, { [d.key]: val })}
-                  className={`flex-1 rounded-xl border px-1 py-2 text-xs ${
+                  className={`flex-1 rounded-lg border px-1 py-2 text-xs ${
                     on ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface2 text-muted'
                   }`}
                 >
@@ -80,14 +80,14 @@ export default function WellnessSheet({ onClose }) {
         <button
           type="button"
           onClick={fillFromHealth}
-          className="self-start rounded-xl border border-line bg-surface2 px-3 py-2 text-xs text-muted"
+          className="self-start rounded-lg border border-line bg-surface2 px-3 py-2 text-xs text-muted"
         >
           Fill from Health
         </button>
       </label>
 
       {/* Readiness read-out — the hook: a charge + how to train */}
-      <div className="rounded-2xl border border-line bg-surface2 p-4 text-center">
+      <div className="rounded-lg border border-line bg-surface2 p-4 text-center">
         {r ? (
           <>
             <div className="mx-auto flex max-w-[220px] items-center gap-1.5">
@@ -118,7 +118,7 @@ export default function WellnessSheet({ onClose }) {
         </div>
       </div>
 
-      <button type="button" onClick={onClose} className="w-full rounded-2xl bg-accent py-3 font-medium text-accent-ink">
+      <button type="button" onClick={onClose} className="w-full rounded-lg bg-accent py-3 font-medium text-accent-ink">
         Done
       </button>
     </Sheet>

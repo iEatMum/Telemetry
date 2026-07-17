@@ -56,7 +56,6 @@ const KNOWN_TYPES = new Set([
   'InsightCard',
   'DailyBriefing',
   'EnergyTrendLine',
-  'MarketSentimentWidget',
 ])
 
 const SCHEMA_VERSION = 1
@@ -578,7 +577,6 @@ A Block is { "type": <WidgetType>, "id": string, "config": object }. The ONLY al
 - InsightCard     config: { heading?, source?, text:string, tone?:"accent"|"warn"|"neg" }
 - DailyBriefing   config: { date?, stats: [{ label, value:string, tone:"pos"|"neg"|"warn"|"muted" }], drivers: [{ tone, text }] }   // each driver renders as an "AI:" line
 - EnergyTrendLine config: { label?, unit?, points: [{ t:string, v:number }], now?:number, open?:number, avg?:number, ticks?:number, caption?:boolean }
-- MarketSentimentWidget config: { label?, status?, sentiment: { score:number(0..100) }, tickers: [{ symbol, last:string, changePct:number, focus?:boolean }] }
 
 CALIBRATION PROTOCOL — read these survey fields and shape the day to them:
 - wakeTime → the ScheduleMatrix's first row is "Wake" at exactly this time; everything flows from it.

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry/telemetry.css">
+</helmet>
+<div style="min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--font-sans);padding:0 0 80px">
+  <div style="border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;gap:11px;flex-wrap:wrap">
+    <span style="width:10px;height:10px;border-radius:2px;background:var(--warn);box-shadow:0 0 10px rgba(255,178,36,.4)"></span>
+    <span style="font-family:var(--font-clock);font-size:16px;letter-spacing:.22em;font-weight:600">TELEMETRY</span>
+    <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.14em;color:var(--muted);padding-top:2px">PROPOSED ADDITIONS &#183; NOT YET IN THE KIT</span>
+    <span style="flex:1"></span>
+    <a href="telemetry/Telemetry Design System.dc.html" style="font-family:var(--font-clock);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:var(--r-4);padding:7px 12px">&#8598; Back to the system</a>
+  </div>
+
+  <div style="max-width:960px;margin:0 auto;padding:26px 24px 0">
+    <p style="font-size:13px;color:var(--muted);line-height:1.55;max-width:640px;margin:0 0 26px">Gaps I found while assembling the screens &#8212; things the brief didn't list but the app will need. Each is a registry candidate: approve it and it becomes a widget/overlay with a prop contract. Nothing here is built into the kit yet (except where noted as a shell hook).</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px">
+      <sc-for list="{{ items }}" as="it" hint-placeholder-count="10">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:16px;display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font-family:var(--font-clock);font-size:9px;letter-spacing:.1em;color:{{ it.prioColor }};border:1px solid var(--line);border-radius:2px;padding:2px 6px">{{ it.prio }}</span>
+            <span style="font-family:var(--font-clock);font-size:13px;font-weight:500;color:var(--text)">{{ it.name }}</span>
+            <span style="margin-left:auto;font-family:var(--font-clock);font-size:9px;letter-spacing:.12em;color:var(--muted)">{{ it.where }}</span>
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:var(--text)">{{ it.why }}</div>
+          <div style="font-family:var(--font-clock);font-size:10px;line-height:1.55;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-4);padding:8px 10px;white-space:pre-wrap">{{ it.contract }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const P1 = "var(--accent)", P2 = "var(--warn)", P3 = "var(--muted)";
+const ITEMS = [
+  { prio: "P1", prioColor: P1, name: "ConfirmSheet + HoldToSeal", where: "OVERLAY",
+    why: "SyncBar currently toggles on tap. The Examen seal is ceremonial: press \u2192 sheet with the step.commit line (\u201cSeal it\u201d) \u2192 press-and-hold to attest. Friction inversion demands the costly path be a hold, not a tap.",
+    contract: "ConfirmSheet { title, body, holdLabel, holdMs?:1200, onSeal, onCancel }" },
+  { prio: "P1", prioColor: P1, name: "PartnerPingRow", where: "OUTLAST \u00b7 TODAY",
+    why: "\u201cDanger routes to a person, not willpower.\u201d The OUTLAST step \u2018Text your partner\u2019 must be a real one-tap action with a pre-filled message \u2014 never a blank composer at the worst moment.",
+    contract: "PartnerPingRow { name, prefill, sent?, onPing } \u00b7 renders delivery state, no read receipts" },
+  { prio: "P1", prioColor: P1, name: "OnboardingSurvey screens", where: "FIRST RUN",
+    why: "InitialSurvey.jsx types the motivational profile (streakModel) and collects the two opt-ins (recovery, faith). Needs the terminal skin: one question per screen, mono progress ticks, no score talk.",
+    contract: "SurveyQuestion { index, total, prompt, options:[{id,label,sub?}], onPick } \u00b7 retakeable from Settings; retake re-forges the deck" },
+  { prio: "P1", prioColor: P1, name: "SettingsSheet", where: "OVERLAY",
+    why: "The gear currently goes nowhere. Needs: theme picker (terminal/zen/night_ops), profile retake, opt-in toggles, partner config, notification window, data export. This is also where recovery/faith modules turn ON \u2014 opt-in lives here, not in a deck.",
+    contract: "SettingsSheet { sections:[{label, rows:[{kind:\"nav\"|\"toggle\"|\"radio\", \u2026}]}], onClose }" },
+  { prio: "P2", prioColor: P2, name: "FaithCard (un-scored)", where: "MIND \u00b7 OPT-IN",
+    why: "The faith module has no widget. Hard rule: never scored, never a streak \u2014 a verse, a reading position, one cue line. \u201cOffered, not performed.\u201d Renders only when the opt-in is on.",
+    contract: "FaithCard { verse?, ref?, position?:\"John 4 \u00b7 p.38\", cue? } \u00b7 no numbers, no deltas, no progress" },
+  { prio: "P2", prioColor: P2, name: "NotificationCard spec", where: "SYSTEM",
+    why: "The one daily local notification needs a designed body: title register shifts per theme (UPPERCASE / soft / lowercase), body always ends in one 60-second action. Cap: one per app-day, no badges.",
+    contract: "warn.notification \u2192 { title(theme), body, action } \u00b7 native local, pre-vulnerable-window" },
+  { prio: "P2", prioColor: P2, name: "ToastQueued", where: "SHELL",
+    why: "After sealing, a transient confirmation (\u201cSealed. Deck rebuilds overnight.\u201d) that doesn't require dismissal. Currently the bar just flips state with no acknowledgment moment.",
+    contract: "Toast { text, ms?:2600 } \u00b7 bottom-center, above sync bar, one at a time" },
+  { prio: "P2", prioColor: P2, name: "REVIEW tab (Sunday debrief)", where: "FORGED TAB",
+    why: "The weekly reckoning arrives as a server-pushed tab on Sundays (R6) \u2014 week's ScheduleMatrix verdicts, KPI deltas, one Counsel card, and the next week's targets. Composition, not new widgets \u2014 but it needs a WeekGrid.",
+    contract: "WeekGrid { days:[{d:\"MON\", pct, sealed }] } \u00b7 7 cells, tone by execution, never red" },
+  { prio: "P2", prioColor: P2, name: "Day-0 deck preset", where: "FORGE RULE",
+    why: "After a reset the forge must promote lifetime piles to slot 1 for 48h so zero is never the dominant numeral. This is a server composition rule \u2014 documenting it as a named preset keeps it testable.",
+    contract: "deck.day0 = [StatRow(lifetime), DailyBriefing(one-voice), ScheduleMatrix, DeepWorkTimer]" },
+  { prio: "P3", prioColor: P3, name: "DeepWork fullscreen cockpit", where: "SHELL HOOK",
+    why: "While the timer runs, the deck hides and the clock takes the screen (Sprint doctrine). Shell supports overlays; needs a fullscreen state on DeepWorkTimer plus a quiet exit.",
+    contract: "DeepWorkTimer + { fullscreen?, onExit } \u00b7 tab strip stays; deck fades" },
+  { prio: "P3", prioColor: P3, name: "OfflineQueueChip", where: "STATUS STRIP",
+    why: "Offline-first: when OFFLINE, edits queue locally. A small \u2018queued n\u2019 count next to the LED tells him sync will catch up \u2014 data, not warning.",
+    contract: "StatusStrip + { queuedCount? } \u00b7 muted, no red, clears on LIVE" },
+  { prio: "P3", prioColor: P3, name: "Haptics + app icon", where: "NATIVE",
+    why: "One soft tick when a hold completes (seal or surrender) \u2014 never celebratory patterns. App icon: the wordmark dot on near-black; no badge counts, ever.",
+    contract: "haptic: impactLight \u00d7 1 on hold-complete \u00b7 icon: static, badge-free" },
+];
+class Component extends DCLogic {
+  renderVals() { return { items: ITEMS }; }
+}
+</script>
+</body>
+</html>

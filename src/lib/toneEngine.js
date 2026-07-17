@@ -44,14 +44,18 @@ function fill(template, params = {}) {
 // urges outlasted, {window} human label for the vulnerable window ("around 10pm").
 
 const LEXICON = {
-  // InsightCard text at WATCH — a forecast, not a verdict.
+  // InsightCard text at WATCH — a forecast, not a verdict. WATCH can fire on day
+  // one from the survey prior alone, so the copy owns the SOURCE (the window YOU
+  // flagged in setup) rather than asserting a history that may not exist — naming
+  // a time as "where you've failed before" to someone who hasn't is nocebo
+  // priming (PSYCHOLOGY §2), and it would simply be false.
   'drift.watch': {
     avoidance:
-      'Conditions are drifting — the pattern says {window} is the exposed stretch. Day {days} is yours; it stays yours if the phone is out of the room before the window opens.',
+      'Conditions are drifting — {window} is the stretch you flagged as exposed. Day {days} is yours; it stays yours if the phone is out of the room before the window opens.',
     accumulation:
-      'Conditions are drifting — {window} is where reps have been lost before. One clean pass through it tonight and the pile grows: {wins} urges outlasted and counting.',
+      'Conditions are drifting — {window} is the window you named as risky. One clean pass through it tonight and the pile grows: {wins} urges outlasted and counting.',
     engagement:
-      'Conditions are drifting — {window} has been the hard stretch before. Nothing to win or lose tonight: just show up for the next block and let the window pass.',
+      'Conditions are drifting — {window} is the stretch you flagged. Nothing to win or lose tonight: just show up for the next block and let the window pass.',
   },
 
   // InsightCard text at CRITICAL — direct, still weather-report framing.
@@ -68,15 +72,15 @@ const LEXICON = {
   'warn.notification': {
     avoidance: {
       title: 'Guardian · day {days} on the line tonight',
-      body: 'The {window} stretch is where runs have ended before. Phone out of the room before it opens — that one move protects the chain.',
+      body: 'The {window} stretch is the one you flagged. Phone out of the room before it opens — that one move protects the chain.',
     },
     accumulation: {
       title: 'Guardian · win #{winsNext} is set up tonight',
-      body: 'The {window} stretch has taken reps before. Pass through it clean and it banks — phone out of the room before it opens.',
+      body: 'The {window} stretch is the window you named. Pass through it clean and it banks — phone out of the room before it opens.',
     },
     engagement: {
       title: 'Guardian · the {window} stretch is coming',
-      body: 'It has been the hard window before. You only have to show up for the next block — phone out of the room and let it pass.',
+      body: 'The {window} stretch is the one you flagged. You only have to show up for the next block — phone out of the room and let it pass.',
     },
   },
 
@@ -110,21 +114,55 @@ const LEXICON = {
 }
 
 // ── Register shifts (theme) ──────────────────────────────────────────────────
-// terminal: clipped scoreboard voice — uppercase notification titles.
-// zen: soften — swap hard imperatives for invitations, drop "on the line".
-// night_ops: quiet — lowercase titles, no other change.
+// Split Ledger doctrine: nothing shouts — the old terminal ALL-CAPS scoreboard
+// voice is gone entirely.
+// split_book / carbon: the standard ledger voice, untouched.
+// lamplight: the vulnerable-window skin — soften hard imperatives into
+//   invitations AND lowercase notification titles. Quiet after dark.
 
 function shiftRegister(text, theme, { isTitle = false } = {}) {
   let out = text
-  if (theme === 'zen') {
+  if (theme === 'lamplight') {
     out = out
       .replace(/Work the steps\./g, 'Walk the steps, one at a time.')
       .replace(/on the line tonight/g, 'worth guarding tonight')
       .replace(/that one move protects the chain/g, 'one gentle move keeps it whole')
+    if (isTitle) out = out.toLowerCase()
   }
-  if (isTitle && theme === 'terminal') out = out.toUpperCase()
-  if (isTitle && theme === 'night_ops') out = out.toLowerCase()
   return out
+}
+
+// ── Register switch (slipResponse + confidence → scaffold | strict) ──────────
+// A SECOND axis over the three streakModel voices, applied ONLY to the warning
+// copy (drift.watch/critical + the pre-window notification). The post-slip line
+// is deliberately excluded — it stays one compassionate voice (hard rule 1).
+//   scaffold — shame-reactive (ghost/spiral/critic) or low confidence: add a
+//              common-humanity beat, keep the ask small. Never strict on these.
+//   strict   — confident + high behavioral baseline: clipped accountability.
+// The beats are fixed, screen-safe phrases (no banned words), appended rather
+// than rewriting the authored body, so screen() can never be tripped.
+const WARNING_SLOTS = new Set(['drift.watch', 'drift.critical', 'warn.notification'])
+const SCAFFOLD_BEAT = ' You have done hard nights before — one small move is the whole ask tonight.'
+const STRICT_BEAT = ' No negotiation. Make the move now.'
+
+export function pickRegister(profile = {}) {
+  const { slipResponse, missionConfidence, executionRate7d } = profile
+  const lowConf = Number.isInteger(missionConfidence) && missionConfidence <= 3
+  const highConf = Number.isInteger(missionConfidence) && missionConfidence >= 8
+  const elite = Number.isInteger(executionRate7d) && executionRate7d >= 6
+  const fragile = slipResponse === 'ghost' || slipResponse === 'spiral' || slipResponse === 'critic'
+  if (fragile || lowConf) return 'scaffold' // shame-reactive / low-efficacy → supportive
+  if (highConf || elite) return 'strict' // confident, high baseline → high-friction
+  return 'standard'
+}
+
+// Append the register beat. For a notification ({title,body}) it lands on the
+// body only, so the title stays a clean scoreboard line.
+function applyRegister(value, register) {
+  if (register === 'standard') return value
+  const beat = register === 'scaffold' ? SCAFFOLD_BEAT : STRICT_BEAT
+  if (typeof value === 'string') return value + beat
+  return { ...value, body: value.body + beat }
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
@@ -140,11 +178,16 @@ export function voice(profile = {}, slot, params = {}) {
   const theme = profile.theme
   const entry = LEXICON[slot] && LEXICON[slot][model]
   if (!entry) return ''
-  if (typeof entry === 'string') return shiftRegister(fill(entry, params), theme)
-  return {
-    title: shiftRegister(fill(entry.title, params), theme, { isTitle: true }),
-    body: shiftRegister(fill(entry.body, params), theme),
-  }
+  // Register applies ONLY to warning copy — never the one-voice post-slip line.
+  const register = WARNING_SLOTS.has(slot) ? pickRegister(profile) : 'standard'
+  if (typeof entry === 'string') return applyRegister(shiftRegister(fill(entry, params), theme), register)
+  return applyRegister(
+    {
+      title: shiftRegister(fill(entry.title, params), theme, { isTitle: true }),
+      body: shiftRegister(fill(entry.body, params), theme),
+    },
+    register,
+  )
 }
 
 /** Every slot/model pair flattened — exists so tests can screen ALL copy. */

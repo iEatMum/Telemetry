@@ -64,10 +64,12 @@ describe('recurrenceLabel', () => {
 })
 
 describe('seedTasks', () => {
-  it('seeds the five recurring tasks with stable ids', () => {
-    const seeded = seedTasks('2026-06-22')
-    expect(seeded).toHaveLength(5)
-    expect(seeded.every((t) => t.id.startsWith('seed-'))).toBe(true)
-    expect(seeded.every((t) => t.done === false)).toBe(true)
+  // The book takes dictation — it never hands a stranger a life they didn't
+  // write. This used to seed the author's own errands (creatine, "Clean room",
+  // laundry, a car check, "Nap after long run"), which every new user inherited.
+  // An empty first book is the contract; the day-zero invitation carries it.
+  it('seeds NOTHING — a new book opens empty', () => {
+    expect(seedTasks()).toEqual([])
+    expect(seedTasks('2026-06-22')).toEqual([])
   })
 })

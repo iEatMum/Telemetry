@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<sc-if value="{{ isUp }}" hint-placeholder-val="{{ true }}">
+  <span style="display:inline-flex;align-items:center;gap:3px;font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-weight:500;letter-spacing:.01em;line-height:1;white-space:nowrap;font-size:13px;color:var(--pos);text-shadow:var(--pos-glow)"><span style="font-size:.78em">&#9650;</span>{{ text }}</span>
+</sc-if>
+<sc-if value="{{ isDown }}">
+  <span style="display:inline-flex;align-items:center;gap:3px;font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-weight:500;letter-spacing:.01em;line-height:1;white-space:nowrap;font-size:13px;color:var(--neg);text-shadow:var(--neg-glow)"><span style="font-size:.78em">&#9660;</span>{{ text }}</span>
+</sc-if>
+<sc-if value="{{ isFlat }}">
+  <span style="display:inline-flex;align-items:center;gap:3px;font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-weight:500;letter-spacing:.01em;line-height:1;white-space:nowrap;font-size:13px;color:var(--muted)"><span style="font-size:.7em">&#9644;</span>{{ text }}</span>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:130,&quot;height&quot;:30},&quot;value&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:2.3,&quot;tsType&quot;:&quot;number | string&quot;},&quot;dir&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;up&quot;,&quot;down&quot;,&quot;flat&quot;],&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;\&quot;up\&quot; | \&quot;down\&quot; | \&quot;flat\&quot;&quot;},&quot;suffix&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const raw = p.value ?? 2.3;
+    let dir = p.dir && p.dir !== "auto" ? p.dir : null;
+    const num = typeof raw === "number"
+      ? raw
+      : parseFloat(String(raw).replace(/[^0-9.\-]/g, ""));
+    if (!dir) dir = num > 0 ? "up" : num < 0 ? "down" : "flat";
+    let disp = raw;
+    if (typeof raw === "number") disp = (raw > 0 ? "+" : "") + raw;
+    const suffix = p.suffix ?? "";
+    return {
+      text: disp + suffix,
+      isUp: dir === "up",
+      isDown: dir === "down",
+      isFlat: dir === "flat",
+    };
+  }
+}
+</script>
+</body>
+</html>

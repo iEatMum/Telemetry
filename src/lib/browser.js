@@ -157,3 +157,19 @@ export function triggerFocusShortcut(name) {
   a.click()
   a.remove()
 }
+
+/**
+ * One soft haptic tick — fired ONLY when a hold completes (seal or surrender).
+ * Never celebratory patterns (R8). Native-only; everything is lazy + fail-soft
+ * so the web bundle never touches the plugin and a missing install is a no-op.
+ */
+export async function hapticTick() {
+  try {
+    const { Capacitor } = await import('@capacitor/core')
+    if (!Capacitor.isNativePlatform()) return
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
+    await Haptics.impact({ style: ImpactStyle.Light })
+  } catch {
+    /* no haptics on this platform — silence is fine */
+  }
+}

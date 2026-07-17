@@ -1,15 +1,16 @@
-// TelemetryWidget.swift — the home-screen DAILY BRIEFING widget. Reads the
-// numbers the app pushes (engaged %, impact done, cards engaged) and renders them
-// in the "perps terminal" look (electric green on near-black, monospaced).
+// TelemetryWidget.swift — the home-screen "DAYS ON THE BOOK" widget.
 //
-// The app drives refreshes: it writes the session and calls reloadWidgets() after
-// every stat change (src/lib/widgets.js ← App.jsx), so the timeline is a single
-// immediate entry with `.never` — no time-based polling needed.
+// The manila paper object among the glass icons (design handoff G9 / §16): a
+// Split-Book ground, carbon ink, one lane-red ◆ seal, a hairline rule. Its whole
+// job is the lifetime total — the number a reset can never touch — with the
+// medium family adding a quiet secondary row. Reads the numbers the app pushes
+// through @capgo/capacitor-widget-kit (src/lib/widgets.js ← App.jsx); the app
+// drives refreshes via reloadWidgets(), so the timeline is one immediate entry.
 
 import WidgetKit
 import SwiftUI
 
-// MARK: - Brand palette (mirrors src/index.css :root dark tokens)
+// MARK: - Brand palette (mirrors src/index.css Split Book :root tokens)
 
 private extension Color {
     init(hex: UInt32) {
@@ -22,18 +23,19 @@ private extension Color {
 }
 
 private enum Brand {
-    static let bg = Color(hex: 0x06080b)
-    static let accent = Color(hex: 0x16f08b)
-    static let muted = Color(hex: 0x707b8c)
-    static let line = Color(hex: 0x232a33)
+    static let bg = Color(hex: 0xEDE4CE)      // manila page
+    static let ink = Color(hex: 0x1F1B12)     // carbon ink
+    static let accent = Color(hex: 0xC93F22)  // lane-red seal
+    static let line = Color(hex: 0xC9BC9C)    // hairline
+    static let muted = Color(hex: 0x6B6150)   // secondary
 }
 
 // MARK: - Timeline
 
 struct BriefingEntry: TimelineEntry {
     let date: Date
+    let daysOnBook: Int
     let impactScore: Int
-    let engagedPercent: Int
     let cardsCompleted: Int
     let hasData: Bool
 }
@@ -50,13 +52,13 @@ struct BriefingProvider: TimelineProvider {
     }
 
     private static var empty: BriefingEntry {
-        BriefingEntry(date: Date(), impactScore: 0, engagedPercent: 0, cardsCompleted: 0, hasData: false)
+        BriefingEntry(date: Date(), daysOnBook: 0, impactScore: 0, cardsCompleted: 0, hasData: false)
     }
 
     private static func current() -> BriefingEntry {
         guard let b = TelemetryWidgetStore.read() else { return empty }
-        return BriefingEntry(date: Date(), impactScore: b.impactScore,
-                             engagedPercent: b.engagedPercent, cardsCompleted: b.cardsCompleted,
+        return BriefingEntry(date: Date(), daysOnBook: b.daysOnBook,
+                             impactScore: b.impactScore, cardsCompleted: b.cardsCompleted,
                              hasData: true)
     }
 }
@@ -64,46 +66,57 @@ struct BriefingProvider: TimelineProvider {
 // MARK: - View
 
 struct TelemetryWidgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
     var entry: BriefingEntry
+
+    private var heroText: String { entry.hasData ? "\(entry.daysOnBook)" : "1" }
+    private var heroLabel: String { entry.hasData ? "DAYS ON THE BOOK" : "THE BOOK OPENS" }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 5) {
-                Circle().fill(Brand.accent).frame(width: 6, height: 6)
-                Text("DAILY BRIEFING")
-                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                    .tracking(1.5)
+            // Head: the label + the one lane-red ◆ seal, over a hairline.
+            HStack(alignment: .top) {
+                Text(heroLabel)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .tracking(1.6)
                     .foregroundStyle(Brand.muted)
+                Spacer()
+                Text("◆")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Brand.accent)
             }
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 4)
 
-            Text("\(entry.engagedPercent)%")
-                .font(.system(size: 36, weight: .bold, design: .monospaced))
-                .foregroundStyle(entry.hasData ? Brand.accent : Brand.muted)
-                .minimumScaleFactor(0.6)
+            // Hero: the lifetime total in carbon mono — never a stark 0.
+            Text(entry.hasData ? heroText : "Day one")
+                .font(.system(size: entry.hasData ? 46 : 24, weight: .medium, design: .monospaced))
+                .foregroundStyle(Brand.ink)
+                .minimumScaleFactor(0.5)
                 .lineLimit(1)
-            Text("ENGAGED")
-                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .tracking(1.5)
-                .foregroundStyle(Brand.muted)
 
-            Spacer(minLength: 6)
-
-            HStack(alignment: .bottom) {
-                stat("\(entry.impactScore)", "IMPACT")
-                Spacer()
-                stat("\(entry.cardsCompleted)", "CARDS")
+            if family == .systemMedium {
+                Spacer(minLength: 6)
+                Rectangle().fill(Brand.line).frame(height: 1)
+                Spacer(minLength: 6)
+                HStack(alignment: .bottom) {
+                    stat("\(entry.impactScore)", "IMPACT")
+                    Spacer()
+                    stat("\(entry.cardsCompleted)", "CARDS")
+                }
+            } else {
+                Spacer(minLength: 0)
+                Rectangle().fill(Brand.line).frame(height: 1)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .widgetURL(URL(string: "telemetry://briefing"))
+        .widgetURL(URL(string: "telemetry://deck"))
         .telemetryBackground()
     }
 
     private func stat(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(value).font(.system(size: 16, weight: .bold, design: .monospaced)).foregroundStyle(.white)
+            Text(value).font(.system(size: 16, weight: .medium, design: .monospaced)).foregroundStyle(Brand.ink)
             Text(label).font(.system(size: 8, weight: .medium, design: .monospaced)).tracking(1).foregroundStyle(Brand.muted)
         }
     }
@@ -124,14 +137,14 @@ private extension View {
 // MARK: - Widget
 
 struct TelemetryWidget: Widget {
-    let kind = "TelemetryDailyBriefing"
+    let kind = "TelemetryDaysOnTheBook"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: BriefingProvider()) { entry in
             TelemetryWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Daily Briefing")
-        .description("Today's engagement, impact, and cards — live from the app.")
+        .configurationDisplayName("Days on the book")
+        .description("Your lifetime total — the number a reset never touches.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

@@ -24,6 +24,7 @@ enum TelemetryWidgetStore {
     static let sessionKey = "capgo.widgetkit.native.session.daily-briefing"
 
     struct Briefing {
+        let daysOnBook: Int
         let impactScore: Int
         let engagedPercent: Int
         let cardsCompleted: Int
@@ -34,6 +35,7 @@ enum TelemetryWidgetStore {
     // decoder's default data strategy — no custom keys/strategy required.
     private struct Envelope: Decodable { let stateData: Data }
     private struct RawState: Decodable {
+        let daysOnBook: Double?
         let impactScore: Double?
         let engagedPercent: Double?
         let cardsCompleted: Double?
@@ -50,6 +52,7 @@ enum TelemetryWidgetStore {
               let state = try? decoder.decode(RawState.self, from: envelope.stateData)
         else { return nil }
         return Briefing(
+            daysOnBook: Int((state.daysOnBook ?? 0).rounded()),
             impactScore: Int((state.impactScore ?? 0).rounded()),
             engagedPercent: Int((state.engagedPercent ?? 0).rounded()),
             cardsCompleted: Int((state.cardsCompleted ?? 0).rounded()),

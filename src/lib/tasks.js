@@ -90,56 +90,21 @@ export function recurrenceLabel(recurrence) {
   }
 }
 
-// First-run seed — the recurring tasks from the spec.
-export function seedTasks(todayKey = dateKey()) {
-  const today = parse(todayKey)
-  const upcoming = (weekday) => dateKey(onOrAfterWeekday(today, weekday))
-  const id = (s) => `seed-${s}`
-  return [
-    {
-      id: id('creatine'),
-      title: 'After breakfast → creatine + supplements',
-      cat: 'Body',
-      recurrence: { type: 'daily' },
-      nextDue: todayKey,
-      done: false,
-      history: [],
-    },
-    {
-      id: id('room'),
-      title: 'Clean room',
-      cat: 'Life',
-      recurrence: { type: 'weekly', weekday: 6 }, // Saturday
-      nextDue: upcoming(6),
-      done: false,
-      history: [],
-    },
-    {
-      id: id('laundry'),
-      title: 'Laundry',
-      cat: 'Life',
-      recurrence: { type: 'weekly', weekday: 0 }, // Sunday
-      nextDue: upcoming(0),
-      done: false,
-      history: [],
-    },
-    {
-      id: id('car'),
-      title: 'Car check — oil, tires, fluids',
-      cat: 'Life',
-      recurrence: { type: 'everyN', n: 1, unit: 'months' },
-      nextDue: todayKey,
-      done: false,
-      history: [],
-    },
-    {
-      id: id('nap'),
-      title: 'Nap after long run',
-      cat: 'Body',
-      recurrence: { type: 'weekly', weekday: 0 }, // Sunday
-      nextDue: upcoming(0),
-      done: false,
-      history: [],
-    },
-  ]
+/**
+ * First-run seed — DELIBERATELY EMPTY. Do not re-populate.
+ *
+ * This used to seed the author's own errands from the built-for-one era —
+ * creatine, "Clean room", laundry, a car check, "Nap after long run". Every
+ * stranger who installed the app was handed someone else's chores, which is the
+ * fastest possible way to read as generic noise instead of their own conscience.
+ * The product's whole thesis is the opposite: the book takes DICTATION. It never
+ * tells a user what their life contains.
+ *
+ * So a new book opens empty and honest — the deck's day-zero invitation ("your
+ * first entry goes here") carries it, and the user writes their own day. If you
+ * are ever tempted to seed "helpful defaults" here, you are re-introducing the
+ * bug: a life the user didn't write is not their ledger.
+ */
+export function seedTasks() {
+  return []
 }

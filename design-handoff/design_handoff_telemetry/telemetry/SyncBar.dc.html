@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+  <button onClick="{{ press }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--font-clock);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:15px;cursor:pointer">
+    <span style="color:var(--accent);font-size:11px;text-shadow:var(--num-glow)">&#9698;</span>Finish day &#183; Sync &amp; Refactor
+  </button>
+</sc-if>
+<sc-if value="{{ isQueued }}">
+  <button onClick="{{ press }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--font-clock);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--accent);background:var(--surface);border:1px solid var(--accent-deep);border-radius:var(--r-6);padding:15px;cursor:pointer;box-shadow:0 0 14px var(--accent-glow) inset,0 0 10px rgba(0,0,0,.3);text-shadow:var(--num-glow)">
+    &#10003; Refactor queued &#183; deck rebuilds tomorrow
+  </button>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:366,&quot;height&quot;:52},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;idle&quot;,&quot;queued&quot;],&quot;default&quot;:&quot;idle&quot;,&quot;tsType&quot;:&quot;\&quot;idle\&quot; | \&quot;queued\&quot;&quot;},&quot;onPress&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(state: string) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { queued: null };
+  renderVals() {
+    const queued = this.state.queued ?? (this.props.state === "queued");
+    return {
+      isIdle: !queued, isQueued: queued,
+      press: () => {
+        const next = !queued;
+        this.setState({ queued: next });
+        if (this.props.onPress) this.props.onPress(next ? "queued" : "idle");
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

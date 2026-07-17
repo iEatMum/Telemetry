@@ -1,7 +1,7 @@
 // offline-fallback.spec.js — the core resilience contract.
 //
 // LOCKED IN is offline-first and fail-soft: when the AI Architect Edge Function
-// is unreachable, the onboarding submit must NOT hang on "PROCESSING" or blank
+// is unreachable, the onboarding submit must NOT hang on the "Opening the book" screen or blank
 // out — it must swallow the error and drop the user into the live deck rendered
 // by the LOCAL deterministic builder (buildLiveLayout → LayoutHost).
 //
@@ -30,23 +30,26 @@ test('offline submit: Edge Function fails, app falls back to the local live deck
   // Walk the full 7-step diagnostic with AI consent ON so the Architect fires.
   await completeSurvey(page, { consent: true })
 
-  // Submit → PROCESSING appears.
+  // Submit → the opening screen appears.
   await initializeButton(page).click()
-  await expect(page.getByText('PROCESSING', { exact: false })).toBeVisible()
+  await expect(page.getByText('Opening the book', { exact: false })).toBeVisible()
 
-  // The app must escape PROCESSING and land on the live deck (a full redirect to
-  // /?demo=live in this demo build). A generous wait covers the ~1.3s floor.
-  await expect(page).toHaveURL(/demo=live/, { timeout: 15_000 })
+  // The app must escape the opening screen and land on the real gated app at '/'
+  // (RequireSurvey sees the survey we just wrote and passes straight through).
+  // A generous wait covers the ~1.3s opening-screen floor.
+  await expect(page).not.toHaveURL(/onboarding/, { timeout: 15_000 })
 
-  // The deck rendered by the LOCAL deterministic builder. Its signatures:
-  //   • the DailyBriefing date is stamped "<app-day> · live" (buildLiveLayout),
-  //   • the hard-coded "Pulse" (KpiGrid) and "Targets" (GoalProgress) titles.
-  await expect(page.getByText(/\d{4}-\d{2}-\d{2}.*live/)).toBeVisible()
-  await expect(page.getByText('Pulse', { exact: true })).toBeVisible()
-  await expect(page.getByText('Targets', { exact: true })).toBeVisible()
+  // The deck rendered by the LOCAL deterministic builder. A brand-new book
+  // deals the minimal first page, so its signatures are:
+  //   • the "First steps" orientation card (brand-new-only),
+  //   • the block the survey just DICTATED, printed on the heat sheet — proof
+  //     the local forge consumed the answers.
+  await expect(page.getByText('Open the night page')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('First steps', { exact: true })).toBeVisible()
+  await expect(page.getByText('Chem — study block')).toBeVisible()
 
-  // PROCESSING must be gone — we did not get stuck on it.
-  await expect(page.getByText('PROCESSING', { exact: false })).toHaveCount(0)
+  // The opening screen must be gone — we did not get stuck on it.
+  await expect(page.getByText('Opening the book', { exact: false })).toHaveCount(0)
 
   // Proof the failure was real and caught: the Architect Edge Function was
   // actually called (and aborted), and at least one other Supabase read failed.
@@ -62,10 +65,14 @@ test('the live deck itself stays local when the layout fetch errors (500)', asyn
 
   await page.goto('/?demo=live')
 
-  await expect(page.getByText('Pulse', { exact: true })).toBeVisible()
-  await expect(page.getByText(/\d{4}-\d{2}-\d{2}.*live/)).toBeVisible()
+  // A storeless demo boot is a brand-new book → the minimal first page.
+  await expect(page.getByText('First steps', { exact: true })).toBeVisible()
+  await expect(page.getByText('Open the night page')).toBeVisible()
   // Tabs from the local payload are present and navigable.
   await expect(page.getByRole('button', { name: 'Trends' })).toBeVisible()
   await page.getByRole('button', { name: 'Trends' }).click()
-  await expect(page.getByText('Internal Markets')).toBeVisible()
+  await expect(page.getByText('Readiness · 14d')).toBeVisible()
+  // Day-0 honesty (CONSTITUTION M1): an all-zero book has no tape to read, so
+  // the sentiment card must be absent — never a computed score over no data.
+  await expect(page.getByText('Internal Markets')).toHaveCount(0)
 })

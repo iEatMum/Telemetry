@@ -20,10 +20,12 @@ export default {
         surface2: 'var(--surface-2)',
         // Structure
         line: 'var(--line)',
+        linebright: 'var(--line-bright)',
         // Text
         ink: 'var(--text)',
         muted: 'var(--muted)',
-        // Primary action — electric terminal green
+        faint: 'var(--faint)',
+        // Primary action — the lane-red seal of commitment
         accent: 'var(--accent)',
         'accent-deep': 'var(--accent-deep)',
         'accent-ink': 'var(--accent-ink)',
@@ -59,9 +61,10 @@ export default {
         mred: 'var(--m-red)',
       },
       fontFamily: {
-        // Machine-truth: clocks, ledgers, tabular readouts, data labels.
-        clock: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
-        // Human voice: body copy, supportive lines, UI.
+        // The stopwatch face: clocks, ledgers, tabular readouts, splits, totals.
+        // IBM Plex Mono is bundled (main.jsx imports 400/500); SF Mono backstops.
+        clock: ['IBM Plex Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+        // Human voice: body copy, supportive lines, UI — also the intercom.
         sans: [
           '-apple-system',
           'BlinkMacSystemFont',
@@ -71,6 +74,9 @@ export default {
           'system-ui',
           'sans-serif',
         ],
+        // Ceremony: WeeklyReview headlines, Guardian marginalia italic ONLY.
+        // ui-serif = New York on iOS; Georgia backstops non-Apple engines.
+        serif: ['ui-serif', 'New York', 'Source Serif 4', 'Georgia', 'serif'],
       },
       fontSize: {
         // Section label
@@ -83,21 +89,30 @@ export default {
         widest2: '0.18em',
         widest3: '0.2em',
       },
-      // Density: a tighter radius scale de-rounds the whole app toward a
-      // terminal / perps feel. Pills (rounded-full) stay pills.
+      // De-boxing at the token level (Split Ledger): cards print square —
+      // xl/2xl/3xl (the card classes) collapse to 0, while sm→lg stay ≤6px for
+      // tappable controls. Pills (rounded-full) stay pills: the seal, radios,
+      // status dots.
       borderRadius: {
-        sm: '0.1875rem', // 3px
-        DEFAULT: '0.25rem', // 4px
+        sm: '0.125rem', // 2px
+        DEFAULT: '0.1875rem', // 3px
         md: '0.3125rem', // 5px
-        lg: '0.375rem', // 6px
-        xl: '0.4375rem', // 7px
-        '2xl': '0.5rem', // 8px
-        '3xl': '0.625rem', // 10px
+        lg: '0.375rem', // 6px — the control ceiling
+        xl: '0', // cards: square
+        '2xl': '0',
+        '3xl': '0',
         full: '9999px',
+        // Handoff radius tokens (D1). Cards/sections stay square (xl/2xl/3xl→0);
+        // controls take 6px; the bottom-sheet lifts on a single 10px top lip.
+        control: 'var(--radius-control)', // 6px
+        sheet: 'var(--radius-sheet)', // 10px — sheet lip only (rounded-t-sheet)
       },
       boxShadow: {
+        // Print does not glow: every skin sets --accent-glow fully transparent,
+        // so these legacy hooks resolve to nothing without component edits.
         glow: '0 0 24px -4px var(--accent-glow)',
         'glow-sm': '0 0 12px -2px var(--accent-glow)',
+        'glow-inset': 'inset 0 0 18px -6px var(--accent-glow)',
       },
       maxWidth: {
         app: '520px',
@@ -106,6 +121,9 @@ export default {
         // Hold-to-surrender fill
         hold: '1200ms',
         'hold-cancel': '150ms',
+        // Handoff motion tokens: taps/toggles vs sheets/overlays.
+        quick: '140ms',
+        calm: '280ms',
       },
       transitionTimingFunction: {
         hold: 'linear',

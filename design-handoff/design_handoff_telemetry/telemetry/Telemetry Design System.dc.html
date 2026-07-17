@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--font-sans);padding:0 0 80px">
+
+  <div style="position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:11px">
+      <span style="width:10px;height:10px;border-radius:2px;background:var(--accent);box-shadow:0 0 10px var(--accent-glow)"></span>
+      <span style="font-family:var(--font-clock);font-size:16px;letter-spacing:.22em;font-weight:600;color:var(--text)">TELEMETRY</span>
+      <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.14em;color:var(--muted);padding-top:2px">GENERATIVE UI · DESIGN SYSTEM</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-6);padding:3px">
+      <sc-for list="{{ btns }}" as="b" hint-placeholder-count="3">
+        <button onClick="{{ b.on }}" style="font-family:var(--font-clock);font-size:11px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;padding:6px 12px;border-radius:var(--r-4);background:{{ b.bg }};color:{{ b.fg }};box-shadow:{{ b.glow }}">{{ b.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="max-width:1180px;margin:0 auto;padding:0 24px">
+
+    <div style="display:flex;align-items:center;gap:14px;margin:28px 0 8px;flex-wrap:wrap">
+      <span style="font-size:13px;color:var(--muted)">A widget kit for server-driven decks &#8212; JSON in, terminal out. Data, not verdict.</span>
+      <span style="flex:1"></span>
+      <a href="Telemetry Architecture Spec.dc.html" style="font-family:var(--font-clock);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent-deep);border-radius:var(--r-4);padding:7px 12px">Architecture spec &#8599;</a>
+      <a href="Telemetry Proposed Additions.dc.html" style="font-family:var(--font-clock);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:var(--r-4);padding:7px 12px">Proposed additions &#8599;</a>
+    </div>
+
+    <!-- ============ FOUNDATIONS ============ -->
+    <div style="display:flex;align-items:center;gap:12px;margin:34px 0 18px">
+      <span style="font-family:var(--font-clock);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--text)">Foundations</span>
+      <span style="flex:1;height:1px;background:var(--line)"></span>
+      <span style="font-family:var(--font-clock);font-size:10px;color:var(--muted)">01</span>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:24px">
+      <div style="flex:1 1 420px;min-width:300px">
+        <div style="font-family:var(--font-clock);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Themes · token overrides</div>
+        <div style="display:flex;gap:10px;font-family:var(--font-clock);font-size:9px;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;padding-left:2px">
+          <span style="flex:1">bg</span><span style="flex:1">surface</span><span style="flex:1">s-2</span><span style="flex:1">line</span><span style="flex:1.4">accent</span><span style="flex:1">pos</span><span style="flex:1">neg</span><span style="flex:1">warn</span><span style="flex:1">text</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ palettes }}" as="pal" hint-placeholder-count="3">
+            <div data-theme="{{ pal.id }}" style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--font-clock);font-size:11px;letter-spacing:.12em;color:var(--accent)">{{ pal.name }}</span><span style="font-size:11px;color:var(--muted)">{{ pal.note }}</span></div>
+              <div style="display:flex;height:40px;border-radius:var(--r-5);overflow:hidden;border:1px solid var(--line)">
+                <div style="flex:1;background:var(--bg)"></div><div style="flex:1;background:var(--surface)"></div><div style="flex:1;background:var(--surface-2)"></div><div style="flex:1;background:var(--line)"></div><div style="flex:1.4;background:var(--accent)"></div><div style="flex:1;background:var(--pos)"></div><div style="flex:1;background:var(--neg)"></div><div style="flex:1;background:var(--warn)"></div><div style="flex:1;background:var(--text)"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex:1 1 360px;min-width:280px">
+        <div style="font-family:var(--font-clock);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Type · two registers</div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+            <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:46px;line-height:1;font-weight:500;color:var(--accent);text-shadow:0 0 16px var(--accent-glow)">41:07</span>
+            <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.1em;color:var(--muted);text-align:right">font-clock<br>46 / tabular<br>+ glow</span>
+          </div>
+          <div style="height:1px;background:var(--line)"></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+            <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Section Label</span>
+            <span style="font-family:var(--font-clock);font-size:10px;color:var(--muted)">10 / .16em</span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+            <span style="font-size:15px;color:var(--text);max-width:70%">Human voice — sans prose for counsel &amp; notes.</span>
+            <span style="font-family:var(--font-clock);font-size:10px;color:var(--muted)">font-sans 15</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div style="font-family:var(--font-clock);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Primitives</div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px">
+        <sc-for list="{{ prims }}" as="pr" hint-placeholder-count="6">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:150px">
+            <span style="font-family:var(--font-clock);font-size:11px;color:var(--text)">{{ pr.name }}</span>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-height:26px">
+              <sc-if value="{{ pr.isDelta }}" hint-placeholder-val="{{ true }}"><dc-import name="DeltaTag" value="2.3" dir="up" hint-size="60px,18px"></dc-import><dc-import name="DeltaTag" value="-1.4" dir="down" hint-size="60px,18px"></dc-import><dc-import name="DeltaTag" value="0" dir="flat" hint-size="52px,18px"></dc-import></sc-if>
+              <sc-if value="{{ pr.isTri }}"><dc-import name="TriStateBox" status="done" hint-size="24px,24px"></dc-import><dc-import name="TriStateBox" status="missed" hint-size="24px,24px"></dc-import><dc-import name="TriStateBox" status="open" hint-size="24px,24px"></dc-import></sc-if>
+              <sc-if value="{{ pr.isLed }}"><dc-import name="StatusLED" status="LIVE" hint-size="60px,18px"></dc-import><dc-import name="StatusLED" status="LOCAL" hint-size="66px,18px"></dc-import><dc-import name="StatusLED" status="OFFLINE" hint-size="76px,18px"></dc-import></sc-if>
+              <sc-if value="{{ pr.isBar }}"><div style="width:100%;display:flex;flex-direction:column;gap:8px"><dc-import name="BarMeter" value="42" max="60" tone="accent" hint-size="100%,6px"></dc-import><dc-import name="BarMeter" value="52" max="60" tone="pos" hint-size="100%,6px"></dc-import></div></sc-if>
+              <sc-if value="{{ pr.isSpark }}"><dc-import name="Sparkline" tone="accent" hint-size="96px,26px"></dc-import><dc-import name="Sparkline" tone="neg" hint-size="96px,26px"></dc-import></sc-if>
+              <sc-if value="{{ pr.isChip }}"><dc-import name="Chip" label="Focus" active="{{ true }}" hint-size="80px,30px"></dc-import><dc-import name="Chip" label="Faith" active="{{ false }}" hint-size="80px,30px"></dc-import></sc-if>
+              <sc-if value="{{ pr.isCard }}"><div style="width:150px;height:64px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:10px"><span style="font-family:var(--font-clock);font-size:9px;letter-spacing:.12em;color:var(--muted)">SURFACE + LINE<br>R-6 &#183; PAD 14</span></div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ============ WIDGETS ============ -->
+    <div style="display:flex;align-items:center;gap:12px;margin:40px 0 6px">
+      <span style="font-family:var(--font-clock);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--text)">Widgets</span>
+      <span style="flex:1;height:1px;background:var(--line)"></span>
+      <span style="font-family:var(--font-clock);font-size:10px;color:var(--muted)">02 · render registry</span>
+    </div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:20px;max-width:640px">Each widget maps 1:1 to a JSON node <span style="font-family:var(--font-clock);color:var(--text)">{ type, props }</span> the server allow-lists. The prop contract under each is the registry entry.</div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:26px">
+      <sc-for list="{{ widgets }}" as="w" hint-placeholder-count="11">
+        <div style="width:390px;max-width:100%">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px">
+            <span style="font-family:var(--font-clock);font-size:13px;font-weight:500;color:var(--text)">{{ w.name }}</span>
+            <span style="font-family:var(--font-clock);font-size:9px;letter-spacing:.1em;color:var(--accent);border:1px solid var(--accent-deep);border-radius:2px;padding:1px 5px">{{ w.tag }}</span>
+          </div>
+          <dc-import name="WidgetHost" node="{{ w.node }}" hint-size="390px,180px"></dc-import>
+          <div style="margin-top:9px;font-family:var(--font-clock);font-size:10px;line-height:1.55;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-4);padding:9px 11px;white-space:pre-wrap;word-break:break-word">{{ w.contract }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- ============ SCREENS ============ -->
+    <div style="display:flex;align-items:center;gap:12px;margin:40px 0 6px">
+      <span style="font-family:var(--font-clock);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--text)">Screens</span>
+      <span style="flex:1;height:1px;background:var(--line)"></span>
+      <span style="font-family:var(--font-clock);font-size:10px;color:var(--muted)">03 &#183; tab compositions</span>
+    </div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:20px;max-width:640px">Full device frames. Each tab is a JSON deck rendered through <span style="font-family:var(--font-clock);color:var(--text)">WidgetHost</span> inside the shell &#8212; TODAY / TRENDS / MIND are compositions, not routes. Tabs, sync bar, and HELP NOW are live; tap HELP NOW for the OUTLAST IT override.</div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start">
+      <sc-for list="{{ screens }}" as="sc" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <dc-import name="TelemetryApp" tab="{{ sc.tab }}" theme="{{ sc.theme }}" trendsEmpty="{{ sc.empty }}" queued="{{ sc.queued }}" clock="{{ sc.clock }}" hint-size="410px,864px"></dc-import>
+          <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:center">{{ sc.caption }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- ============ CHROME ============ -->
+    <div style="display:flex;align-items:center;gap:12px;margin:44px 0 18px">
+      <span style="font-family:var(--font-clock);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--text)">Chrome &amp; Overlays</span>
+      <span style="flex:1;height:1px;background:var(--line)"></span>
+      <span style="font-family:var(--font-clock);font-size:10px;color:var(--muted)">04</span>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start">
+      <div style="width:390px;max-width:100%">
+        <div style="font-family:var(--font-clock);font-size:13px;font-weight:500;color:var(--text);margin-bottom:9px">StatusStrip</div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:10px 12px">
+          <dc-import name="StatusStrip" status="LOCAL" clock="06:14" hint-size="100%,22px"></dc-import>
+        </div>
+        <div style="margin-top:9px;font-family:var(--font-clock);font-size:10px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-4);padding:9px 11px">{ status:"LIVE"|"LOCAL"|"OFFLINE", clock? }</div>
+      </div>
+
+      <div style="width:230px">
+        <div style="font-family:var(--font-clock);font-size:13px;font-weight:500;color:var(--text);margin-bottom:9px">HelpNowPill</div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:18px;display:flex;justify-content:center">
+          <dc-import name="HelpNowPill" hint-size="150px,44px"></dc-import>
+        </div>
+        <div style="margin-top:9px;font-family:var(--font-clock);font-size:10px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-4);padding:9px 11px">{ onPress? } &#183; one tap from anywhere</div>
+      </div>
+
+      <div style="width:390px;max-width:100%">
+        <div style="font-family:var(--font-clock);font-size:13px;font-weight:500;color:var(--text);margin-bottom:9px">TabStrip</div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);overflow:hidden">
+          <dc-import name="TabStrip" hint-size="100%,46px"></dc-import>
+        </div>
+        <div style="margin-top:9px;font-family:var(--font-clock);font-size:10px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-4);padding:9px 11px">{ tabs:[{ id, label }], active?, onSelect?, showGear? } &#183; server-ordered, horizontally scrollable, active = accent underline</div>
+      </div>
+
+      <div style="width:390px;max-width:100%">
+        <div style="font-family:var(--font-clock);font-size:13px;font-weight:500;color:var(--text);margin-bottom:9px">SyncBar &#8212; two states</div>
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;display:flex;flex-direction:column;gap:10px">
+          <dc-import name="SyncBar" state="idle" hint-size="100%,50px"></dc-import>
+          <dc-import name="SyncBar" state="queued" hint-size="100%,50px"></dc-import>
+        </div>
+        <div style="margin-top:9px;font-family:var(--font-clock);font-size:10px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-4);padding:9px 11px">{ state:"idle"|"queued", onPress? } &#183; pinned bottom &#183; the evening seal &#8212; accent border when queued</div>
+      </div>
+
+      <div style="width:390px;max-width:100%">
+        <div style="font-family:var(--font-clock);font-size:13px;font-weight:500;color:var(--text);margin-bottom:9px">OutlastModal &#8212; behavioral override</div>
+        <div style="position:relative;height:700px;border:1px solid var(--line);border-radius:var(--r-6);overflow:hidden">
+          <dc-import name="OutlastModal" hint-size="100%,100%"></dc-import>
+        </div>
+        <div style="margin-top:9px;font-family:var(--font-clock);font-size:10px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-4);padding:9px 11px">{ minutes?, voiceLine?, outlastedCount?, onClose?(result) } &#183; full-screen, always calm dark &#183; hold-to-surrender sweeps 1.2s L&#8594;R, release cancels &#183; staying costs nothing</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { theme: "terminal" };
+  renderVals() {
+    const themes = [
+      { id: "terminal", label: "Terminal" },
+      { id: "zen", label: "Zen" },
+      { id: "night_ops", label: "Night ops" },
+    ];
+    const btns = themes.map(t => ({
+      id: t.id, label: t.label,
+      on: () => this.setState({ theme: t.id }),
+      bg: this.state.theme === t.id ? "var(--accent)" : "transparent",
+      fg: this.state.theme === t.id ? "var(--accent-ink)" : "var(--muted)",
+      glow: this.state.theme === t.id ? "0 0 12px var(--accent-glow)" : "none",
+    }));
+    const palettes = [
+      { id: "terminal", name: "TERMINAL", note: "electric green · glow ON" },
+      { id: "zen", name: "ZEN", note: "calm light · glow OFF" },
+      { id: "night_ops", name: "NIGHT_OPS", note: "muted after-hours · glow low" },
+    ];
+    const prims = [
+      { name: "DeltaTag", isDelta: true },
+      { name: "TriStateBox", isTri: true },
+      { name: "StatusLED", isLed: true },
+      { name: "BarMeter", isBar: true },
+      { name: "Sparkline", isSpark: true },
+      { name: "Chip", isChip: true },
+      { name: "Card", isCard: true },
+    ];
+    const widgets = [
+      { name: "DailyBriefing", tag: "TODAY", contract: "{ date?, stats:[{ label, value, tone:\"pos\"|\"neg\"|\"warn\"|\"muted\" }], drivers:[{ tone, text }] }" },
+      { name: "ScheduleMatrix", tag: "TODAY", contract: "{ title?, rows:[{ time:\"HH:MM\", block, status:\"hit\"|\"done\"|\"late\"|\"missed\"|\"open\"|\"skip\", impact?:\"high\", delta?:{ value, dir } }] }" },
+      { name: "DeepWorkTimer", tag: "TODAY", contract: "{ label, minutes, at?, highImpact?, note? }" },
+      { name: "GoalProgress", tag: "TODAY", contract: "{ title?, items:[{ label, value, max, right?, tone? }] }" },
+      { name: "KpiGrid", tag: "TRENDS", contract: "{ title?, cols?, items:[{ label, value, unit?, delta?, deltaSuffix?, spark?, sparkTone?, accent? }] }" },
+      { name: "StatRow", tag: "TRENDS", contract: "{ title?, cols?, items:[{ label, value, delta?, deltaSuffix?, accent? }] }" },
+      { name: "BiometricChart", tag: "TRENDS", contract: "{ label, value?, unit?, delta?, tone?, data:number[] }" },
+      { name: "EnergyTrendLine", tag: "TRENDS", contract: "{ label?, unit?, points:[{ t, v }], now?, open?, avg?, ticks?, caption? }" },
+      { name: "MarketSentimentWidget", tag: "TRENDS", contract: "{ label?, status?, sentiment:{ score:0..100 }, tickers:[{ symbol, last, changePct, focus? }] }" },
+      { name: "InsightCard", tag: "MIND", contract: "{ heading?, source?, text, tone?:\"accent\"|\"warn\"|\"neg\" }" },
+      { name: "EmptyState", tag: "TRENDS", contract: "{ label?, hint? } · no-data / awaiting-sync state" },
+    ];
+    const screens = [
+      { tab: "today", theme: "terminal", empty: false, queued: false, clock: "06:14", caption: "TODAY \u00b7 terminal \u00b7 the morning deck" },
+      { tab: "trends", theme: "terminal", empty: false, queued: false, clock: "12:40", caption: "TRENDS \u00b7 terminal \u00b7 analyst face" },
+      { tab: "mind", theme: "night_ops", empty: false, queued: true, clock: "21:52", caption: "MIND \u00b7 night_ops \u00b7 sealed evening" },
+      { tab: "trends", theme: "zen", empty: true, queued: false, clock: "07:02", caption: "TRENDS no-data \u00b7 zen \u00b7 awaiting first sync" },
+    ];
+    const widgetCards = widgets.map(w => Object.assign({}, w, { node: { type: w.name, props: {} } }));
+    return { theme: this.state.theme, btns, palettes, prims, widgets: widgetCards, screens };
+  }
+}
+</script>
+</body>
+</html>

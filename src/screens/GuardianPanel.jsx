@@ -12,6 +12,8 @@ import { useStore } from '../lib/store.jsx'
 import { useDriftSentinel, getInvocations } from '../lib/guardianEngine.js'
 import { stepStats, STEP_LIBRARY } from '../lib/protocolForge.js'
 import { streakDays } from '../lib/dates.js'
+import { useEntitlement } from '../lib/purchases.js'
+import { CoachGate } from '../components/Paywall.jsx'
 import { Card, SectionLabel, LedgerNotice, LifetimePile, BarMeter } from '../components/ui.jsx'
 
 const BAND_TONE = { stable: 'text-pos', watch: 'text-warn', critical: 'text-neg' }
@@ -37,6 +39,10 @@ function VectorRow({ v }) {
 export default function GuardianPanel() {
   const { streak } = useStore()
   const drift = useDriftSentinel()
+  // The drift sentinel + protocol intelligence ARE the coach (M0.1). The
+  // Record stays free — it's the user's own book, never behind the register.
+  // The urge protocol itself is untouched by this gate (safety is free).
+  const { entitled } = useEntitlement()
 
   const wins = streak.urgesSurvived || []
   const resets = streak.resets || []
@@ -59,35 +65,39 @@ export default function GuardianPanel() {
 
   return (
     <div className="space-y-5">
-      {/* Live drift read */}
+      {/* Live drift read — coach-gated */}
       <div>
         <SectionLabel className="mb-2 px-1">Drift sentinel</SectionLabel>
-        <Card>
-          <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
-            <span className={`font-clock text-sm font-semibold uppercase tracking-widest2 ${BAND_TONE[drift?.band] || 'text-muted'}`}>
-              {drift ? drift.band : 'reading…'}
-            </span>
-            {drift?.window?.label && (
-              <span className="text-xs text-muted">watch window {drift.window.label}</span>
-            )}
-          </div>
-          {drift ? (
-            <>
-              <div className="divide-y divide-line/50">
-                {drift.vectors.map((v) => (
-                  <VectorRow key={v.key} v={v} />
-                ))}
-              </div>
-              <p className="border-t border-line px-4 py-3 text-[12px] leading-relaxed text-muted">
-                {BAND_LINE[drift.band]}
-              </p>
-            </>
-          ) : (
-            <div className="px-4 py-3">
-              <LedgerNotice>Assessing today's signals…</LedgerNotice>
+        {!entitled ? (
+          <CoachGate line="The sentinel reads sleep, engagement, and your danger window — and names the drift before it lands." />
+        ) : (
+          <Card>
+            <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
+              <span className={`font-clock text-sm font-semibold uppercase tracking-widest2 ${BAND_TONE[drift?.band] || 'text-muted'}`}>
+                {drift ? drift.band : 'reading…'}
+              </span>
+              {drift?.window?.label && (
+                <span className="text-xs text-muted">watch window {drift.window.label}</span>
+              )}
             </div>
-          )}
-        </Card>
+            {drift ? (
+              <>
+                <div className="divide-y divide-line/50">
+                  {drift.vectors.map((v) => (
+                    <VectorRow key={v.key} v={v} />
+                  ))}
+                </div>
+                <p className="border-t border-line px-4 py-3 text-[12px] leading-relaxed text-muted">
+                  {BAND_LINE[drift.band]}
+                </p>
+              </>
+            ) : (
+              <div className="px-4 py-3">
+                <LedgerNotice>Assessing today's signals…</LedgerNotice>
+              </div>
+            )}
+          </Card>
+        )}
       </div>
 
       {/* The record — permanent piles + the neutral timeline */}
@@ -122,10 +132,13 @@ export default function GuardianPanel() {
         )}
       </div>
 
-      {/* What the forge has learned */}
+      {/* What the forge has learned — coach-gated (the LEARNING is the coach;
+          the urge protocol itself always deals a full hand for free) */}
       <div>
         <SectionLabel className="mb-2 px-1">Protocol intelligence</SectionLabel>
-        {learned.length ? (
+        {!entitled ? (
+          <CoachGate line="Every night-page run teaches the forge which steps hold for you — the next deal adapts." />
+        ) : learned.length ? (
           <Card className="space-y-3 p-4">
             {learned.map((r) => (
               <BarMeter

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="display:flex;align-items:stretch;background:var(--bg);border-bottom:1px solid var(--line)">
+  <div style="flex:1;display:flex;gap:20px;overflow-x:auto;padding:0 16px;scrollbar-width:none">
+    <sc-for list="{{ items }}" as="t" hint-placeholder-count="3">
+      <button onClick="{{ t.select }}" style="flex:none;font-family:var(--font-clock);font-size:12px;letter-spacing:.16em;text-transform:uppercase;background:none;border:none;cursor:pointer;padding:15px 2px 12px;color:{{ t.color }};border-bottom:2px solid {{ t.under }};text-shadow:{{ t.glow }};min-height:44px">{{ t.label }}</button>
+    </sc-for>
+  </div>
+  <sc-if value="{{ showGear }}" hint-placeholder-val="{{ true }}">
+    <button aria-label="Settings" style="flex:none;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);align-self:center">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:48},&quot;tabs&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ id: string; label: string }[]&quot;},&quot;active&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;today&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onSelect&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(id: string) =&gt; void&quot;},&quot;showGear&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const DEF_TABS = [
+  { id: "today", label: "Today" },
+  { id: "trends", label: "Trends" },
+  { id: "mind", label: "Mind" },
+];
+class Component extends DCLogic {
+  state = { active: null };
+  renderVals() {
+    const p = this.props;
+    const tabs = (p.tabs && p.tabs.length ? p.tabs : DEF_TABS);
+    const active = this.state.active ?? p.active ?? tabs[0].id;
+    const items = tabs.map(t => {
+      const on = t.id === active;
+      return {
+        label: t.label,
+        color: on ? "var(--text)" : "var(--muted)",
+        under: on ? "var(--accent)" : "transparent",
+        glow: on ? "var(--text-glow)" : "none",
+        select: () => {
+          this.setState({ active: t.id });
+          if (p.onSelect) p.onSelect(t.id);
+        },
+      };
+    });
+    return { items, showGear: p.showGear !== undefined ? !!p.showGear : true };
+  }
+}
+</script>
+</body>
+</html>

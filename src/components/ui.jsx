@@ -12,14 +12,15 @@
 // ─────────────────────────────────────────────
 
 /**
- * A card surface — the base box every data widget sits on. Sharp-cornered and
- * hairline-bordered for the terminal look (P3.1). Defaults to div; pass `as` to
- * change the tag.
+ * A card region — de-boxed per Split Ledger: no border box, no rounding, one
+ * paper step up from the page, closed by a single bottom hairline (the ledger
+ * rule). Every data widget sits on this. Defaults to div; pass `as` to change
+ * the tag.
  */
 export function Card({ children, className = '', as: Tag = 'div', ...rest }) {
   return (
     <Tag
-      className={`rounded-md border border-line bg-surface ${className}`}
+      className={`border-b border-line bg-surface ${className}`}
       {...rest}
     >
       {children}
@@ -75,8 +76,8 @@ export function Stat({ value, label, accent = false, delta, deltaDir, deltaSuffi
 export function TriStateBox({ state }) {
   if (state === 'missed') {
     return (
-      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border border-dashed border-muted text-muted">
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <span className="flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded border-[1.5px] border-dashed border-muted text-muted">
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <path d="M6 6l12 12M18 6L6 18" />
         </svg>
       </span>
@@ -85,12 +86,12 @@ export function TriStateBox({ state }) {
   const done = state === 'done'
   return (
     <span
-      className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border ${
-        done ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface2'
+      className={`flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded border ${
+        done ? 'border-accent bg-accent text-accent-ink shadow-glow-sm' : 'border-line bg-surface2'
       }`}
     >
       {done && (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 13l4 4L19 7" />
         </svg>
       )}
@@ -135,17 +136,19 @@ export function CheckRow({ state, onCycle, label, tag, action }) {
 // ─────────────────────────────────────────────
 
 /**
- * Pill toggle button. `active` = ink fill / idle = surface-2.
+ * Pill toggle button (handoff contract): ON = pos-soft fill + accent-deep
+ * border + accent text + a glowing 5px dot; OFF = surface-2 + hairline + muted.
  */
 export function Chip({ active, onClick, children, className = '' }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs capitalize transition-colors ${
-        active ? 'bg-ink text-bg' : 'bg-surface2 text-muted'
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-clock text-[11px] uppercase tracking-widest2 transition-colors duration-quick ${
+        active ? 'border-accent-deep bg-pos-soft text-accent' : 'border-line bg-surface2 text-muted'
       } ${className}`}
     >
+      {active && <span aria-hidden className="h-[5px] w-[5px] rounded-full bg-accent shadow-glow-sm" />}
       {children}
     </button>
   )
@@ -288,10 +291,11 @@ export function ConsiderResource({ r }) {
 }
 
 // ─────────────────────────────────────────────
-// Hold-to-surrender button
+// Hold-to-confirm button (the slip-logging ritual)
 // ─────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from 'react'
+import { sealCommit, warmSeal } from '../lib/haptics.js'
 
 const HOLD_MS = 1200
 
@@ -299,18 +303,44 @@ const HOLD_MS = 1200
  * Press-and-hold ritual. A slow filling bar sweeps left→right over HOLD_MS.
  * Only fires `onComplete` if the user holds the full duration.
  * Releasing early resets silently. Deliberate friction — by design.
+ *
+ * Accessible equivalents (WCAG 2.1.1 — the hold is pointer-only by itself):
+ *   • keyboard: hold Space/Enter for the same HOLD_MS (early keyup cancels
+ *     free, same as a pointer release);
+ *   • screen readers / quick taps: a tap under TAP_MS arms a 4s confirm —
+ *     the label flips to the confirm ask (announced via aria-live) and a
+ *     second deliberate activation completes. Two intentional activations
+ *     with a spoken confirm carry the same weight as the 1.2s hold.
  */
-export function HoldButton({ disabled, onComplete, children }) {
-  const [holding, setHolding] = useState(false)
-  const timer = useRef(null)
+const TAP_MS = 350
+const CONFIRM_MS = 4000
 
+// `commit` marks this hold as a COMMITMENT (seal the day, INITIALIZE) → the one
+// sanctioned success haptic fires on completion, and the engine is warmed on
+// press. A hold that logs a SLIP passes commit={false} (the default) and stays
+// silent: the haptic grammar never buzzes the body for a shortfall.
+export function HoldButton({ disabled, onComplete, children, commit = false }) {
+  const [holding, setHolding] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const timer = useRef(null)
+  const confirmTimer = useRef(null)
+  const downAt = useRef(0)
+  const keyHeld = useRef(false)
+
+  function complete() {
+    disarm()
+    if (commit) sealCommit() // one SUCCESS tap on a commit; silence on a slip
+    onComplete()
+  }
   function start() {
     if (disabled || timer.current) return
+    if (commit) warmSeal() // pre-load the haptic bridge so the tap has no lag
+    downAt.current = Date.now()
     setHolding(true)
     timer.current = setTimeout(() => {
       timer.current = null
       setHolding(false)
-      onComplete()
+      complete()
     }, HOLD_MS)
   }
   function cancel() {
@@ -320,16 +350,72 @@ export function HoldButton({ disabled, onComplete, children }) {
       timer.current = null
     }
   }
-  useEffect(() => () => timer.current && clearTimeout(timer.current), [])
+  function armConfirm() {
+    setConfirming(true)
+    clearTimeout(confirmTimer.current)
+    confirmTimer.current = setTimeout(() => setConfirming(false), CONFIRM_MS)
+  }
+  function disarm() {
+    setConfirming(false)
+    clearTimeout(confirmTimer.current)
+  }
+
+  function onPointerDown() {
+    start()
+  }
+  function onPointerUp() {
+    const quick = timer.current && Date.now() - downAt.current < TAP_MS
+    cancel()
+    if (!quick) {
+      disarm()
+      return
+    }
+    // A quick tap: second one inside the confirm window completes; the first
+    // arms the confirm. Longer-but-early releases stay free, exactly as before.
+    if (confirming) complete()
+    else armConfirm()
+  }
+  // Synthetic activations (screen readers fire click with no pointer stream)
+  // walk the same two-step confirm.
+  function onClick(e) {
+    if (disabled || e.detail !== 0 || keyHeld.current) return
+    if (confirming) complete()
+    else armConfirm()
+  }
+  // Keyboard: hold the key for the full duration; preventDefault suppresses
+  // the browser's synthetic click so the confirm path can't double-fire.
+  function onKeyDown(e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return
+    e.preventDefault()
+    if (e.repeat || keyHeld.current) return
+    keyHeld.current = true
+    start()
+  }
+  function onKeyUp(e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return
+    keyHeld.current = false
+    cancel()
+  }
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+      if (confirmTimer.current) clearTimeout(confirmTimer.current)
+    },
+    []
+  )
 
   return (
     <button
       type="button"
       disabled={disabled}
-      onPointerDown={start}
-      onPointerUp={cancel}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
       onPointerLeave={cancel}
       onPointerCancel={cancel}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
       className={`relative w-full overflow-hidden rounded-md py-4 text-center text-sm font-semibold uppercase tracking-wide select-none ${
         disabled ? 'bg-surface2 text-muted' : 'bg-surface2 text-ink'
       }`}
@@ -343,31 +429,44 @@ export function HoldButton({ disabled, onComplete, children }) {
           transition: `width ${holding ? HOLD_MS : 150}ms linear`,
         }}
       />
-      <span className="relative">
-        {children || (holding ? 'Keep holding…' : 'Hold to surrender')}
+      <span aria-live="polite" className="relative">
+        {confirming
+          ? 'Tap again to log it'
+          : children || (holding ? 'Keep holding…' : 'Hold to log the slip')}
       </span>
     </button>
   )
 }
 
 // ─────────────────────────────────────────────
-// HELP NOW pill — global, always one tap away
+// StatusLED — the connectivity truth dot (chrome contract)
 // ─────────────────────────────────────────────
 
 /**
- * The gold HELP NOW pill. Pinned above the tab bar on every face.
- * The urge protocol must be one tap from anywhere — struggle has no schedule.
+ * 7px status dot + mono label. Semantics: LIVE / ON DEVICE = pos (local-first
+ * is the design, not a degradation), LOCAL = warn (a configured backend
+ * running unsynced), OFFLINE = muted and still — silence is content, not an
+ * alarm. Pulses unless OFFLINE.
  */
-export function HelpNowPill({ onPress }) {
+export function StatusLED({ status = 'LIVE', label }) {
+  const key = String(status).toUpperCase()
+  const cssVar =
+    key === 'LIVE' || key === 'ON DEVICE' ? '--led-live' : key === 'OFFLINE' ? '--led-offline' : '--led-local'
+  const still = key === 'OFFLINE'
   return (
-    <button
-      type="button"
-      onClick={onPress}
-      className="flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink shadow-glow-sm"
-    >
-      <span aria-hidden className="text-base leading-none">⚡</span>
-      HELP NOW
-    </button>
+    <span className="flex items-center gap-2">
+      <span
+        aria-hidden
+        className={`h-[7px] w-[7px] flex-none rounded-full ${still ? '' : 'animate-pulse-live'}`}
+        style={{
+          background: `var(${cssVar})`,
+          boxShadow: still ? 'none' : `0 0 8px var(${cssVar})`,
+        }}
+      />
+      <span className="font-clock text-[11px] uppercase tracking-widest2 text-muted">
+        {label || key}
+      </span>
+    </span>
   )
 }
 
@@ -442,19 +541,35 @@ const BAR_TONE = {
   pos: 'bg-pos',
   neg: 'bg-neg',
   warn: 'bg-warn',
+  muted: 'bg-muted',
+  ink: 'bg-ink',
 }
 const ARROW = { up: '▲', down: '▼', flat: '▬' }
 
 /**
  * A small green/red change badge. `value` may be a number (a leading + is added
- * for positives) or a pre-formatted string. `dir` picks the arrow + color.
+ * for positives) or a pre-formatted string. `dir` picks the arrow + color;
+ * omitted (or "auto") with a numeric value, the sign decides. Direction glow
+ * rides the theme tokens (off on Zen, low on Night Ops).
  */
-export function DeltaTag({ value, dir = 'flat', suffix = '' }) {
+export function DeltaTag({ value, dir, suffix = '' }) {
+  const d =
+    dir && dir !== 'auto'
+      ? dir
+      : typeof value === 'number'
+        ? value > 0
+          ? 'up'
+          : value < 0
+            ? 'down'
+            : 'flat'
+        : 'flat'
   const display =
     typeof value === 'number' ? `${value > 0 ? '+' : ''}${value}${suffix}` : value
+  const tone = d === 'up' ? 'pos' : d === 'down' ? 'neg' : 'muted'
+  const glow = d === 'up' ? 'glow-pos' : d === 'down' ? 'glow-neg' : ''
   return (
-    <span className={`font-clock tnum text-[11px] leading-none ${TEXT_TONE[dir === 'up' ? 'pos' : dir === 'down' ? 'neg' : 'muted']}`}>
-      <span aria-hidden>{ARROW[dir] || ARROW.flat}</span> {display}
+    <span className={`font-clock tnum text-[11px] leading-none ${TEXT_TONE[tone]} ${glow}`}>
+      <span aria-hidden>{ARROW[d] || ARROW.flat}</span> {display}
     </span>
   )
 }
@@ -501,26 +616,39 @@ export function Sparkline({
     .map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`)
     .join(' ')
   const area = `${line} L${W} ${H} L0 ${H} Z`
+  // End dot (contract: 1.9r). The viewBox stretches non-uniformly, so a <circle>
+  // would render as an ellipse — the dot is an overlaid element instead, pinned
+  // to the last point's height.
+  const lastY = coords[coords.length - 1][1]
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      style={{ height }}
-      className={`w-full ${TEXT_TONE[tone] || TEXT_TONE.accent} ${className}`}
-      role="img"
-    >
-      {fill && <path d={area} fill="currentColor" stroke="none" opacity="0.12" />}
-      <path
-        d={line}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
+    <div className={`relative ${className}`} style={{ height }}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        style={{ height }}
+        className={`w-full ${TEXT_TONE[tone] || TEXT_TONE.accent}`}
+        role="img"
+      >
+        {fill && <path d={area} fill="currentColor" stroke="none" opacity="0.12" />}
+        <path
+          d={line}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      <span
+        aria-hidden
+        className={`absolute right-0 h-[4px] w-[4px] -translate-y-1/2 translate-x-1/2 rounded-full ${
+          BAR_TONE[tone] || BAR_TONE.accent
+        }`}
+        style={{ top: `${lastY}%` }}
       />
-    </svg>
+    </div>
   )
 }
 
@@ -566,15 +694,17 @@ export function KpiTile({
   accent = false,
 }) {
   const dir = deltaDir || (typeof delta === 'number' ? (delta >= 0 ? 'up' : 'down') : 'flat')
+  // A trial-balance cell, not a box (Split Ledger 07): the parent grid draws
+  // the column/row rules, so this is bare — small-caps label, mono figure.
   return (
-    <Card className="p-3.5">
+    <div className="py-2.5">
       <div className="flex items-start justify-between gap-2">
         <span className="text-[10px] uppercase tracking-widest2 text-muted">{label}</span>
         {delta != null && <DeltaTag value={delta} dir={dir} suffix={deltaSuffix} />}
       </div>
       <div className="mt-2 flex items-baseline gap-1">
         <span
-          className={`font-clock tnum text-3xl leading-none ${accent ? 'text-accent' : 'text-ink'}`}
+          className={`font-clock tnum text-3xl font-medium leading-none ${accent ? 'text-accent' : 'text-ink'}`}
         >
           {value}
         </span>
@@ -585,7 +715,7 @@ export function KpiTile({
           <Sparkline data={spark} tone={sparkTone || (accent ? 'accent' : 'muted')} height={26} />
         </div>
       )}
-    </Card>
+    </div>
   )
 }
 

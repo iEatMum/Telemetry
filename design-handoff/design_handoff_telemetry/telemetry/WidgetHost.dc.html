@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<sc-if value="{{ isDailyBriefing }}" hint-placeholder-val="{{ true }}"><dc-import name="DailyBriefing" date="{{ props.date }}" stats="{{ props.stats }}" drivers="{{ props.drivers }}" hint-size="100%,140px"></dc-import></sc-if>
+<sc-if value="{{ isScheduleMatrix }}"><dc-import name="ScheduleMatrix" title="{{ props.title }}" rows="{{ props.rows }}" hint-size="100%,180px"></dc-import></sc-if>
+<sc-if value="{{ isDeepWorkTimer }}"><dc-import name="DeepWorkTimer" label="{{ props.label }}" minutes="{{ props.minutes }}" at="{{ props.at }}" highImpact="{{ props.highImpact }}" note="{{ props.note }}" hint-size="100%,240px"></dc-import></sc-if>
+<sc-if value="{{ isGoalProgress }}"><dc-import name="GoalProgress" title="{{ props.title }}" items="{{ props.items }}" hint-size="100%,200px"></dc-import></sc-if>
+<sc-if value="{{ isKpiGrid }}"><dc-import name="KpiGrid" title="{{ props.title }}" cols="{{ props.cols }}" items="{{ props.items }}" hint-size="100%,200px"></dc-import></sc-if>
+<sc-if value="{{ isStatRow }}"><dc-import name="StatRow" title="{{ props.title }}" cols="{{ props.cols }}" items="{{ props.items }}" hint-size="100%,110px"></dc-import></sc-if>
+<sc-if value="{{ isBiometricChart }}"><dc-import name="BiometricChart" label="{{ props.label }}" value="{{ props.value }}" unit="{{ props.unit }}" delta="{{ props.delta }}" tone="{{ props.tone }}" data="{{ props.data }}" hint-size="100%,150px"></dc-import></sc-if>
+<sc-if value="{{ isEnergyTrendLine }}"><dc-import name="EnergyTrendLine" label="{{ props.label }}" unit="{{ props.unit }}" points="{{ props.points }}" now="{{ props.now }}" open="{{ props.open }}" avg="{{ props.avg }}" ticks="{{ props.ticks }}" caption="{{ props.caption }}" hint-size="100%,210px"></dc-import></sc-if>
+<sc-if value="{{ isMarketSentiment }}"><dc-import name="MarketSentimentWidget" label="{{ props.label }}" status="{{ props.status }}" sentiment="{{ props.sentiment }}" tickers="{{ props.tickers }}" hint-size="100%,320px"></dc-import></sc-if>
+<sc-if value="{{ isInsightCard }}"><dc-import name="InsightCard" heading="{{ props.heading }}" source="{{ props.source }}" text="{{ props.text }}" tone="{{ props.tone }}" hint-size="100%,150px"></dc-import></sc-if>
+<sc-if value="{{ isEmptyState }}"><dc-import name="EmptyState" label="{{ props.label }}" hint="{{ props.hint }}" hint-size="100%,150px"></dc-import></sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:160},&quot;node&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ type: string; props: object }&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const node = this.props.node || {};
+    const type = node.type;
+    return {
+      props: node.props || {},
+      isDailyBriefing: type === "DailyBriefing",
+      isScheduleMatrix: type === "ScheduleMatrix",
+      isDeepWorkTimer: type === "DeepWorkTimer",
+      isGoalProgress: type === "GoalProgress",
+      isKpiGrid: type === "KpiGrid",
+      isStatRow: type === "StatRow",
+      isBiometricChart: type === "BiometricChart",
+      isEnergyTrendLine: type === "EnergyTrendLine",
+      isMarketSentiment: type === "MarketSentimentWidget",
+      isInsightCard: type === "InsightCard",
+      isEmptyState: type === "EmptyState",
+    };
+  }
+}
+</script>
+</body>
+</html>

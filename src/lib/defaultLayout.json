@@ -44,9 +44,9 @@
             "title": "Pulse",
             "cols": 2,
             "items": [
-              { "label": "Wake Streak", "value": "23", "unit": "days", "delta": 12, "deltaSuffix": "%", "accent": true, "spark": [2, 3, 3, 5, 4, 6, 7, 8, 8, 11] },
-              { "label": "Deep Work", "value": "4.5", "unit": "hrs", "delta": 18, "deltaSuffix": "%", "accent": true, "spark": [4, 6, 5, 7, 6, 8, 5, 9, 7, 10] },
-              { "label": "Discipline", "value": "92", "unit": "%", "delta": -3, "deltaSuffix": "%", "sparkTone": "neg", "spark": [9, 8, 8, 6, 7, 5, 5, 4, 3, 3] },
+              { "label": "Wake Streak", "value": "23", "unit": "days", "delta": 12, "deltaSuffix": "%", "spark": [2, 3, 3, 5, 4, 6, 7, 8, 8, 11] },
+              { "label": "Deep Work", "value": "4.5", "unit": "hrs", "delta": 18, "deltaSuffix": "%", "spark": [4, 6, 5, 7, 6, 8, 5, 9, 7, 10] },
+              { "label": "Discipline", "value": "92", "unit": "%", "delta": -3, "deltaSuffix": "%", "spark": [9, 8, 8, 6, 7, 5, 5, 4, 3, 3] },
               { "label": "Sleep", "value": "7.2", "unit": "hrs", "delta": 5, "deltaSuffix": "%", "spark": [5, 5, 6, 5, 6, 5, 6, 6, 5, 6] }
             ]
           }
@@ -57,8 +57,6 @@
           "config": {
             "title": "Targets",
             "items": [
-              { "label": "Monthly income", "value": 2400, "max": 3500, "right": "$2,400 / $3,500", "tone": "accent" },
-              { "label": "Weekly mileage", "value": 28, "max": 35, "right": "28 / 35 mi", "tone": "pos" },
               { "label": "Readiness", "value": 4, "max": 5, "right": "4 / 5", "tone": "pos" },
               { "label": "Recovery debt", "value": 2.5, "max": 5, "right": "elevated", "tone": "warn" }
             ]
@@ -80,6 +78,16 @@
       "key": "trends",
       "label": "Trends",
       "blocks": [
+        {
+          "type": "InsightCard",
+          "id": "trend-counsel",
+          "config": {
+            "heading": "Counsel",
+            "source": "pattern · late phone-down",
+            "text": "Three of the last five nights the phone went down late. That's not a character flaw, it's a cue gap. Put the charger outside the bedroom tonight — the distance does the work willpower won't.",
+            "tone": "warn"
+          }
+        },
         {
           "type": "EnergyTrendLine",
           "id": "trend-energy",
@@ -110,20 +118,6 @@
               { "t": "7p", "v": 66 },
               { "t": "8p", "v": 55 },
               { "t": "9p", "v": 41 }
-            ]
-          }
-        },
-        {
-          "type": "MarketSentimentWidget",
-          "id": "trend-sentiment",
-          "config": {
-            "label": "Market Sentiment",
-            "status": "Live",
-            "sentiment": { "score": 72 },
-            "tickers": [
-              { "symbol": "BTC", "last": "67,420", "changePct": 2.4 },
-              { "symbol": "S&P 500", "last": "5,210", "changePct": -0.6 },
-              { "symbol": "My Focus", "last": "92", "changePct": 8.0, "focus": true }
             ]
           }
         },
@@ -160,34 +154,18 @@
             "unit": "% avg",
             "delta": -3,
             "deltaSuffix": "%",
-            "tone": "neg",
+            "tone": "warn",
             "data": [95, 94, 92, 93, 90, 91, 88, 90, 87, 89, 86, 88, 90, 89]
-          }
-        }
-      ]
-    },
-    {
-      "key": "mind",
-      "label": "Mind",
-      "blocks": [
-        {
-          "type": "InsightCard",
-          "id": "mind-counsel",
-          "config": {
-            "heading": "Counsel",
-            "source": "pattern · late phone-down",
-            "text": "Three of the last five nights the phone went down late. That's not a character flaw, it's a cue gap. Put the charger outside the bedroom tonight — the distance does the work willpower won't.",
-            "tone": "warn"
           }
         },
         {
           "type": "StatRow",
-          "id": "mind-stats",
+          "id": "trend-stats",
           "config": {
             "title": "This week",
             "cols": 3,
             "items": [
-              { "label": "Sprints", "value": "18", "delta": 3, "accent": true },
+              { "label": "Sprints", "value": "18", "delta": 3 },
               { "label": "Clean days", "value": "23", "delta": 7 },
               { "label": "Best streak", "value": "31" }
             ]

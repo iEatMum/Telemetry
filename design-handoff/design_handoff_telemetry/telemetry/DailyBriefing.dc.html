@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;font-family:var(--font-sans)">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Daily Briefing</span>
+    <span style="font-family:var(--font-clock);font-size:11px;letter-spacing:.06em;color:var(--muted)">{{ date }}</span>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:1px;margin-bottom:14px;border:1px solid var(--line);border-radius:var(--r-5);overflow:hidden;background:var(--line)">
+    <sc-for list="{{ stats }}" as="stat" hint-placeholder-count="3">
+      <div style="flex:1 1 0;min-width:80px;background:var(--surface-2);padding:9px 11px 10px">
+        <div style="font-family:var(--font-clock);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">{{ stat.label }}</div>
+        <div style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:20px;font-weight:500;line-height:1;color:{{ stat.color }};text-shadow:{{ stat.glow }}">{{ stat.value }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <sc-for list="{{ drivers }}" as="d" hint-placeholder-count="2">
+      <div style="display:flex;gap:8px;align-items:baseline">
+        <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.08em;color:{{ d.color }};flex:none;padding-top:1px;font-weight:500">AI:</span>
+        <span style="font-size:13px;line-height:1.42;color:var(--text)">{{ d.text }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:238},&quot;date&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;MON · 06:14&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;stats&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ label: string; value: string; tone: \&quot;pos\&quot; | \&quot;neg\&quot; | \&quot;warn\&quot; | \&quot;muted\&quot; | \&quot;accent\&quot; }[]&quot;},&quot;drivers&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ tone: string; text: string }[]&quot;}}">
+const DEFAULT_STATS = [
+  { label: "STREAK", value: "41d", tone: "accent" },
+  { label: "FOCUS", value: "3.2h", tone: "pos" },
+  { label: "DRIFT", value: "18m", tone: "warn" },
+];
+const DEFAULT_DRIVERS = [
+  { tone: "pos", text: "Sleep debt cleared \u2014 cortisol curve is clean. Attack the hard block first." },
+  { tone: "warn", text: "Two late starts logged this week. Protect the 07:00 anchor." },
+];
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const toneC = { pos: "var(--pos)", neg: "var(--neg)", warn: "var(--warn)", muted: "var(--text)", accent: "var(--accent)" };
+    const toneG = { pos: "var(--pos-glow)", neg: "var(--neg-glow)", warn: "var(--warn-glow)", muted: "none", accent: "var(--num-glow)" };
+    const stats = (p.stats && p.stats.length ? p.stats : DEFAULT_STATS).map(s => ({
+      label: s.label, value: s.value,
+      color: toneC[s.tone] || "var(--text)", glow: toneG[s.tone] || "none",
+    }));
+    const drivers = (p.drivers && p.drivers.length ? p.drivers : DEFAULT_DRIVERS).map(d => ({
+      text: d.text, color: toneC[d.tone] || "var(--accent)",
+    }));
+    return { stats, drivers, date: p.date || "MON \u00b7 06:14" };
+  }
+}
+</script>
+</body>
+</html>

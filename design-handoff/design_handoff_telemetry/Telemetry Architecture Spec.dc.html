@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="100%,100%">
+
+  <div slot="header" style="display:flex;justify-content:space-between;align-items:baseline;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:#8a948c;padding-bottom:6px">
+    <span>Telemetry &#183; Architectural Design Spec</span>
+    <span>v1.0 &#183; Binding</span>
+  </div>
+
+  <h1 style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:27px;font-weight:650;letter-spacing:-.01em;color:#141d17;margin:0 0 6px">Telemetry &#8212; Architectural Design Spec</h1>
+  <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;letter-spacing:.05em;color:#5f6a63;margin:0 0 14px">v1.0 &#183; 02 JUL 2026 &#183; STATUS: BINDING FOR FINAL VISUAL POLISH</div>
+  <div style="font-family:-apple-system,sans-serif;font-size:12.5px;line-height:1.55;color:#3c463f;border:1px solid #d9ded6;border-radius:4px;padding:10px 12px;margin:0 0 22px;display:grid;grid-template-columns:110px 1fr;gap:4px 12px">
+    <span style="font-family:ui-monospace,Menlo,monospace;font-size:9.5px;letter-spacing:.14em;color:#8a948c;padding-top:2px">SYNTHESIZES</span>
+    <span>LOCKED IN design context (the doctrine) &#215; Telemetry generative widget kit (the instrument) &#215; the behavior engines.</span>
+    <span style="font-family:ui-monospace,Menlo,monospace;font-size:9.5px;letter-spacing:.14em;color:#8a948c;padding-top:2px">CODE SEEN</span>
+    <span><b>toneEngine.js</b> (active, quoted). <b>guardianEngine.js / protocolForge.js / InitialSurvey.jsx</b> were referenced but not attached &#8212; every assumption about them is flagged <span style="font-family:ui-monospace,Menlo,monospace;color:#b7790a">&#9888; VERIFY</span> in &#167;10, never silently invented.</span>
+  </div>
+
+  <!-- 0 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:26px 0 12px">&#167;0 &#183; The ruling principle</h2>
+  <p style="font-family:-apple-system,sans-serif;font-size:13.5px;line-height:1.6;color:#2a332c;margin:0 0 10px"><b>LOCKED IN is the doctrine; Telemetry is the instrument.</b> The perps-terminal aesthetic is a skin over the same psychology &#8212; the user now reads himself as a market instead of a pool, but the market must obey the pool's rules. Where the terminal look and the psychology collide, <b>the psychology wins, every time</b>. This is the tiebreaker for every ruling in &#167;3.</p>
+  <p style="font-family:-apple-system,sans-serif;font-size:13.5px;line-height:1.6;color:#2a332c;margin:0 0 10px">Two laws from <span style="font-family:ui-monospace,Menlo,monospace;font-size:12px">toneEngine.js</span> are marked binding in the code itself and bind this spec too:</p>
+  <ol style="font-family:-apple-system,sans-serif;font-size:13px;line-height:1.6;color:#2a332c;margin:0 0 0;padding-left:22px">
+    <li style="margin-bottom:6px"><b>Post-slip copy is one voice for all profiles.</b> Loss framing protects a streak; it never indicts a broken one. No design surface may re-introduce profile branching after a slip.</li>
+    <li><b>Severity shifts register, not volume.</b> Escalation changes how a line reads, never how many surfaces or notifications fire. guardianEngine caps notifications at one per app-day; no visual pattern may imply more.</li>
+  </ol>
+
+  <!-- 1 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;1 &#183; System map &#8212; how a pixel gets made</h2>
+  <div style="display:flex;align-items:stretch;gap:0;margin:0 0 12px;break-inside:avoid">
+    <div style="flex:1;border:1px solid #c9d1c9;border-radius:4px;padding:8px 9px;background:#f4f7f2"><div style="font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.12em;color:#0b9c5a;margin-bottom:3px">01 PROFILE</div><div style="font-family:-apple-system,sans-serif;font-size:11px;line-height:1.45;color:#2a332c">InitialSurvey types the motivational engine &#8594; <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">streakModel</span>: avoidance &#183; accumulation &#183; engagement</div></div>
+    <div style="align-self:center;font-family:ui-monospace,Menlo,monospace;color:#8a948c;padding:0 4px">&#8594;</div>
+    <div style="flex:1;border:1px solid #c9d1c9;border-radius:4px;padding:8px 9px;background:#f4f7f2"><div style="font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.12em;color:#0b9c5a;margin-bottom:3px">02 STATE</div><div style="font-family:-apple-system,sans-serif;font-size:11px;line-height:1.45;color:#2a332c">guardianEngine reads signals &#8594; severity (CALM &#183; WATCH &#183; CRITICAL) + the 1/day notification budget</div></div>
+    <div style="align-self:center;font-family:ui-monospace,Menlo,monospace;color:#8a948c;padding:0 4px">&#8594;</div>
+    <div style="flex:1;border:1px solid #c9d1c9;border-radius:4px;padding:8px 9px;background:#f4f7f2"><div style="font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.12em;color:#0b9c5a;margin-bottom:3px">03 FORGE</div><div style="font-family:-apple-system,sans-serif;font-size:11px;line-height:1.45;color:#2a332c">protocolForge composes the day &#8594; a JSON deck: tabs of allow-listed <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">{type, props}</span> nodes</div></div>
+    <div style="align-self:center;font-family:ui-monospace,Menlo,monospace;color:#8a948c;padding:0 4px">&#8594;</div>
+    <div style="flex:1;border:1px solid #c9d1c9;border-radius:4px;padding:8px 9px;background:#f4f7f2"><div style="font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.12em;color:#0b9c5a;margin-bottom:3px">04 VOICE</div><div style="font-family:-apple-system,sans-serif;font-size:11px;line-height:1.45;color:#2a332c">toneEngine fills the copy props &#8594; <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">voice(profile, slot, params)</span> per profile, register-shifted per theme</div></div>
+    <div style="align-self:center;font-family:ui-monospace,Menlo,monospace;color:#8a948c;padding:0 4px">&#8594;</div>
+    <div style="flex:1;border:1px solid #0b9c5a;border-radius:4px;padding:8px 9px;background:#eaf5ee"><div style="font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.12em;color:#0b9c5a;margin-bottom:3px">05 RENDER</div><div style="font-family:-apple-system,sans-serif;font-size:11px;line-height:1.45;color:#2a332c">React/Capacitor shell &#8594; WidgetHost registry &#8594; the 11 Telemetry widgets inside the tab shell</div></div>
+  </div>
+  <p style="font-family:-apple-system,sans-serif;font-size:13px;line-height:1.6;color:#2a332c;margin:0 0 6px"><b>The registry is the only path to pixels.</b> Engines produce <i>props and strings</i>, never markup; the client renders only the 11 allow-listed types (plus chrome). This is a safety property, not just an architecture: generated copy can never smuggle in a UI the hard rules haven't audited &#8212; a new surface requires a new registry entry, which requires a &#167;7 row and a hard-rules pass.</p>
+
+  <!-- 2 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;2 &#183; Doctrine map &#8212; what carried, what transformed, what's new</h2>
+  <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.5;color:#2a332c">
+    <thead><tr>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:24%">LOCKED IN (DOCTRINE)</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:28%">TELEMETRY (INSTRUMENT)</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17">STATUS &#183; NOTE</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">The hard rules (&#167;7 of the brief)</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Carried verbatim, re-audited in &#167;3</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#0b9c5a">KEPT.</b> Overrides aesthetics, including the new one.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Witnessed = mono &#183; claimed = sans</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">font-clock</span> (machine truth) &#183; <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">font-sans</span> (human voice)</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#0b9c5a">KEPT.</b> Same split, renamed. Tabular figures everywhere numeric.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Miss = neutral grey/dashed, never red</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">ScheduleMatrix <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">missed</span> = dashed muted &#10005;; TriStateBox same</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#0b9c5a">KEPT.</b> Already true in the kit; &#167;3 R2 fences it against perps red.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Friction inversion (help weightless, attesting ceremonial)</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">HELP NOW one tap everywhere; OUTLAST IT hold-to-surrender; Sync &amp; Refactor as the evening seal</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#0b9c5a">KEPT.</b> The hold gesture <i>moved</i> &#8212; see R5.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Gold rule: one accent, earned, 3 uses only</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Electric green <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">--accent #16f08b</span> + semantic <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">--pos/--neg/--warn</span></td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#b7790a">TRANSFORMED</b> &#8594; the accent-discipline law, R1/R2.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Three fixed bottom tabs + sub-views</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Server-driven top tab strip; TODAY / TRENDS / MIND are <i>compositions</i>, not routes</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#b7790a">TRANSFORMED</b> &#8594; R6. Morning&#8594;TODAY, Examen&#8594;MIND + Sync bar, Streak/Sprint absorb into widgets.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Scoreboard clock &#183; lifetime piles</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">DailyBriefing streak stat &#183; DeepWorkTimer (the accent anchor) &#183; StatRow lifetime row in MIND</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#b7790a">TRANSFORMED</b> &#8594; R4 keeps lifetime piles dominant at day-0.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Offerings &#8212; spiritual life, un-scored</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Opt-in faith module inside MIND; position-only, no metrics</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#b7790a">TRANSFORMED</b> &#8594; R3. Violations found in kit demo data &#8212; fixed (&#167;9).</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">One user, one voice</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Three motivational profiles &#215; three themes; post-slip collapses to one voice</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#141d17">NEW.</b> Profile picks framing; theme shifts register; layout adapts &#8212; &#167;5.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">&#8212;</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">TRENDS &#8212; the analyst face (KPIs, sentiment, energy curve)</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><b style="color:#141d17">NEW.</b> Legal only because it reads <i>conditions</i>, never worth &#8212; R7.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 3 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;3 &#183; Conflict rulings</h2>
+  <p style="font-family:-apple-system,sans-serif;font-size:12.5px;line-height:1.55;color:#4a534c;margin:0 0 12px">Each ruling is final unless a &#9888; item in &#167;10 contradicts it when the missing code is reconciled.</p>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:10px;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R1</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">Gold rule vs. terminal green &#8212; the accent-discipline law</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Conflict:</b> LOCKED IN permits its accent in exactly 3 places; a perps terminal splashes green everywhere. <b>Ruling:</b> green-as-<i>semantic-direction</i> (<span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">--pos</span>) is data and may appear wherever data moves up. Green-as-<i>reward</i> (<span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">--accent</span> fills, glows, buttons) keeps the scarcity law: the day's anchor (DeepWorkTimer), the single primary action per surface, the active tab underline, and HELP NOW. Nothing else earns an accent fill. <b>Why:</b> if the accent is everywhere, attention has no price; the anchor block must remain the brightest thing he owns.</div>
+  </div>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:10px;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R2</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">Perps red vs. "never a red loss state"</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Conflict:</b> strict green-up/red-down semantics vs. the founding ban on red failure states. <b>Ruling:</b> <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">--neg</span> is a <i>market direction</i>, legal only on measures of external conditions (screen time up, HRV down, a late delta). It is <b>forbidden</b> on: the slip close screen, missed schedule rows, any streak number, any sentence whose subject is the user. A missed block is muted and dashed; a reset renders in accent-on-dark calm ("data, not verdict"); <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">urge.slipped</span> never inherits drift styling. <b>Why:</b> red on the self is shame; red on a ticker is weather. The type system enforces the difference: verdicts about the person never take tone props.</div>
+  </div>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:10px;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R3</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">Faith content in a metrics app</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Conflict:</b> Telemetry quantifies everything; the doctrine forbids scoring the spiritual. <b>Ruling:</b> spiritual items may never appear as tickers, progress bars, KPI cells, or verdicted schedule rows. The faith module is <b>opt-in</b> (survey + settings), renders only inside MIND as an un-scored card (verse &#183; reading position &#183; a cue line), and carries the framing "offered, not performed." Three violations existed in the kit's demo data (FAITH ticker with +15%, a Scripture-streak progress bar, a verdicted scripture block) &#8212; <b>corrected in the kit</b>, see &#167;9. <b>Why:</b> the un-scored surface is the doctrine's proof that the app measures behavior, not the soul.</div>
+  </div>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:10px;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R4</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">Streak clock vs. profile psychology &#8212; composition adapts, widgets don't</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Conflict:</b> the old design had one sacred scoreboard; toneEngine proves the same number motivates one profile and wounds another. <b>Ruling:</b> the widget set is shared; the <i>forge reorders the deck per profile</i> (&#167;5) and toneEngine picks the framing. Day-0 override for <b>all</b> profiles: the lifetime StatRow is auto-promoted to slot 1 of TODAY so a reset never renders 0 as the dominant number <span style="font-family:ui-monospace,Menlo,monospace;color:#b7790a;font-size:10.5px">&#9888; guardianEngine post-reset deck rule, verify</span>. <b>Why:</b> this is the generative payoff &#8212; server-driven UI lets layout itself be therapeutic, not just copy.</div>
+  </div>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:10px;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R5</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">The hold gesture &#8212; who pays the friction in OUTLAST IT</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Conflict:</b> LOCKED IN's press-and-hold is ceremonial attestation (Handover); Telemetry's brief puts a 1.2s hold-to-surrender inside the urge override. <b>Ruling:</b> both stand, because both charge the <i>costly</i> path: in the evening seal, the hold attests; in OUTLAST IT, the hold is the price of giving in &#8212; staying costs nothing (releasing early cancels), surrendering costs 1.2 deliberate seconds with a slow L&#8594;R sweep and no color flash. On completion the screen goes to the one-voice <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">urge.slipped</span> close: calm, muted, next-rep. <b>Why:</b> friction inversion is the product's signature move; the terminal skin just renders the price as a filling bar.</div>
+  </div>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:10px;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R6</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">Fixed tabs + sub-views vs. server-driven tabs</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Conflict:</b> the old IA hid depth under Morning sub-views; the new shell has no nested navigation. <b>Ruling:</b> depth arrives as <i>forged tabs</i>, never pushed routes: the weekly Sunday Debrief becomes a server-pushed REVIEW tab on Sundays; Sprint's cockpit is the DeepWorkTimer widget going fullscreen while running (hides deck, tab strip stays); Streak's calendar and Money/Train detail are TRENDS compositions. Back = tab switch; the strip never exceeds ~5 tabs <span style="font-family:ui-monospace,Menlo,monospace;color:#b7790a;font-size:10.5px">&#9888; forge tab budget, verify</span>. <b>Why:</b> one navigation idea, zero hamburger drawers, and the calm three-face default survives &#8212; extra faces exist only on the days they earn their place.</div>
+  </div>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:10px;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R7</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">"BEARISH" about a person</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Conflict:</b> MarketSentimentWidget scores sentiment 0&#8211;100; a low score could read as a verdict on him. <b>Ruling:</b> Internal Markets reads <i>conditions</i> &#8212; sleep, screen load, schedule drift &#8212; never the person. The sentiment score maps from guardianEngine severity; sub-40 copy uses weather framing ("conditions are stacked", from <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">drift.critical</span>), and the widget label never contains "you". WATCH renders InsightCard <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">tone:"warn"</span>, CRITICAL <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">tone:"neg"</span> &#8212; legal under R2 because a forecast is weather, not verdict; the post-slip screen may never reuse this styling. <b>Why:</b> toneEngine already writes these lines as forecasts; the visual layer must not re-personalize them.</div>
+  </div>
+
+  <div style="border:1px solid #d9ded6;border-radius:4px;margin-bottom:0;break-inside:avoid">
+    <div style="display:flex;gap:10px;align-items:baseline;padding:8px 11px;border-bottom:1px solid #e2e6df;background:#f4f7f2"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:#0b9c5a;font-weight:600">R8</span><span style="font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:600;color:#141d17">PWA doctrine on a Capacitor native shell</span></div>
+    <div style="padding:9px 11px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c"><b>Ruling:</b> native capabilities are adopted only where they serve the doctrine: real safe-area insets; local notifications carrying <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">warn.notification</span> (one per day, theme-registered titles); a single soft haptic tick when a hold completes (never celebratory patterns); HealthKit read-only for biometrics. <b>Forbidden regardless of platform:</b> app icon badges, red dots, streak widgets on the lock screen (a reset would broadcast), push escalation. <b>Why:</b> the platform got stronger; the notification budget didn't.</div>
+  </div>
+
+  <!-- 4 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;4 &#183; The shell &#8212; navigation blueprint (iPhone, 390&#215;844)</h2>
+  <div style="display:flex;gap:16px;break-inside:avoid">
+    <div style="flex:0 0 205px;border:1.5px solid #141d17;border-radius:14px;padding:8px;background:#fbfcfa">
+      <div style="border:1px solid #d9ded6;border-radius:8px;overflow:hidden;font-family:ui-monospace,Menlo,monospace;font-size:8.5px;letter-spacing:.1em;color:#3c463f">
+        <div style="padding:7px 9px 5px;display:flex;justify-content:space-between;background:#f4f7f2"><span style="color:#0b9c5a">&#9679; LOCAL</span><span>06:14</span></div>
+        <div style="padding:6px 9px;border-top:1px solid #e2e6df;display:flex;gap:9px;background:#f4f7f2;align-items:center"><span style="color:#141d17;border-bottom:2px solid #0b9c5a;padding-bottom:2px">TODAY</span><span style="color:#8a948c">TRENDS</span><span style="color:#8a948c">MIND</span><span style="margin-left:auto;color:#8a948c">&#9881;</span></div>
+        <div style="padding:8px 9px;display:flex;flex-direction:column;gap:5px;background:#ffffff">
+          <div style="border:1px solid #d9ded6;border-radius:4px;padding:5px 7px;color:#5f6a63">DailyBriefing</div>
+          <div style="border:1px solid #d9ded6;border-radius:4px;padding:5px 7px;color:#5f6a63">ScheduleMatrix</div>
+          <div style="border:1px solid #0b9c5a;border-radius:4px;padding:5px 7px;color:#0b9c5a">DeepWorkTimer &#9670;</div>
+          <div style="border:1px solid #d9ded6;border-radius:4px;padding:5px 7px;color:#5f6a63">GoalProgress</div>
+          <div style="display:flex;justify-content:flex-end"><span style="background:#0b9c5a;color:#fff;border-radius:999px;padding:4px 8px">HELP NOW</span></div>
+        </div>
+        <div style="padding:7px 9px;border-top:1px solid #e2e6df;background:#f4f7f2;color:#3c463f">&#9698; FINISH DAY &#183; SYNC &amp; REFACTOR</div>
+        <div style="padding:5px 9px;display:flex;justify-content:center;background:#f4f7f2"><span style="width:52px;height:3px;border-radius:99px;background:#c9d1c9"></span></div>
+      </div>
+    </div>
+    <div style="flex:1;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c">
+      <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px">
+        <li><b>StatusStrip</b> (fixed, in the safe area): LED + LOCAL / LIVE / OFFLINE + clock. Connectivity truth only &#8212; <b>never</b> guardian severity; an ambient threat light would make the whole app an anxiety dashboard.</li>
+        <li><b>Generative tab strip</b> (sticky): server-ordered tabs, mono uppercase, active = accent underline; horizontally scrollable when the forge pushes extra faces (R6). Settings gear top-right, 44&#215;44, below the notch.</li>
+        <li><b>Deck scroll</b>: the tab's JSON children via WidgetHost; content max 520px centered; <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">gap-widget</span> rhythm; one accent anchor per deck (R1).</li>
+        <li><b>HELP NOW pill</b>: floats bottom-right above the sync bar on every tab; opens OUTLAST IT in one tap. The only element that may cover content &#8212; a short scrim fade sits behind it.</li>
+        <li><b>Sync &amp; Refactor bar</b> (pinned): state A "&#9698; Finish day &#183; Sync &amp; Refactor"; state B "&#10003; Refactor queued &#183; deck rebuilds tomorrow" with accent border. This is the Examen seal &#8212; it charges the ceremonial press (R5) and carries the <span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px">step.commit</span> line as its confirm framing.</li>
+        <li><b>Overlays</b> (outside the tab router): OUTLAST IT full-screen; Settings sheet; the queued-refactor toast. Nothing else may take over the screen.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;5 &#183; Profile-adaptive composition (the forge's layout doctrine)</h2>
+  <p style="font-family:-apple-system,sans-serif;font-size:12.5px;line-height:1.55;color:#4a534c;margin:0 0 10px">Same widgets, different order and copy. Deck order is forged server-side per <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px">streakModel</span>; the client never branches on profile. Sample lines below are from <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px">toneEngine.js</span> verbatim.</p>
+  <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.5;color:#2a332c">
+    <thead><tr>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:14%">PROFILE</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:33%">TODAY DECK ORDER</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:20%">WHAT LEADS &amp; WHY</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17">VOICE SAMPLE (urge.open)</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#141d17">avoidance</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">DailyBriefing (streak stat first, accent) &#8594; ScheduleMatrix &#8594; DeepWorkTimer &#8594; GoalProgress</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">The unbroken chain, visible before anything can threaten it.</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-style:italic;color:#3c463f">"Day {days} stands as long as you stand."</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#141d17">accumulation</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">StatRow (lifetime piles, accent) &#8594; DailyBriefing &#8594; ScheduleMatrix &#8594; DeepWorkTimer</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Totals that only climb; today is the next deposit.</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-style:italic;color:#3c463f">"{wins} outlasted already &#8212; this is the setup for the next one."</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#141d17">engagement</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">DeepWorkTimer (next block, accent) &#8594; ScheduleMatrix &#8594; DailyBriefing (streak stat demoted to muted) &#8594; GoalProgress</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">The next rep only; consistency over perfection, no number to defend.</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-style:italic;color:#3c463f">"All you owe the next 15 minutes is staying."</td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="margin-top:10px;border-left:3px solid #0b9c5a;background:#eaf5ee;border-radius:0 4px 4px 0;padding:9px 12px;font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#2a332c;break-inside:avoid"><b>Day-0 override (all profiles):</b> after a reset the forge promotes the lifetime StatRow to slot 1 and demotes the current-run stat for 48h. Post-slip copy is the single shared voice: <i>"Logged. The clock restarts; the work does not."</i> No profile branching, no red, no zero as the biggest numeral on screen.</div>
+
+  <!-- 6 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;6 &#183; Theme &#215; register matrix</h2>
+  <p style="font-family:-apple-system,sans-serif;font-size:12.5px;line-height:1.55;color:#4a534c;margin:0 0 10px">Theme is one user choice driving two systems in lockstep: visual tokens (already shipped in <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px">telemetry.css</span>) and toneEngine's <span style="font-family:ui-monospace,Menlo,monospace;font-size:11px">shiftRegister</span>. Profile changes <i>what is said</i>; theme changes <i>how it sounds and looks</i>.</p>
+  <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.5;color:#2a332c">
+    <thead><tr>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:14%">THEME</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:34%">VISUAL TOKENS</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:32%">COPY REGISTER (toneEngine)</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17">INTENDED HOURS</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#141d17">terminal</span><br><span style="display:inline-flex;gap:3px;margin-top:4px"><span style="width:12px;height:12px;border-radius:3px;background:#05070a;border:1px solid #d9ded6"></span><span style="width:12px;height:12px;border-radius:3px;background:#16f08b"></span><span style="width:12px;height:12px;border-radius:3px;background:#ff495f"></span></span></td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Near-black <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">#05070a</span>, electric <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">#16f08b</span>, numeral glow ON (10px &#183; .30), hairlines, sharp radii.</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Clipped scoreboard voice; notification titles UPPERCASE. Imperatives intact.</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Default. The 06:00 open &#8212; commitment as market open.</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#141d17">zen</span><br><span style="display:inline-flex;gap:3px;margin-top:4px"><span style="width:12px;height:12px;border-radius:3px;background:#e9ede8;border:1px solid #d9ded6"></span><span style="width:12px;height:12px;border-radius:3px;background:#0b9c5a"></span><span style="width:12px;height:12px;border-radius:3px;background:#d33b4e"></span></span></td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Light paper surfaces, glow OFF, +4px card padding / +4px widget gap (breathing room as a token, not a redesign).</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Imperatives soften to invitations: "Work the steps." &#8594; "Walk the steps, one at a time." Loss idioms dropped ("on the line" &#8594; "worth guarding").</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Recovery-leaning stretches; users for whom the terminal reads as pressure.</td>
+      </tr>
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#141d17">night_ops</span><br><span style="display:inline-flex;gap:3px;margin-top:4px"><span style="width:12px;height:12px;border-radius:3px;background:#0b0d10;border:1px solid #d9ded6"></span><span style="width:12px;height:12px;border-radius:3px;background:#5fbf92"></span><span style="width:12px;height:12px;border-radius:3px;background:#c76b76"></span></span></td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Desaturated sage accent, muted text, glow LOW (8px &#183; .14), warn glow off &#8212; nothing shouts after dark.</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">Quiet: notification titles lowercase; body copy unchanged.</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e6df;vertical-align:top">After-hours; the 22:00 examen and the vulnerable window itself.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-family:-apple-system,sans-serif;font-size:12px;line-height:1.55;color:#4a534c;margin:10px 0 0">Theme switching is manual (settings) with one sanctioned suggestion: the forge may <i>offer</i> night_ops in the evening deck once, never auto-switch. <span style="font-family:ui-monospace,Menlo,monospace;color:#b7790a;font-size:10.5px">&#9888; verify against guardianEngine</span></p>
+
+  <!-- 7 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;7 &#183; Widget &#8596; engine binding (the registry, annotated)</h2>
+  <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:11px;line-height:1.5;color:#2a332c">
+    <thead><tr>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:19%">WIDGET</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:30%">FED BY</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17">TONE LAW</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">DailyBriefing</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">guardian day summary; each driver = one short toneEngine line rendered as "AI:"</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Drivers are forecasts (R7); a driver about the user's <i>action plan</i> may be warn, never neg.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">ScheduleMatrix</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">protocolForge blocks <span style="font-family:ui-monospace,Menlo,monospace;color:#b7790a;font-size:10px">&#9888; row schema</span>; verdicts sealed by the Referee</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Witnessed = no edit affordance. missed is muted/dashed forever (R2); &#9670; marks high-impact; no spiritual rows (R3).</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">DeepWorkTimer</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">The forge's anchor block of the day</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">The deck's ONE accent anchor (R1). Running state hides the deck (Sprint cockpit doctrine); breath animation only.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">GoalProgress</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Goal store (quarter targets)</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">neg tone only for exceeded limits (spend, screen), never for effort shortfall. Clean-days meters pair with a lifetime figure (R4).</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">KpiGrid / StatRow</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Metrics store; StatRow doubles as the lifetime-piles row</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Lifetime cells use <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">accent:true</span>; they only grow, so they may glow.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">BiometricChart</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">HealthKit via Capacitor (read-only)</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Sleep is a trend line, never a pass/fail (hard rule). Direction colors are data (R2).</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">EnergyTrendLine</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Readiness model; caption strings use <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">windowLabel()</span></td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">The vulnerable window is drawn as terrain to route around, not a countdown to fear.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">MarketSentimentWidget</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Sentiment &#8592; guardian severity; tickers &#8592; tracked behavior measures</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Conditions, never worth (R7). No spiritual tickers (R3). &#9670; focus row = today's exposed measure.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">InsightCard</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">drift.watch / drift.critical</span>; heading "Counsel", source "GUARDIAN &#183; WATCH|CRITICAL"</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">warn at WATCH, neg at CRITICAL (R7). Dismissable ("let it go") so a named drift doesn't re-indict nightly. Post-slip never uses this card.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">EmptyState</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Pre-first-sync / no-data decks</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">"NO SIGNAL" is calm, dashed, muted &#8212; silence is content, not an error.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 8 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;8 &#183; Overlay flows</h2>
+  <div style="display:flex;gap:14px;break-inside:avoid">
+    <div style="flex:1.4;border:1px solid #d9ded6;border-radius:4px;padding:11px 13px">
+      <div style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.16em;color:#141d17;margin-bottom:8px">OUTLAST IT &#8212; STATE MACHINE</div>
+      <ol style="font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.55;color:#2a332c;margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
+        <li><b>Enter</b> &#8212; HELP NOW tap (or shortcut/intercept <span style="font-family:ui-monospace,Menlo,monospace;color:#b7790a;font-size:10px">&#9888; triggers</span>). Full-screen, calm dark regardless of theme. 15:00 clock auto-starts. Subtitle = <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">urge.open</span> per profile.</li>
+        <li><b>Steps</b> &#8212; fixed, ordered, one visible at a time: leave the room &#8594; 20 pushups &#8594; text your partner (one tap, pre-filled &#8212; danger routes to a person) &#8594; get outside &#8594; ride it out.</li>
+        <li><b>Exit A &#183; outlasted</b> &#8212; clock ends or he closes having stayed: <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">urge.survived</span>, logged as a WIN, OUTLASTED pile +1. No confetti; the number climbing is the ceremony.</li>
+        <li><b>Exit B &#183; surrender</b> &#8212; hold-to-surrender: 1.2s bar sweeps L&#8594;R, muted (not red, not accent); releasing early cancels at no cost (R5). On completion: the one-voice <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">urge.slipped</span> close, then the day-0 deck override (&#167;5).</li>
+      </ol>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+      <div style="border:1px solid #d9ded6;border-radius:4px;padding:11px 13px">
+        <div style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.16em;color:#141d17;margin-bottom:8px">SYNC &amp; REFACTOR (EXAMEN SEAL)</div>
+        <p style="font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.55;color:#2a332c;margin:0">Press &#8594; confirm sheet framed by <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">step.commit</span> ("Seal it&#8230;") &#8594; ceremonial hold &#8594; bar flips to <b>queued</b> (accent border). The ledger seals, the forge rebuilds tomorrow's deck overnight. One seal per day; re-opening the app after sealing shows the queued state, not a second ask.</p>
+      </div>
+      <div style="border:1px solid #d9ded6;border-radius:4px;padding:11px 13px">
+        <div style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.16em;color:#141d17;margin-bottom:8px">THE ONE NOTIFICATION</div>
+        <p style="font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.55;color:#2a332c;margin:0"><span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">warn.notification</span>, pre-window, native local. Title register per theme (UPPERCASE / soft / lowercase). Body always ends in the one 60-second action. Never more than one per app-day; no badges ever (R8).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;9 &#183; Visual-polish punch list (execute in order)</h2>
+  <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.5;color:#2a332c">
+    <tbody>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;width:34px;vertical-align:top">P1</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Post-slip surfaces:</b> strip any profile branching and any <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">--neg</span>; muted + accent only; copy verbatim from <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">urge.slipped</span>; lifetime piles above the reset clock.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P2</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Accent audit per deck:</b> exactly one accent anchor + primary actions + active tab + HELP NOW (R1). Demote every other green fill to <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">--pos</span> text or muted.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P3</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Red audit:</b> grep every <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">--neg</span> use against R2's forbidden list; missed states must be muted/dashed.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P4</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Numerals:</b> <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">font-clock</span> + tabular figures on every number, time, ticker, label; glow only per theme tokens (terminal on, zen off, night_ops low).</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P5</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>InsightCard severity styling</b> per R7 (warn/neg headers, LED dot matches); wire "let it go" dismiss.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P6</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Deck ordering per profile</b> implemented in the forge (&#167;5), including the day-0 override. Client stays profile-blind.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P7</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Chrome geometry:</b> safe-area insets on StatusStrip / sync bar; 44&#215;44 targets (gear, tabs, holds); content max 520 centered; hairlines over shadows; radii 3&#8211;10 only.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P8</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Motion ceiling:</b> LED pulse + timer breath + the two hold sweeps. Nothing else animates ambiently; all of it respects <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">prefers-reduced-motion</span>.</td></tr>
+      <tr><td style="padding:6px 8px;border-bottom:1px solid #e2e6df;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P9</td><td style="padding:6px 8px;border-bottom:1px solid #e2e6df"><b>Faith module (opt-in)</b> built per R3: MIND-only, un-scored, position-only reading plan, "offered, not performed."</td></tr>
+      <tr><td style="padding:6px 8px;font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#0b9c5a;vertical-align:top">P10</td><td style="padding:6px 8px"><b>Kit demo-data fixes &#8212; DONE this revision:</b> FAITH ticker &#8594; READ; "Scripture streak" bar &#8594; "Screen curfew hits"; verdicted scripture row &#8594; journal block. The reference gallery now passes its own hard rules.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 10 -->
+  <h2 style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#141d17;border-bottom:1.5px solid #141d17;padding-bottom:5px;margin:28px 0 12px">&#167;10 &#183; Open items &#8212; reconcile when the missing code lands</h2>
+  <table style="width:100%;border-collapse:collapse;font-family:-apple-system,sans-serif;font-size:11.5px;line-height:1.5;color:#2a332c">
+    <thead><tr>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:22%">FILE (NOT SEEN)</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17;width:44%">THIS SPEC ASSUMES</th>
+      <th style="text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c;font-weight:500;padding:6px 8px;border-bottom:1px solid #141d17">VERIFY</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">guardianEngine.js</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Severity ladder CALM/WATCH/CRITICAL; 1/day notification cap; a post-reset deck rule exists (or must be added) for the &#167;5 day-0 override; sentiment score derivable from severity.</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Ladder names &#183; cap location &#183; reset hook &#183; score mapping.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">protocolForge.js</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Forges blocks mappable to ScheduleMatrix rows (time/block/impact); owns deck composition + tab budget; emits the commit step that hosts <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">step.commit</span>.</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Row schema &#8596; widget contract &#183; where deck order lives &#183; tab budget.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">InitialSurvey.jsx</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Types <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px">settings.streakModel</span>; also collects theme preference and the faith/recovery opt-ins (R3). Retakeable from settings; retake re-forges the deck.</td><td style="padding:7px 8px;border-bottom:1px solid #e2e6df;vertical-align:top">Question set &#183; opt-in storage &#183; retake path.</td></tr>
+      <tr><td style="padding:7px 8px;vertical-align:top;font-family:ui-monospace,Menlo,monospace;font-size:10px">Tab shell (impl.)</td><td style="padding:7px 8px;vertical-align:top">Tabs render from server JSON; overlays live outside the tab router; DeepWorkTimer fullscreen mode is possible within the shell (R6).</td><td style="padding:7px 8px;vertical-align:top">JSON shape &#183; overlay mount point &#183; fullscreen hook.</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top:22px;padding-top:10px;border-top:1px solid #d9ded6;display:flex;justify-content:space-between;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:9px;letter-spacing:.14em;color:#8a948c">
+    <span>END OF SPEC &#183; RULINGS R1&#8211;R8 BINDING &#183; &#9888; ITEMS PENDING CODE</span>
+    <span>TELEMETRY &#183; DATA, NOT VERDICT</span>
+  </div>
+
+</x-import>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,123 @@
+/* ============================================================
+   TELEMETRY · Color
+   Dark by default. A perps-terminal readout: near-black surfaces,
+   hairline separation, one electric-green accent, strict
+   green-up / red-down semantics. Numerals glow (terminal only).
+
+   THREE THEMES as token overrides:
+     terminal (:root)     electric green on near-black, glow ON
+     [data-theme="zen"]   calm light paper, glow OFF, more air
+     [data-theme="night_ops"]  muted after-hours dark, glow low
+   ============================================================ */
+
+:root,
+[data-theme="terminal"] {
+  /* surfaces — separated by tone, hairlines used sparingly */
+  --bg: #05070a;          /* device page */
+  --surface: #0a0e13;     /* widget cards */
+  --surface-2: #10161d;   /* insets / inputs / tracks */
+  --line: #1b232c;        /* hairline borders */
+
+  /* text */
+  --text: #d4dde3;        /* primary */
+  --muted: #66727d;       /* labels / secondary */
+
+  /* accent — the one electric green */
+  --accent: #16f08b;
+  --accent-deep: #0b9a58;  /* pressed / borders / area fills */
+  --accent-ink: #04160d;   /* text ON accent */
+  --accent-glow: rgba(22, 240, 139, 0.45);
+
+  /* directional semantics — strict green-up / red-down */
+  --pos: #16f08b;
+  --neg: #ff495f;
+  --warn: #ffb224;
+  --pos-soft: rgba(22, 240, 139, 0.12);
+  --neg-soft: rgba(255, 73, 95, 0.12);
+  --warn-soft: rgba(255, 178, 36, 0.12);
+
+  /* glows — the subtle numeral haze (terminal signature) */
+  --num-glow: 0 0 10px rgba(22, 240, 139, 0.30);
+  --pos-glow: 0 0 10px rgba(22, 240, 139, 0.32);
+  --neg-glow: 0 0 10px rgba(255, 73, 95, 0.30);
+  --warn-glow: 0 0 10px rgba(255, 178, 36, 0.28);
+  --text-glow: 0 0 12px rgba(180, 210, 195, 0.06);
+
+  /* status LEDs */
+  --led-live: var(--pos);
+  --led-local: var(--warn);
+  --led-offline: var(--muted);
+
+  /* chart grid + scrim */
+  --grid: rgba(255, 255, 255, 0.045);
+  --scrim: rgba(0, 0, 0, 0.72);
+}
+
+/* ---- ZEN · calm light, glow OFF, more breathing room ---- */
+[data-theme="zen"] {
+  --bg: #e9ede8;
+  --surface: #f7f9f5;
+  --surface-2: #edf1ea;
+  --line: #d5ddd2;
+
+  --text: #1b2a22;
+  --muted: #6a7770;
+
+  --accent: #0b9c5a;
+  --accent-deep: #077a45;
+  --accent-ink: #ffffff;
+  --accent-glow: rgba(11, 156, 90, 0.20);
+
+  --pos: #0b9c5a;
+  --neg: #d33b4e;
+  --warn: #b7790a;
+  --pos-soft: rgba(11, 156, 90, 0.12);
+  --neg-soft: rgba(211, 59, 78, 0.10);
+  --warn-soft: rgba(183, 121, 10, 0.12);
+
+  --num-glow: none;
+  --pos-glow: none;
+  --neg-glow: none;
+  --warn-glow: none;
+  --text-glow: none;
+
+  --grid: rgba(0, 0, 0, 0.055);
+  --scrim: rgba(20, 30, 24, 0.55);
+
+  /* more air */
+  --pad-card: 18px;
+  --gap-widget: 16px;
+  --gap-stat: 14px;
+}
+
+/* ---- NIGHT_OPS · muted after-hours dark, glow low ---- */
+[data-theme="night_ops"] {
+  --bg: #0b0d10;
+  --surface: #12151a;
+  --surface-2: #181c22;
+  --line: #242b33;
+
+  --text: #aab4bd;
+  --muted: #59626c;
+
+  --accent: #5fbf92;
+  --accent-deep: #3f8a68;
+  --accent-ink: #06120b;
+  --accent-glow: rgba(95, 191, 146, 0.22);
+
+  --pos: #5fbf92;
+  --neg: #c76b76;
+  --warn: #c79a52;
+  --pos-soft: rgba(95, 191, 146, 0.10);
+  --neg-soft: rgba(199, 107, 118, 0.10);
+  --warn-soft: rgba(199, 154, 82, 0.10);
+
+  --num-glow: 0 0 8px rgba(95, 191, 146, 0.14);
+  --pos-glow: 0 0 8px rgba(95, 191, 146, 0.14);
+  --neg-glow: 0 0 8px rgba(199, 107, 118, 0.12);
+  --warn-glow: none;
+  --text-glow: none;
+
+  --grid: rgba(255, 255, 255, 0.03);
+  --scrim: rgba(0, 0, 0, 0.72);
+}

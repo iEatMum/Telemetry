@@ -1,5 +1,12 @@
 // stakes.js — the CLIENT half of the Stakes Engine.
 //
+// V1 STATUS (2026-07-11, second review panel): the shipping app sells NO
+// financial/social consequence — onboarding offers only witness/none, and no
+// UI promises a charge or a ping. This module survives as the fail-soft seam
+// for a possible v1.1+ server-side engine; today triggerStakesCheck() always
+// no-ops (Supabase paused, no session). If the engine never returns, delete
+// this file and the RefactorIndicator call together.
+//
 // SECURITY: the actual consequence (Twilio SMS / financial penalty) is NOT here.
 // It lives in the `stakes` Supabase Edge Function, because Twilio/Stripe secrets
 // must never ship in the client bundle. This file holds only (1) the PURE breach

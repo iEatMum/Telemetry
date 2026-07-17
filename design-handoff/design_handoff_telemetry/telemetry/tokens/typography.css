@@ -1,0 +1,42 @@
+/* ============================================================
+   TELEMETRY · Type
+   Two registers:
+     font-clock (monospace, tabular) = machine truth — ALL numerals,
+       times, tickers, section labels, verdicts.
+     font-sans (system) = prose — human voice, notes, counsel.
+   System-native, no webfonts (intentional: the terminal is the platform).
+   ============================================================ */
+
+:root {
+  --font-clock: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Monaco,
+    "Cascadia Mono", "Roboto Mono", "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* scale */
+  --t-label: 10px;   /* section labels */
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-base: 13px;    /* body */
+  --t-md: 15px;
+  --t-lg: 19px;
+  --t-xl: 24px;
+  --t-2xl: 32px;
+  --t-clock: 40px;   /* timer readout */
+  --t-hero: 46px;    /* biggest numeric readout */
+
+  /* tracking */
+  --track-label: 0.16em;  /* uppercase machine labels */
+  --track-wide: 0.08em;
+  --track-mono: 0.01em;
+
+  /* weight */
+  --w-reg: 400;
+  --w-med: 500;
+  --w-semi: 600;
+
+  /* leading */
+  --lh-tight: 1.05;
+  --lh-snug: 1.28;
+  --lh-normal: 1.5;
+}

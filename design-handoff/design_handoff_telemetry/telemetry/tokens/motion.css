@@ -1,0 +1,41 @@
+/* ============================================================
+   TELEMETRY · Motion
+   Restrained. The terminal breathes, it doesn't bounce.
+   LED pulse on live dots; a slow breath on the active timer.
+   Respects prefers-reduced-motion.
+   ============================================================ */
+
+:root {
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);      /* calm, no overshoot */
+  --dur-quick: 140ms;   /* taps, chip toggles, tab switch */
+  --dur-calm: 280ms;    /* sheets / overlays */
+  --dur-pulse: 1800ms;  /* LED + timer breath */
+  --dur-outlast: 1200ms; /* OUTLAST IT hold-to-surrender sweep */
+}
+
+/* pulsing status LED — color comes from inline --_led */
+@keyframes tl-led {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--_led, transparent); }
+  50%      { opacity: 0.5; box-shadow: 0 0 7px 1px var(--_led, transparent); }
+}
+
+/* the one ambient breath — active timer / running clock only */
+@keyframes tl-breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.72; }
+}
+
+/* faint data ticker sweep (used sparingly on live sparklines) */
+@keyframes tl-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+.tl-breathe { animation: tl-breathe var(--dur-pulse) var(--ease) infinite; }
+.tl-led-pulse { animation: tl-led var(--dur-pulse) var(--ease) infinite; }
+.tl-blink { animation: tl-blink 1100ms steps(2, end) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-breathe, .tl-led-pulse, .tl-blink,
+  *[class*="tl-"] { animation: none !important; }
+}

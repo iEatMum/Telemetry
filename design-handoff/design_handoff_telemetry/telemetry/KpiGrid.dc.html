@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;font-family:var(--font-sans)">
+  <sc-if value="{{ hasTitle }}" hint-placeholder-val="{{ true }}"><div style="font-family:var(--font-clock);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">{{ title }}</div></sc-if>
+  <div style="display:grid;grid-template-columns:{{ gridCols }};gap:8px">
+    <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-5);padding:10px 11px 11px;display:flex;flex-direction:column;gap:7px;min-width:0">
+        <div style="font-family:var(--font-clock);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</div>
+        <div style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap">
+          <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:22px;font-weight:500;line-height:1;color:{{ it.valColor }};text-shadow:{{ it.valGlow }}">{{ it.value }}</span>
+          <sc-if value="{{ it.hasUnit }}"><span style="font-family:var(--font-clock);font-size:11px;color:var(--muted)">{{ it.unit }}</span></sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;min-height:20px">
+          <sc-if value="{{ it.hasDelta }}"><dc-import name="DeltaTag" value="{{ it.delta }}" suffix="{{ it.deltaSuffix }}" hint-size="52px,16px"></dc-import></sc-if>
+          <sc-if value="{{ it.hasSpark }}"><span style="margin-left:auto;display:inline-flex"><dc-import name="Sparkline" data="{{ it.spark }}" tone="{{ it.sparkTone }}" width="58" height="20" hint-size="58px,20px"></dc-import></span></sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:220},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;cols&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:2,&quot;min&quot;:1,&quot;max&quot;:4,&quot;tsType&quot;:&quot;number&quot;},&quot;items&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ label: string; value: string; unit?: string; delta?: number; deltaSuffix?: string; spark?: number[]; sparkTone?: string; accent?: boolean }[]&quot;}}">
+const DEF = [
+  { label: "Resting HR", value: "48", unit: "bpm", delta: -3, spark: [54, 53, 52, 51, 50, 49, 49, 48], sparkTone: "pos" },
+  { label: "HRV", value: "92", unit: "ms", delta: 8, spark: [70, 74, 72, 80, 84, 88, 90, 92], sparkTone: "accent", accent: true },
+  { label: "Sleep", value: "7.4", unit: "h", delta: 0.6, spark: [6, 6.5, 7, 6.8, 7.2, 7.1, 7.4, 7.4], sparkTone: "accent" },
+  { label: "Focus", value: "3.2", unit: "h", delta: -0.4, spark: [4, 3.8, 3.5, 3.6, 3.2, 3.4, 3.1, 3.2], sparkTone: "warn" },
+];
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const cols = p.cols ?? 2;
+    const items = (p.items && p.items.length ? p.items : DEF).map(it => ({
+      label: it.label, value: it.value,
+      unit: it.unit, hasUnit: it.unit != null && it.unit !== "",
+      delta: it.delta, deltaSuffix: it.deltaSuffix ?? "", hasDelta: it.delta != null,
+      spark: it.spark, hasSpark: Array.isArray(it.spark) && it.spark.length > 0,
+      sparkTone: it.sparkTone || "accent",
+      valColor: it.accent ? "var(--accent)" : "var(--text)",
+      valGlow: it.accent ? "0 0 12px var(--accent-glow)" : "var(--text-glow)",
+    }));
+    return {
+      title: p.title || "", hasTitle: !!(p.title),
+      gridCols: "repeat(" + cols + ",minmax(0,1fr))",
+      items,
+    };
+  }
+}
+</script>
+</body>
+</html>

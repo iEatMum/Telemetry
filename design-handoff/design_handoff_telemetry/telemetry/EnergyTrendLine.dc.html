@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;font-family:var(--font-sans)">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px">
+    <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">{{ label }}</span>
+    <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:10px;letter-spacing:.08em;white-space:nowrap;color:var(--muted)">OPEN {{ openV }} <span style="opacity:.4">&#183;</span> NOW <span style="color:var(--accent);text-shadow:var(--num-glow)">{{ nowV }}</span> <span style="opacity:.4">&#183;</span> AVG {{ avgV }}</span>
+  </div>
+  <div style="position:relative;height:96px;margin-bottom:8px">
+    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="display:block;overflow:visible">
+      <line x1="0" y1="{{ avgY }}" x2="100" y2="{{ avgY }}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 2" vector-effect="non-scaling-stroke" opacity="0.4"></line>
+      <path d="{{ area }}" fill="var(--pos-soft)"></path>
+      <path d="{{ line }}" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 3px var(--accent-glow))"></path>
+    </svg>
+    <span style="position:absolute;left:{{ nowX }}%;top:{{ nowY }}%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:999px;background:var(--accent);box-shadow:0 0 10px var(--accent-glow);border:2px solid var(--surface)"></span>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:10px;letter-spacing:.04em;color:var(--muted)">
+    <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="9"><span>{{ t }}</span></sc-for>
+  </div>
+  <sc-if value="{{ hasCaption }}" hint-placeholder-val="{{ true }}"><div style="margin-top:9px;font-size:12px;color:var(--muted);line-height:1.42">{{ caption }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:210},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Energy Curve&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;unit&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;0–100&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;points&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ t: string; v: number }[]&quot;},&quot;now&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;18&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;open&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;avg&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;ticks&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string[]&quot;},&quot;caption&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Peak window 17:00–19:00 — protect it for the hard block.&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const DEF_POINTS = [
+  { t: "06", v: 40 }, { t: "08", v: 62 }, { t: "10", v: 78 }, { t: "12", v: 70 },
+  { t: "14", v: 52 }, { t: "16", v: 66 }, { t: "18", v: 84 }, { t: "20", v: 58 }, { t: "22", v: 44 },
+];
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const points = (p.points && p.points.length) ? p.points : DEF_POINTS;
+    const vals = points.map(o => o.v);
+    const mn = Math.min(...vals), mx = Math.max(...vals), rng = (mx - mn) || 1;
+    const n = points.length;
+    const xy = vals.map((v, i) => [n === 1 ? 50 : (i / (n - 1)) * 100, 100 - ((v - mn) / rng) * 100]);
+    const line = xy.map((q, i) => (i ? "L" : "M") + q[0].toFixed(2) + " " + q[1].toFixed(2)).join(" ");
+    const area = "M " + xy[0][0].toFixed(2) + " 100 " + xy.map(q => "L " + q[0].toFixed(2) + " " + q[1].toFixed(2)).join(" ") + " L " + xy[n - 1][0].toFixed(2) + " 100 Z";
+    const avgVal = p.avg != null ? p.avg : vals.reduce((a, b) => a + b, 0) / n;
+    const avgY = 100 - ((avgVal - mn) / rng) * 100;
+    let nowIdx = p.now != null ? points.findIndex(o => String(o.t) === String(p.now)) : n - 1;
+    if (nowIdx < 0) nowIdx = n - 1;
+    const openV = p.open != null ? p.open : vals[0];
+    const ticks = (p.ticks && p.ticks.length) ? p.ticks : points.map(o => o.t);
+    return {
+      label: p.label || "Energy Curve", 
+      line, area, avgY: avgY.toFixed(2),
+      nowX: xy[nowIdx][0].toFixed(2), nowY: xy[nowIdx][1].toFixed(2), nowV: String(vals[nowIdx]),
+      openV: String(openV), avgV: String(Math.round(avgVal)),
+      ticks,
+      caption: p.caption || "Peak window 17:00\u201319:00 \u2014 protect it for the hard block.",
+      hasCaption: p.caption !== "",
+    };
+  }
+}
+</script>
+</body>
+</html>

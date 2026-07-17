@@ -3,42 +3,90 @@
 @tailwind utilities;
 
 /* ----------------------------------------------------------------------------
-   Terminal design tokens (Phase 3 — the "perps" pivot).
-   High-contrast, dark-first command-center palette. The old still-water gold is
-   gone: the primary action color is an electric terminal green, and the app now
-   speaks strict green-up / red-down semantic state like a trading terminal.
+   Split Ledger design tokens (the full-redesign champion, 2026-07).
+   The athlete's split book: manila paper, carbon ink, stopwatch-grade mono
+   numerals, hairline rules instead of boxes — and ONE lane-red reserved
+   structurally for the seal of commitment. A ledger only accrues: a miss is an
+   unposted line, never a stain, never red.
 
    One source of truth: components reference semantic Tailwind names
    (bg / surface / ink / accent / pos / neg / …) that resolve to these vars — so
    re-skinning the whole app is editing THIS file, not the components.
+
+   The old terminal glow tokens survive as variables (components still reference
+   .scoreboard / shadow-glow) but every skin resolves them to none/transparent:
+   print does not glow.
 ---------------------------------------------------------------------------- */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Surface stack — bg → surface → surface-2 (near-black, stepping up) */
-  --bg: #06080b;
-  --surface: #0e1217;
-  --surface-2: #161b22;
-  --line: #232a33;
+  /* Layout rhythm. */
+  --pad-card: 16px;
+  --gap-widget: 14px;
+  --gap-stat: 12px;
 
-  /* Text */
-  --text: #e8ecf2;
-  --muted: #707b8c;
+  /* Radius — the ledger is square. Everything inside a surface is radius-0; a
+     control takes one soft 6px; the bottom-sheet lifts on a single 10px top lip
+     ("a page pulled from the book"). Shared here only — never per-theme. */
+  --radius-card: 0px;
+  --radius-control: 6px;
+  --radius-sheet: 10px;
 
-  /* Primary action — electric terminal green. Dark ink rides on top. */
-  --accent: #16f08b;
-  --accent-deep: #0bc673;
-  --accent-ink: #04140b;
-  --accent-glow: rgba(22, 240, 139, 0.45);
-  --glow-strength: 1;
+  /* Dynamic Type — a native content-size hook multiplies the root font-size by
+     this (1 = system default). Relative units downstream scale with it; see
+     src/lib/dynamicType.js. */
+  --type-scale: 1;
 
-  /* Semantic state — strict up / down, plus a caution amber. */
-  --pos: #16f08b;
-  --neg: #ff4d5e;
-  --warn: #f5b114;
-  --pos-soft: rgba(22, 240, 139, 0.14);
-  --neg-soft: rgba(255, 77, 94, 0.14);
-  --warn-soft: rgba(245, 177, 20, 0.14);
+  /* Motion — one ease, four verbs (ink-settle · breath · rule-draw ·
+     seal-press). Nothing animates outside these durations. */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-quick: 140ms;
+  --dur-calm: 280ms;
+  --dur-pulse: 1800ms;
+  --dur-seal: 1200ms;
+  --dur-stamp: 520ms; /* the seal-press + haptic-beat settle on the stamp frame */
+  --dur-outlast: 1200ms; /* legacy alias for --dur-seal */
+
+  /* Paper stack — manila page, one paper step per layer. */
+  --bg: #ede4ce;
+  --surface: #f6efdd;
+  --surface-2: #e2d7bc;
+  --line: #c9bc9c;
+  --line-bright: #ac9f7d;
+
+  /* Ink */
+  --text: #1f1b12;
+  --muted: #6b6150;
+  --faint: #6c6451;
+
+  /* Lane-red — the seal of commitment. Grammatically reserved: Start, the
+     seal, the ◆ high-impact marker. It can never mark a miss. */
+  --accent: #c93f22;
+  --accent-deep: #a93318;
+  --accent-ink: #f9f3e2;
+  --accent-glow: rgba(201, 63, 34, 0);
+
+  /* Semantic state — EXTERNAL data only (biometrics, conditions). */
+  --pos: #3f6e4e;
+  --neg: #8e3b44;
+  --warn: #8c671a;
+  --pos-soft: rgba(63, 110, 78, 0.14);
+  --neg-soft: rgba(142, 59, 68, 0.12);
+  --warn-soft: rgba(140, 103, 26, 0.14);
+
+  /* Glows — print does not glow. Kept as tokens so components need no edits. */
+  --num-glow: none;
+  --pos-glow: none;
+  --neg-glow: none;
+  --warn-glow: none;
+  --text-glow: none;
+
+  /* Chrome — status LEDs, chart gridlines, overlay scrim. */
+  --led-live: var(--pos);
+  --led-local: var(--warn);
+  --led-offline: var(--muted);
+  --grid: rgba(31, 27, 18, 0.06);
+  --scrim: rgba(31, 27, 18, 0.55);
 }
 
 /* ── Themes — the ONE appearance axis ─────────────────────────────────────────
@@ -47,79 +95,170 @@
    nested <div> would leave <body> stranded on the base palette.
 
    Each theme is a COMPLETE palette: it never inherits tokens from another block,
-   so a skin can't half-apply and leave (say) dark text on a dark surface. The old
-   dark/light `data-theme` axis + the prefers-color-scheme override were removed —
-   "light" now lives in the Zen theme. --glow-strength lets a theme dial the
-   readout glow (Terminal 1 · Night Ops .7 · Zen 0).
+   so a skin can't half-apply and leave (say) dark text on a dark surface.
+   Values are the Split Ledger production synthesis (design tournament champion,
+   design-prompts/03-split-ledger-CHAMPION.md) — the tokens are the contract,
+   so these hexes are not editorial. ONE dated amendment (2026-07-11, second
+   review panel): every --faint was shifted to ≥4.5:1 against its skin's --bg
+   (WCAG AA) — the originals sat at 2.5–3.2:1 and --faint carries 11px fine
+   print. Same hue family, minimum shift that passes.
 ------------------------------------------------------------------------------- */
 
-/* Terminal — primary. Perps-desk, high-signal, electric green on near-black. */
-[data-theme='terminal'] {
-  color-scheme: dark;
-  --bg: #06080b;
-  --surface: #0e1217;
-  --surface-2: #161b22;
-  --line: #232a33;
-  --text: #e8ecf2;
-  --muted: #707b8c;
-  --accent: #16f08b;
-  --accent-deep: #0bc673;
-  --accent-ink: #04140b;
-  --accent-glow: rgba(22, 240, 139, 0.45);
-  --pos: #16f08b;
-  --neg: #ff4d5e;
-  --warn: #f5b114;
-  --pos-soft: rgba(22, 240, 139, 0.14);
-  --neg-soft: rgba(255, 77, 94, 0.14);
-  --warn-soft: rgba(245, 177, 20, 0.14);
-  --glow-strength: 1;
-}
-
-/* Zen — calm, light, minimal; doubles as the light / high-contrast mode. Body
-   contrast ≈ 15:1 (AAA). Greens/reds darkened so they stay legible on white. */
-[data-theme='zen'] {
+/* Split Book — default. Manila paper, carbon ink, lane-red seal. Daylight. */
+[data-theme='split_book'] {
   color-scheme: light;
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --surface-2: #eef1f5;
-  --line: #dde3ea;
-  --text: #141a22;
-  --muted: #5b6572;
-  --accent: #2f6df0;
-  --accent-deep: #2358c8;
-  --accent-ink: #ffffff;
-  --accent-glow: rgba(47, 109, 240, 0.22);
-  --pos: #0a8f52;
-  --neg: #d23049;
-  --warn: #b5730a;
-  --pos-soft: rgba(10, 143, 82, 0.12);
-  --neg-soft: rgba(210, 48, 73, 0.12);
-  --warn-soft: rgba(181, 115, 10, 0.12);
-  --glow-strength: 0;
+  --bg: #ede4ce;
+  --surface: #f6efdd;
+  --surface-2: #e2d7bc;
+  --line: #c9bc9c;
+  --line-bright: #ac9f7d;
+  --text: #1f1b12;
+  --muted: #6b6150;
+  --faint: #6c6451;
+  --accent: #c93f22;
+  --accent-deep: #a93318;
+  --accent-ink: #f9f3e2;
+  --accent-glow: rgba(201, 63, 34, 0);
+  --pos: #3f6e4e;
+  --neg: #8e3b44;
+  --warn: #8c671a;
+  --pos-soft: rgba(63, 110, 78, 0.14);
+  --neg-soft: rgba(142, 59, 68, 0.12);
+  --warn-soft: rgba(140, 103, 26, 0.14);
+  --num-glow: none;
+  --pos-glow: none;
+  --neg-glow: none;
+  --warn-glow: none;
+  --text-glow: none;
+  --led-live: var(--pos);
+  --led-local: var(--warn);
+  --led-offline: var(--muted);
+  --grid: rgba(31, 27, 18, 0.06);
+  --scrim: rgba(31, 27, 18, 0.55);
+  --pad-card: 16px;
+  --gap-widget: 14px;
+  --gap-stat: 12px;
 }
 
-/* Night Ops — deep black, low-light focus. Body text is a dim warm-grey (NOT
-   full red — pure-red body copy is an eye-strain problem); red is reserved for
-   the accent + `neg`. Up/down semantics stay green/red. */
-[data-theme='night_ops'] {
+/* Lamplight — the vulnerable evening window. Amber-washed ink-dark paper,
+   desaturated seal. Nothing shouts after dark. */
+[data-theme='lamplight'] {
   color-scheme: dark;
-  --bg: #04060a;
-  --surface: #0a0e15;
-  --surface-2: #111722;
-  --line: #1b2430;
-  --text: #c2ccd6;
-  --muted: #5a6673;
-  --accent: #ff5a5f;
-  --accent-deep: #d83f45;
-  --accent-ink: #160406;
-  --accent-glow: rgba(255, 90, 95, 0.35);
-  --pos: #37d99b;
-  --neg: #ff5a5f;
-  --warn: #e0a63a;
-  --pos-soft: rgba(55, 217, 155, 0.12);
-  --neg-soft: rgba(255, 90, 95, 0.14);
-  --warn-soft: rgba(224, 166, 58, 0.12);
-  --glow-strength: 0.7;
+  --bg: #14100a;
+  --surface: #1b160e;
+  --surface-2: #241d12;
+  --line: #3a3222;
+  --line-bright: #4e4430;
+  --text: #e7dcc4;
+  --muted: #9a8d72;
+  --faint: #877c68;
+  --accent: #b25b41;
+  --accent-deep: #8f462f;
+  --accent-ink: #201409;
+  --accent-glow: rgba(178, 91, 65, 0);
+  --pos: #7fa98b;
+  --neg: #b07680;
+  --warn: #c0985a;
+  --pos-soft: rgba(127, 169, 139, 0.12);
+  --neg-soft: rgba(176, 118, 128, 0.12);
+  --warn-soft: rgba(192, 152, 90, 0.12);
+  --num-glow: none;
+  --pos-glow: none;
+  --neg-glow: none;
+  --warn-glow: none;
+  --text-glow: none;
+  --led-live: var(--pos);
+  --led-local: var(--warn);
+  --led-offline: var(--muted);
+  --grid: rgba(255, 255, 255, 0.035);
+  --scrim: rgba(0, 0, 0, 0.72);
+  --pad-card: 16px;
+  --gap-widget: 14px;
+  --gap-stat: 12px;
+}
+
+/* Carbon — all-day dark, design co-equal with Split Book. Graphite page,
+   bone ink, brick seal. */
+[data-theme='carbon'] {
+  color-scheme: dark;
+  --bg: #101214;
+  --surface: #16191c;
+  --surface-2: #1d2125;
+  --line: #2a2f34;
+  --line-bright: #3b4249;
+  --text: #e8e6e1;
+  --muted: #8d9298;
+  --faint: #7a7f83;
+  --accent: #c4553b;
+  --accent-deep: #9e4029;
+  --accent-ink: #f5efe6;
+  --accent-glow: rgba(196, 85, 59, 0);
+  --pos: #79b48d;
+  --neg: #c97a83;
+  --warn: #cfa25c;
+  --pos-soft: rgba(121, 180, 141, 0.12);
+  --neg-soft: rgba(201, 122, 131, 0.12);
+  --warn-soft: rgba(207, 162, 92, 0.12);
+  --num-glow: none;
+  --pos-glow: none;
+  --neg-glow: none;
+  --warn-glow: none;
+  --text-glow: none;
+  --led-live: var(--pos);
+  --led-local: var(--warn);
+  --led-offline: var(--muted);
+  --grid: rgba(255, 255, 255, 0.04);
+  --scrim: rgba(0, 0, 0, 0.72);
+  --pad-card: 16px;
+  --gap-widget: 14px;
+  --gap-stat: 12px;
+}
+
+/* ── [data-invert] — the private night page ───────────────────────────────────
+   The DeepWork cockpit and the Urge protocol re-point the SAME token names to
+   ink-dark values in EVERY skin, so the hero moments read stopwatch, not
+   stationery. Scoped by theme so each skin inverts into its own family.
+   (The default block also covers split_book — html always carries data-theme,
+   but a stray unthemed subtree should still invert safely.) */
+[data-invert],
+[data-theme='split_book'] [data-invert] {
+  color-scheme: dark;
+  --bg: #17130b;
+  --surface: #1e1910;
+  --surface-2: #262013;
+  --line: #3a3222;
+  --line-bright: #4e4430;
+  --text: #e7dcc4;
+  --muted: #9a8d72;
+  --faint: #897e6a;
+  --accent: #c6502f;
+  --accent-deep: #a03a20;
+  --accent-ink: #f9f3e2;
+  --accent-glow: rgba(198, 80, 47, 0);
+  --pos: #7fa98b;
+  --neg: #b07680;
+  --warn: #c0985a;
+  --pos-soft: rgba(127, 169, 139, 0.12);
+  --neg-soft: rgba(176, 118, 128, 0.12);
+  --warn-soft: rgba(192, 152, 90, 0.12);
+  --grid: rgba(255, 255, 255, 0.035);
+  --scrim: rgba(0, 0, 0, 0.72);
+}
+
+[data-theme='lamplight'] [data-invert] {
+  --bg: #0e0b06;
+  --surface: #151009;
+  --surface-2: #1c1610;
+  --line: #332c1e;
+  --line-bright: #473e2b;
+}
+
+[data-theme='carbon'] [data-invert] {
+  --bg: #0a0c0d;
+  --surface: #101315;
+  --surface-2: #171b1e;
+  --line: #262b2f;
+  --line-bright: #363d43;
 }
 
 @layer base {
@@ -127,6 +266,15 @@
   body,
   #root {
     height: 100%;
+  }
+
+  /* Dynamic Type root: the native content-size hook scales --type-scale, so any
+     type authored in relative units (rem/em) tracks the user's chosen size.
+     text-size-adjust keeps iOS from silently inflating text on its own. */
+  html {
+    font-size: calc(100% * var(--type-scale));
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -140,7 +288,7 @@
     overscroll-behavior-y: none;
   }
 
-  /* Keyboard users get a clear, green focus ring. */
+  /* Keyboard users get a clear lane-red focus ring. */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -176,7 +324,84 @@
 @layer components {
   /* Shared text-input look. */
   .input {
-    @apply w-full rounded-md border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none;
+    @apply w-full rounded-lg border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none;
+  }
+
+  /* ── Print-chrome kit — six shared utilities + one Arc primitive ──────────
+     The entire page furniture of the split book. Do NOT invent per-widget
+     chrome beyond these (tournament developer constraint). */
+
+  /* .rule — a card/section closed by a single bottom hairline (the de-boxed
+     card: no border box, no shadow, one rule under the region). */
+  .rule {
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* .rule-double — the double rule under section heads / closed balances. */
+  .rule-double {
+    border-bottom: 3px double var(--line-bright);
+  }
+
+  /* .ticks — a hairline tick strip (time columns, gauge scales). Height comes
+     from the element; ticks every 8px. */
+  .ticks {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--line) 0,
+      var(--line) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  }
+
+  /* .stamp — the seal treatment: lane-red ring, mono caps inside. The ONLY
+     circle vocabulary in the system besides radios/pills. */
+  .stamp {
+    border: 2px solid var(--accent);
+    border-radius: 9999px;
+    color: var(--accent);
+    font-family: theme('fontFamily.clock');
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* .slip — the coach's pencil note in the margin (Guardian marginalia):
+     indented block behind a 2px ochre left rule. Ochre at most — never red,
+     never an indictment. */
+  .slip {
+    border-left: 2px solid var(--warn);
+    background: var(--surface-2);
+    padding: 10px 12px;
+  }
+
+  /* .field-no — mono form-field numbering ("04/15") and ledger reference lines. */
+  .field-no {
+    font-family: theme('fontFamily.clock');
+    font-variant-numeric: tabular-nums;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  /* .arc — the ONE shared Arc primitive: a conic ring driven by --arc (0–100)
+     with ring thickness --arc-w. Powers the seal hold-ring, the onboarding
+     progress ring, the sentiment gauge and DeepWork progress. */
+  .arc {
+    --arc: 0;
+    --arc-w: 3px;
+    border-radius: 9999px;
+    background: conic-gradient(var(--accent) calc(var(--arc) * 1%), var(--line) 0);
+    -webkit-mask: radial-gradient(
+      closest-side,
+      transparent calc(100% - var(--arc-w) - 1px),
+      #000 calc(100% - var(--arc-w))
+    );
+    mask: radial-gradient(
+      closest-side,
+      transparent calc(100% - var(--arc-w) - 1px),
+      #000 calc(100% - var(--arc-w))
+    );
   }
 }
 
@@ -187,13 +412,28 @@
     font-feature-settings: 'tnum' 1;
   }
 
-  /* The readout glow — static, so it's fine with reduced motion. */
-  .scoreboard {
-    text-shadow: 0 0 18px var(--accent-glow);
+  /* AX reflow — at accessibility text sizes dynamicType.js sets [data-ax] on
+     <html>. A label|control row marked .ax-row then stacks (column) instead of
+     clipping. Surfaces (ScheduleMatrix, KpiGrid, sheet rows) opt in per phase. */
+  [data-ax] .ax-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
   }
-  /* Zen (--glow-strength: 0) dials the readout glow off entirely. */
-  [data-theme='zen'] .scoreboard {
-    text-shadow: none;
+
+  /* Legacy glow hooks — every skin resolves these to `none` now (print does
+     not glow), but the classes stay so components need no edits. */
+  .scoreboard {
+    text-shadow: var(--num-glow);
+  }
+  .glow-pos {
+    text-shadow: var(--pos-glow);
+  }
+  .glow-neg {
+    text-shadow: var(--neg-glow);
+  }
+  .glow-warn {
+    text-shadow: var(--warn-glow);
   }
 
   /* iOS safe areas (notch / home indicator). */
@@ -203,108 +443,119 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  /* Scroll tracks must clear the pinned bottom chrome — the nav bar (4rem) and,
-     above it, the floating HELP NOW pill — plus the home indicator, so the last
-     element is never trapped underneath. The Sync & Refactor bar is IN the deck's
-     scroll flow now (LayoutHost footer), so it needs no clearance of its own. */
+  /* Scroll tracks must clear the pinned bottom chrome — the nav bar (4rem, now
+     carrying the docked HELP slot too) plus the home indicator, so the last
+     element is never trapped underneath. Nothing floats over content anymore. */
   .pb-deck {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 8rem);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
   }
   .pb-nav {
     padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
   }
-  /* HELP NOW floats just above the nav bar; folds in the home-indicator inset so
-     they rise together on notched devices. */
-  .bottom-help {
-    bottom: calc(env(safe-area-inset-bottom) + 5rem);
-  }
 }
 
-/* The active-state pulse — disabled entirely under reduced motion. */
+/* ── Motion ceiling — four verbs, one ease ────────────────────────────────────
+   ink-settle (entries appear) · breath (running clocks only) · rule-draw
+   (progress lines, the seal hold sweep) · seal-press (any commit settles).
+   No overshoot, no color flashes. All disabled by the reduced-motion block. */
+
+/* Breath — running clocks only (Outlast count-up, DeepWork while running).
+   Handoff amplitude: .42 ↔ 1 (a deeper, calmer breath than the old .72 floor). */
 @keyframes pulse-accent {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.55;
+    opacity: 0.42;
   }
 }
-
 .animate-pulse-accent {
-  animation: pulse-accent 2s ease-in-out infinite;
+  animation: pulse-accent var(--dur-pulse) var(--ease) infinite;
+}
+.animate-breath {
+  animation: pulse-accent var(--dur-pulse) var(--ease) infinite;
 }
 
-/* ── Terminal motion tokens — "Mechanical & Snappy" (from the design canvas) ──
-   data-stream  = staggered deal-in for cards/rows (the "deal")
-   pulse-live   = hard-edged live blink (no soft fade)
-   flash-action = 150ms confirm flash on a high-impact tap
-   typewriter + tw-caret = stepped reveal + blinking cursor for AI/driver text
-   mark-breathe = hard-snap breath for a running marker
-   All are disabled by the reduced-motion block below. */
-@keyframes data-stream {
+/* LED pulse — status dots only. Soft settle, never a hard blink. */
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+.animate-pulse-live {
+  animation: pulse-live var(--dur-pulse) var(--ease) infinite;
+}
+
+/* ink-settle — an entry posts: 160ms fade + 2px rise. (Also the survey's
+   deal-in under its legacy `data-stream` name.) */
+@keyframes ink-settle {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(2px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-@keyframes flash-action {
-  0% {
-    opacity: 0.92;
-  }
-  100% {
-    opacity: 0;
-  }
+.animate-ink-settle {
+  animation: ink-settle 160ms var(--ease) both;
 }
-@keyframes pulse-live {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  51%,
-  100% {
-    opacity: 0.16;
-  }
-}
-@keyframes typewriter {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-@keyframes tw-caret {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-@keyframes mark-breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
+.animate-data-stream {
+  animation: ink-settle 160ms var(--ease) both;
 }
 
-.animate-data-stream {
-  animation: data-stream 160ms cubic-bezier(0.4, 0, 0.2, 1) both;
+/* rule-draw — a hairline sweeps in from the left (tab underline, progress
+   lines). Element must be the line itself. */
+@keyframes rule-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
-.animate-pulse-live {
-  animation: pulse-live 1.3s linear infinite;
+.animate-rule-draw {
+  transform-origin: left;
+  animation: rule-draw var(--dur-calm) var(--ease) both;
 }
-.animate-flash {
-  animation: flash-action 150ms linear forwards;
+
+/* seal-press — the commit settle: the disc dips to .975 and returns over the
+   stamp frame (520ms). Never a celebration. (Handoff sealPress.) */
+@keyframes seal-press {
+  0% {
+    transform: scale(1);
+  }
+  34% {
+    transform: scale(0.975);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-seal-press {
+  animation: seal-press var(--dur-stamp) var(--ease) both;
+}
+
+/* haptic-beat — a single ring pulses out and fades on the stamp frame, the
+   visual twin of the one success haptic. Fires ONCE, never loops. */
+@keyframes haptic-beat {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+.animate-haptic-beat {
+  animation: haptic-beat var(--dur-stamp) var(--ease) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

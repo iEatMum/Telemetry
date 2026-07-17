@@ -1,230 +1,219 @@
 // Telemetry — Waitlist landing page (React 18 · plain JS · Tailwind).
-// MARKETING surface ONLY. Uses the scoped "command center" marketing theme
-// (marketing-theme.css → m* tokens) — NOT the app's witness/terminal tokens. The
-// red/amber + leaderboard mechanics here must never be ported into the app.
-//
-// Source: the design-system waitlist handoff + the "daily deal" canvas mock. The
-// right-hand CommandPanel previews the generative deck and showcases the
-// Mechanical & Snappy motion (data-stream deal-in, pulse-live). Reachable at
-// /?waitlist (wired in main.jsx). Supabase capture fails soft to a local mock.
+// MARKETING surface, but built in the APP's own Split Ledger tokens and voice —
+// the funnel must look like the thing it installs. The old page sold a dark
+// "command center" (neon green, hype copy, a fabricated queue rank, a dead
+// lockedin.app link) — the exact opposite of the calm manila app, which seeded
+// install→open drop and "not what was advertised" reviews. This page shows the
+// real promise: a discipline ledger that never shames you, free book + optional
+// coach, on-device. Reachable at /?waitlist (wired in main.jsx). Supabase capture
+// fails soft to a local confirmation.
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
-import '../marketing-theme.css'
 
-const pad = (n) => String(n).padStart(2, '0')
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
-const Label = ({ children, className = '' }) => (
-  <span className={'font-mono text-[11px] tracking-[0.18em] uppercase text-mmuted ' + className}>{children}</span>
+// The funnel's destination (CONSTITUTION M4): paste the App Store listing URL
+// here once the app is live — the store button then leads and the email list
+// becomes the overflow. Empty string = pre-launch waitlist mode.
+const APP_STORE_URL = ''
+
+const Micro = ({ children, className = '' }) => (
+  <span className={'font-clock text-[11px] uppercase tracking-widest2 text-muted ' + className}>{children}</span>
 )
 
-function MockClock() {
-  const [t, setT] = useState({ d: 142, h: 6, m: 38, s: 11 })
-  useEffect(() => {
-    const id = setInterval(
-      () =>
-        setT((p) => {
-          let { d, h, m, s } = p
-          s++
-          if (s > 59) { s = 0; m++ }
-          if (m > 59) { m = 0; h++ }
-          if (h > 23) { h = 0; d++ }
-          return { d, h, m, s }
-        }),
-      1000
-    )
-    return () => clearInterval(id)
-  }, [])
-  return (
-    <div className="flex items-baseline gap-2 font-mono tabular-nums text-[34px] leading-none text-mgreen [text-shadow:0_0_22px_var(--m-green-glow)] animate-breathe">
-      <span>{pad(t.d)}</span><span className="text-mfaint [text-shadow:none]">:</span>
-      <span>{pad(t.h)}</span><span className="text-mfaint [text-shadow:none]">:</span>
-      <span>{pad(t.m)}</span><span className="text-mfaint [text-shadow:none]">:</span>
-      <span className="opacity-85">{pad(t.s)}</span>
-    </div>
-  )
-}
-
+// Honest capture: email in, a plain confirmation out. No invented rank, no
+// unbacked referral math — the brand IS honesty, so the funnel can't fake numbers
+// (the queue can't be read back through INSERT-only RLS anyway). And honesty cuts
+// both ways: a failed insert (the backend is currently PAUSED — every insert
+// fails) must never show "On the list" while the address evaporates. Failure gets
+// its own state and a mailto fallback that actually records the signup.
 function Capture() {
   const [email, setEmail] = useState('')
-  const [state, setState] = useState('idle') // idle | submitting | joined
-  const [rank, setRank] = useState(null)
-  const [ref, setRef] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [state, setState] = useState('idle') // idle | submitting | joined | failed
 
   const submit = async (e) => {
     e.preventDefault()
     if (!EMAIL_RE.test(email)) return
     setState('submitting')
-
-    const code = (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)).slice(0, 8)
-    const approxRank = 1000 + Math.floor(Math.random() * 8000)
-
-    // Real join when the backend exists; fail soft to the local mock otherwise
-    // (table INSERT-only RLS means rank can't be read back yet — see 0007_waitlist.sql).
+    const code = (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(email.length)).slice(0, 8)
     if (isSupabaseConfigured && supabase) {
       try {
         const referredBy = new URLSearchParams(location.search).get('ref')
         const { error } = await supabase.from('waitlist').insert({ email, referral_code: code, referred_by: referredBy })
-        if (!error) {
-          setRank(approxRank); setRef(code); setState('joined'); return
-        }
+        setState(error ? 'failed' : 'joined')
+        return
       } catch {
-        /* fall through to mock */
+        setState('failed')
+        return
       }
     }
-    await new Promise((r) => setTimeout(r, 650))
-    setRank(approxRank); setRef(code); setState('joined')
-  }
-
-  const link = `lockedin.app/?ref=${ref}`
-  const copy = () => {
-    navigator.clipboard?.writeText('https://' + link)
-    setCopied(true); setTimeout(() => setCopied(false), 1600)
+    // No capture backend configured at all — say so, don't pretend.
+    setState('failed')
   }
 
   if (state === 'joined') {
     return (
-      <div className="flex flex-col gap-[18px]">
-        <Label className="text-mgreen">▸ access queued</Label>
-        <div>
-          <Label>your position</Label>
-          <div className="font-mono text-[54px] leading-none text-mgreen [text-shadow:0_0_26px_var(--m-green-glow)] mt-1.5">#{rank.toLocaleString()}</div>
-        </div>
-        <p className="m-0 text-[14.5px] leading-relaxed text-mmuted max-w-[440px]">
-          Every operator you recruit moves you up the queue. Three referrals jumps you{' '}
-          <span className="text-mink">~400 spots</span>. Front of the line gets day-one access.
+      <div className="flex flex-col gap-3 border-t border-line pt-5">
+        <Micro className="text-accent">On the list</Micro>
+        <p className="max-w-[440px] text-[15px] leading-relaxed text-muted">
+          You’re on the list — you’ll get it first when Telemetry opens on the App Store. No spam, and you can
+          delete anytime.
         </p>
-        <div className="flex gap-2 items-stretch">
-          <div className="flex-1 flex items-center px-3.5 font-mono text-[13.5px] text-mink bg-mpanel2 border border-mline rounded truncate">{link}</div>
-          <button onClick={copy} className={'px-5 font-mono text-[12px] font-bold tracking-[0.12em] rounded ' + (copied ? 'bg-mpanel2 text-mgreen border border-mgreen' : 'bg-mgreen text-mgreenink shadow-[0_0_24px_var(--m-green-glow)]')}>
-            {copied ? 'COPIED ✓' : 'COPY LINK'}
-          </button>
-        </div>
-        <div className="flex gap-2">
-          {['TikTok', 'X', 'iMessage'].map((s) => (
-            <button key={s} className="flex-1 py-[11px] font-mono text-[11px] tracking-[0.1em] uppercase text-mmuted border border-mline rounded">SHARE · {s}</button>
-          ))}
-        </div>
+      </div>
+    )
+  }
+
+  if (state === 'failed') {
+    return (
+      <div className="flex flex-col gap-3 border-t border-line pt-5">
+        <Micro>The list didn’t take the entry</Micro>
+        <p className="max-w-[440px] text-[15px] leading-relaxed text-muted">
+          Something on our side is down, and pretending otherwise isn’t how this book works.{' '}
+          <a
+            className="text-ink underline decoration-line underline-offset-4"
+            href={`mailto:ianpalsgaard@gmail.com?subject=Telemetry%20waitlist&body=${encodeURIComponent(email)}`}
+          >
+            Email us
+          </a>{' '}
+          and we’ll add you by hand, or try again later.
+        </p>
+        <button
+          type="button"
+          onClick={() => setState('idle')}
+          className="self-start rounded-md border border-line px-5 py-3 font-clock text-[12px] uppercase tracking-widest2 text-muted"
+        >
+          Try again
+        </button>
       </div>
     )
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3.5">
-      <div className="flex gap-2 items-stretch flex-wrap">
+    <form onSubmit={submit} className="flex flex-col gap-3">
+      {APP_STORE_URL ? (
+        <a
+          href={APP_STORE_URL}
+          className="self-start rounded-md bg-accent px-7 py-4 font-clock text-[13px] font-semibold uppercase tracking-widest2 text-accent-ink"
+        >
+          Get it on the App Store →
+        </a>
+      ) : null}
+      <div className="flex flex-wrap items-stretch gap-2">
         <input
-          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@email.com" required
-          className="flex-[1_1_240px] min-w-0 px-4 py-[15px] font-mono bg-mpanel border border-mlinebright rounded text-mink text-[15px] outline-none focus:border-mgreen"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@email.com"
+          aria-label="Email address"
+          required
+          className="min-w-0 flex-[1_1_240px] rounded-md border border-line bg-surface px-4 py-4 text-[15px] text-ink outline-none focus:border-accent-deep"
         />
-        <button type="submit" disabled={state === 'submitting'} className="px-[30px] font-mono text-[13px] font-bold tracking-[0.12em] bg-mgreen text-mgreenink rounded shadow-[0_0_28px_var(--m-green-glow)] disabled:opacity-60">
-          {state === 'submitting' ? 'LOCKING…' : 'LOCK IN →'}
+        <button
+          type="submit"
+          disabled={state === 'submitting'}
+          className="rounded-md bg-accent px-7 font-clock text-[13px] font-semibold uppercase tracking-widest2 text-accent-ink disabled:opacity-60"
+        >
+          {state === 'submitting' ? 'Adding…' : 'Join the list'}
         </button>
       </div>
-      <Label>no spam · delete anytime · 8,423 on the list</Label>
+      <Micro>Launching on the App Store — the list gets it first · no spam · delete anytime</Micro>
     </form>
   )
 }
 
-// Right-rail preview of the generative deck — static, marketing-themed, and it
-// "deals in" with the data-stream motion to sell the command-center feel.
-function CommandPanel() {
-  const schedule = [
-    { t: '05:30', label: 'Wake', verdict: 'HIT', mark: 'var(--m-green)', vColor: 'var(--m-muted)' },
-    { t: '06:15', label: 'Sprint · 6×200m', verdict: 'LIVE', mark: 'var(--m-green)', vColor: 'var(--m-green)' },
-    { t: '12:30', label: 'Fuel', verdict: 'PENDING', mark: 'var(--m-line-bright)', vColor: 'var(--m-amber)' },
-    { t: '18:00', label: 'Study block', verdict: 'PENDING', mark: 'var(--m-line-bright)', vColor: 'var(--m-amber)' },
-    { t: '22:00', label: 'Phone down', verdict: 'PENDING', mark: 'var(--m-line-bright)', vColor: 'var(--m-amber)' },
+// A manila preview of the ACTUAL app — the same page a new user installs. Misses
+// are withheld ink / muted-dashed, never red; the current block carries the one
+// accent rule. No dark terminal, no verdict chips the app doesn't ship.
+function SamplePage() {
+  const rows = [
+    { t: '05:30', label: 'Wake — feet on floor', state: 'done' },
+    { t: '06:15', label: 'Deep work — first block', state: 'now' },
+    { t: '12:30', label: 'Train — tempo', state: 'open' },
+    { t: '22:00', label: 'Phone out of the room', state: 'missed' },
   ]
-  const tiles = [
-    { value: '212', label: 'CLEAN DAYS', color: 'var(--m-green)' },
-    { value: '14', label: 'SPRINTS / WK', color: 'var(--m-ink)' },
-    { value: '38.2', label: 'MILES / WK', color: 'var(--m-ink)' },
-  ]
-  const trend = '10,55 56,40 102,49 148,30 193,39 239,23 285,27'
-
+  const mark = { done: '✓', open: '·', missed: '—' }
   return (
-    <div className="rounded-xl border border-mline bg-mbg2 p-5 shadow-[0_0_60px_-20px_var(--m-green-glow)]">
-      <div className="flex items-center justify-between border-b border-mline pb-4">
-        <div>
-          <Label>uptime · clean</Label>
-          <div className="mt-2"><MockClock /></div>
-        </div>
-        <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.16em] text-mgreen">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-mgreen animate-pulse-live" /> SYSTEM LIVE
-        </div>
+    <div className="rounded-xl border border-line bg-surface p-6">
+      <div className="text-center">
+        <Micro>Days on the book</Micro>
+        <div className="mt-2 font-clock tnum text-[64px] leading-none text-ink">212</div>
+        <div className="mt-1 font-clock text-[11px] uppercase tracking-widest2 text-faint">run 3 · wk 30</div>
       </div>
-
-      {/* Schedule matrix — deals in */}
-      <div className="mt-4 rounded-lg bg-mpanel p-4">
-        <Label>schedule matrix</Label>
-        <div className="mt-3 flex flex-col">
-          {schedule.map((r, i) => (
-            <div
-              key={r.t}
-              className="animate-data-stream flex items-center gap-3.5 border-t border-mline py-2.5 first:border-t-0"
-              style={{ animationDelay: `${i * 55}ms` }}
+      <div className="mt-6 border-t border-line">
+        {rows.map((r) => (
+          <div
+            key={r.t}
+            className={`flex items-center gap-3 border-b border-line py-3 ${
+              r.state === 'now' ? 'border-l-2 border-accent-deep bg-surface2 pl-3' : ''
+            }`}
+          >
+            <span className="min-w-[44px] font-clock tnum text-[12px] text-muted">{r.t}</span>
+            <span
+              className={`flex-1 text-[13px] ${
+                r.state === 'missed' ? 'text-faint line-through decoration-dashed' : 'text-ink'
+              }`}
             >
-              <span className="self-stretch w-[3px] rounded-sm" style={{ background: r.mark }} />
-              <span className="font-mono tabular-nums text-[13px] text-mink min-w-[48px]">{r.t}</span>
-              <span className="flex-1 text-[13px] text-mink">{r.label}</span>
-              <span className="font-mono text-[10px] tracking-[0.12em]" style={{ color: r.vColor }}>{r.verdict}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Energy trend */}
-      <div className="mt-3.5 rounded-lg bg-mpanel p-4 animate-data-stream" style={{ animationDelay: '300ms' }}>
-        <div className="flex items-center justify-between">
-          <Label>energy trend</Label>
-          <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.14em] text-mgreen">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-mgreen animate-pulse-live" /> NOW
-          </span>
-        </div>
-        <svg viewBox="0 0 300 86" preserveAspectRatio="none" className="mt-3 block h-[80px] w-full overflow-visible">
-          <polyline points={trend} fill="none" stroke="var(--m-green)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          <line x1="285" y1="0" x2="285" y2="86" stroke="var(--m-line-bright)" strokeWidth="1" strokeDasharray="3 4" />
-          <circle cx="285" cy="27" r="9" fill="var(--m-green-glow)" />
-          <circle cx="285" cy="27" r="4.5" fill="var(--m-green)" />
-        </svg>
-      </div>
-
-      {/* Stat grid — deals in */}
-      <div className="mt-3.5 grid grid-cols-3 gap-3.5">
-        {tiles.map((tile, i) => (
-          <div key={tile.label} className="animate-data-stream rounded-lg bg-mpanel p-4" style={{ animationDelay: `${180 + i * 70}ms` }}>
-            <div className="font-mono tabular-nums text-[24px] font-semibold leading-none" style={{ color: tile.color }}>{tile.value}</div>
-            <div className="mt-2 font-mono text-[10px] tracking-[0.12em] text-mmuted">{tile.label}</div>
+              {r.label}
+            </span>
+            {r.state === 'now' ? (
+              <span className="font-clock text-[10px] uppercase tracking-widest2 text-accent">◆ now</span>
+            ) : (
+              <span className="font-clock text-[12px] text-muted">{mark[r.state]}</span>
+            )}
           </div>
         ))}
+      </div>
+      <div className="mt-4 text-center font-clock text-[10px] uppercase tracking-widest2 text-faint">
+        A miss is logged, never punished
       </div>
     </div>
   )
 }
 
+const VALUE = [
+  ['Free forever', 'The whole book — schedule, streaks, sprints, and the 2 a.m. night page. No paywall on discipline.'],
+  ['The tape, not the judge', 'A miss is logged in withheld ink, never a red mark. Data, not shame.'],
+  ['The coach, only if you want it', 'An AI read of your week and your drift — $6.99/mo, 7 days free. Optional, never nagged.'],
+  ['Yours, on device', 'No account, no feed. Nothing leaves your phone unless you send it.'],
+]
+
 export default function Waitlist() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-mbg text-mink font-sans">
-      {/* grid texture + green glow wash */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.22] [background-image:linear-gradient(var(--m-line)_1px,transparent_1px),linear-gradient(90deg,var(--m-line)_1px,transparent_1px)] [background-size:54px_54px] [mask-image:radial-gradient(ellipse_90%_70%_at_50%_30%,#000,transparent)]" />
-      <header className="relative flex items-center justify-between px-8 py-[22px] max-w-[1180px] mx-auto">
-        <div className="font-mono text-[14px] font-bold tracking-[0.22em]">TELEMETRY</div>
-        <div className="flex items-center gap-2 px-3 py-[7px] border border-mline rounded"><Label>pre-launch · v0</Label></div>
+    <div className="min-h-screen bg-bg text-ink">
+      <header className="mx-auto flex max-w-[1180px] items-center justify-between px-8 py-6">
+        <div className="font-clock text-[14px] font-semibold uppercase tracking-[0.22em]">Telemetry</div>
+        <div className="rounded-md border border-line px-3 py-1.5">
+          <Micro>pre-launch</Micro>
+        </div>
       </header>
-      <main className="relative max-w-[1180px] mx-auto px-8 pt-10 pb-20 grid grid-cols-1 md:grid-cols-[1.05fr_.95fr] gap-14 items-center">
-        <section className="flex flex-col gap-[26px]">
-          <h1 className="m-0 text-[clamp(40px,5.4vw,68px)] leading-[1.02] tracking-[-0.02em] font-extrabold">
-            STOP NEGOTIATING WITH <span className="text-mgreen [text-shadow:0_0_30px_var(--m-green-glow)]">YOURSELF.</span>
+
+      <main className="mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-14 px-8 pb-20 pt-10 md:grid-cols-[1.05fr_.95fr]">
+        <section className="flex flex-col gap-6">
+          <Micro>The discipline ledger</Micro>
+          <h1 className="m-0 text-[clamp(38px,5.2vw,60px)] font-semibold leading-[1.05] tracking-[-0.01em]">
+            Keep the book on yourself.
+            <br />
+            <span className="text-accent">It never shames you.</span>
           </h1>
-          <p className="m-0 text-[18px] leading-[1.55] text-mmuted max-w-[480px]">
-            An AI system that runs your day like a command center — wake, deep work, training, streaks. It witnesses what you actually did and tells you the next move. <span className="text-mink">No willpower required. Just the protocol.</span>
+          <p className="m-0 max-w-[480px] text-[18px] leading-relaxed text-muted">
+            Telemetry keeps the tape — your schedule, your streaks, and the night page for the hard hours. A miss is
+            logged, never punished. The book is free forever; hire the AI coach when you want the read.
           </p>
+
+          <ul className="border-t border-line">
+            {VALUE.map(([t, s]) => (
+              <li key={t} className="border-b border-line py-3">
+                <div className="text-[14px] text-ink">{t}</div>
+                <div className="text-[12px] text-muted">{s}</div>
+              </li>
+            ))}
+          </ul>
+
           <Capture />
         </section>
-        <CommandPanel />
+
+        <SamplePage />
       </main>
     </div>
   )

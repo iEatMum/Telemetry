@@ -5,10 +5,16 @@
 import { useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
+import { useEntitlement } from '../lib/purchases.js'
+import { CoachGate } from './Paywall.jsx'
 import { startOfWeek, dateKey, streakDays, appDayDate, daysUntil } from '../lib/dates.js'
 
 export default function WeeklyReview({ onClose }) {
   const { streak, sprints, income, runs, reviews, saveReview, settings, exportData, updateSettings } = useStore()
+  // The Sunday Debrief is the coach's reconciliation (M0.1) — behind the
+  // register. The book's own data stays reachable: export lives in Settings,
+  // the week grid on TRENDS, both free.
+  const { entitled } = useEntitlement()
 
   // Anchor the week to the 3am app-day so a clean log made Sun 12–3am (stamped
   // to Saturday by appDayKey) still lands in this week's window.
@@ -64,11 +70,19 @@ export default function WeeklyReview({ onClose }) {
     setBackedUp(true)
   }
 
+  if (!entitled) {
+    return (
+      <Sheet title="Sunday Debrief" onClose={onClose}>
+        <CoachGate line="On Sundays the coach reconciles the week — what held, what broke, and the one change worth naming." />
+      </Sheet>
+    )
+  }
+
   return (
     <Sheet title="Sunday Debrief" onClose={onClose}>
       {prior?.oneChange && (
-        <div className="rounded-xl border border-accent/40 bg-accent/5 px-4 py-3">
-          <div className="text-xs uppercase tracking-wide text-accent">Last week you said</div>
+        <div className="border-l-2 border-linebright bg-surface2 px-4 py-3">
+          <div className="text-xs uppercase tracking-wide text-muted">Last week you said</div>
           <div className="mt-1 text-sm text-ink">"{prior.oneChange}"</div>
         </div>
       )}
@@ -81,25 +95,25 @@ export default function WeeklyReview({ onClose }) {
       </div>
       <p className="text-center text-xs text-muted">
         ${Math.round(stats.money).toLocaleString()} logged this week ·{' '}
-        <span className={stats.longRun ? 'text-accent' : 'text-muted'}>
+        <span className={stats.longRun ? 'text-ink' : 'text-muted'}>
           {stats.longRun ? 'long run ✓' : 'no long run'}
         </span>
       </p>
       {weeksToFresno != null && (
-        <p className="text-center text-xs text-accent">{weeksToFresno} weeks until you report to Fresno State.</p>
+        <p className="text-center text-xs text-ink">{weeksToFresno} weeks until you report to Fresno State.</p>
       )}
 
       <Question label="What worked?" value={worked} onChange={setWorked} />
       <Question label="What broke?" value={broke} onChange={setBroke} />
       <Question label="One change — the kind of man you're becoming" value={oneChange} onChange={setOneChange} />
       {oneChange.trim() && (
-        <p className="text-center text-xs text-accent">New week. One change. Go.</p>
+        <p className="text-center text-xs text-ink">New week. One change. Go.</p>
       )}
 
       <button
         type="button"
         onClick={save}
-        className="w-full rounded-2xl bg-accent py-3.5 font-medium text-accent-ink"
+        className="w-full rounded-md bg-accent py-3.5 font-clock text-sm font-semibold uppercase tracking-widest2 text-accent-ink"
       >
         {saved ? 'Saved ✓' : 'Save debrief'}
       </button>
@@ -116,7 +130,7 @@ export default function WeeklyReview({ onClose }) {
 
 function DebriefStat({ value, label }) {
   return (
-    <div className="rounded-xl bg-surface2 py-3">
+    <div className="rounded-lg bg-surface2 py-3">
       <div className="font-clock tnum text-xl text-ink">{value}</div>
       <div className="text-[10px] uppercase tracking-wide text-muted">{label}</div>
     </div>
@@ -131,7 +145,7 @@ function Question({ label, value, onChange }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={2}
-        className="resize-none rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+        className="resize-none rounded-lg border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
       />
     </label>
   )

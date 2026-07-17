@@ -126,10 +126,23 @@ export function densityAt(hour, moments) {
   return sum
 }
 
-/** The peak danger hour and normalized now-risk. Needs ≥3 moments to speak. */
-export function temporalProfile(streak, now = new Date()) {
+/**
+ * The peak danger hour and normalized now-risk. Needs ≥3 real moments to speak
+ * from observation. With fewer, an optional day-0 survey `prior` ({ peakHour })
+ * stands in — returned with evidence:'survey' (truthy, so it fills the {window},
+ * but NOT === true, so assessDrift excludes it from the CRITICAL evidence gate).
+ */
+export function temporalProfile(streak, now = new Date(), prior = null) {
   const moments = urgeMoments(streak)
-  if (moments.length < 3) return { evidence: false, score: 0, peakHour: null }
+  if (moments.length < 3) {
+    if (prior && Number.isFinite(prior.peakHour)) {
+      const nowH = now.getHours() + now.getMinutes() / 60
+      const d = circularDist(nowH, prior.peakHour)
+      const score = Math.exp(-(d * d) / (2 * SIGMA_H * SIGMA_H)) // same Gaussian as the histogram
+      return { evidence: 'survey', score: Math.min(1, score), peakHour: prior.peakHour }
+    }
+    return { evidence: false, score: 0, peakHour: null }
+  }
   let peakHour = 0
   let peak = -1
   for (let h = 0; h < 24; h += 0.5) {
@@ -174,6 +187,13 @@ function vHrvDrop({ health, baselines }) {
 function vEngagementSlip({ summary }) {
   const seen = summary?.widgets?.length || 0
   if (seen < 4) return { score: 0, evidence: false, note: 'deck barely dealt yet' }
+  // "Ignored" is only a fact once the day shows some action — cards mount as
+  // "seen" the instant the deck is dealt, so before anything has been used,
+  // posted, or missed, an untouched deck is a blank page, not a slip.
+  const imp = summary.impact || {}
+  const acted =
+    (summary.usedTypes?.length || 0) > 0 || (imp.done || 0) > 0 || (imp.missed || 0) > 0 || summary.closed
+  if (!acted) return { score: 0, evidence: false, note: 'deck dealt — no reads yet' }
   const ignored = summary.ignoredTypes?.length || 0
   const score = ignored >= 4 ? 1 : ignored >= 2 ? 0.5 : 0
   return { score, evidence: true, note: ignored ? `${ignored} card types ignored` : 'deck engaged' }
@@ -183,6 +203,13 @@ function vStreakPhase({ streak, now }) {
   if (!streak?.startedAt) return { score: 0, evidence: false, note: 'no run yet' }
   const days = streakDays(streak.startedAt, now)
   const bestDays = Math.floor((streak.bestSeconds || 0) / 86400)
+  // A brand-new book (day 0, no resets or wins ever) has no behavior to read —
+  // the phase model starts once there's a single day of tape. Without this, a
+  // fresh install opens to a risk flag about conduct that never happened.
+  const hasHistory = (streak.resets || []).length > 0 || (streak.urgesSurvived || []).length > 0
+  if (days === 0 && !hasHistory) {
+    return { score: 0, evidence: false, note: 'first day on the book' }
+  }
   // Early days: the habit isn't load-bearing yet, and a fresh reset carries AVE
   // risk (Lally 2010; Marlatt). Summit zone: approaching/just past the personal
   // best is its own pressure (goal-gradient in, letdown out).
@@ -190,7 +217,7 @@ function vStreakPhase({ streak, now }) {
   let note = `day ${days} — steady water`
   if (days <= 6) {
     score = 0.7
-    note = `day ${days} — the fragile early stretch`
+    note = `day ${days} — early days; the structure carries you`
   } else if (days <= 13) {
     score = 0.35
     note = `day ${days} — young run`
@@ -214,7 +241,7 @@ const VECTORS = [
   { key: 'hrvDrop', weight: 10, fn: vHrvDrop },
   { key: 'engagementSlip', weight: 20, fn: vEngagementSlip },
   { key: 'streakPhase', weight: 15, fn: vStreakPhase },
-  { key: 'temporalRisk', weight: 25, fn: ({ temporal }) => ({ score: temporal.score, evidence: temporal.evidence, note: temporal.evidence ? (temporal.score > 0.5 ? 'inside your historical danger window' : 'outside the historical danger window') : 'not enough urge history yet' }) },
+  { key: 'temporalRisk', weight: 25, fn: ({ temporal }) => ({ score: temporal.score, evidence: temporal.evidence, note: temporal.evidence === 'survey' ? (temporal.score > 0.5 ? 'inside your stated danger window' : 'outside your stated danger window') : temporal.evidence ? (temporal.score > 0.5 ? 'inside your historical danger window' : 'outside the historical danger window') : 'not enough urge history yet' }) },
   { key: 'impactMisses', weight: 10, fn: vImpactMisses },
 ]
 
@@ -233,8 +260,8 @@ function bandFor(score, lastBand, evidenceCount) {
  * The pure core. All inputs injected — fully testable, no IO.
  * Returns { score, band, vectors, window, evidenceCount }.
  */
-export function assessDrift({ now = new Date(), health = null, baselines = {}, wellnessToday = null, summary = null, streak = {}, lastBand = 'stable' } = {}) {
-  const temporal = temporalProfile(streak, now)
+export function assessDrift({ now = new Date(), health = null, baselines = {}, wellnessToday = null, summary = null, streak = {}, lastBand = 'stable', guardianSeed = null } = {}) {
+  const temporal = temporalProfile(streak, now, guardianSeed?.temporalPrior || null)
   const ctx = { now, health, baselines, wellnessToday, summary, streak, temporal }
 
   let score = 0
@@ -242,22 +269,36 @@ export function assessDrift({ now = new Date(), health = null, baselines = {}, w
   const vectors = VECTORS.map(({ key, weight, fn }) => {
     const v = fn(ctx)
     score += v.score * weight
-    if (v.evidence && v.score > 0) evidenceCount += 1
+    // Only OBSERVED evidence (=== true) gates CRITICAL. A survey prior
+    // (evidence:'survey') adds to the WATCH score and fills the window, but can
+    // never satisfy the ≥2-evidence critical requirement — priors don't convict.
+    if (v.evidence === true && v.score > 0) evidenceCount += 1
     return { key, weight, ...v }
   })
   score = Math.round(score)
   const band = bandFor(score, lastBand, evidenceCount)
 
-  // The predicted window (only with real history): [peak-1h, peak+1h], warned
-  // 30 minutes before it opens — action-cued, never mid-window nagging.
+  // The predicted vulnerability hour, warned EXACTLY 30 minutes before it —
+  // action-cued, one shot, never mid-window nagging. Sourced from the observed
+  // histogram or the day-0 survey prior (temporalProfile handles which).
   let window = null
   if (temporal.evidence && temporal.peakHour != null) {
+    // Wrap around midnight: peakHour 0 (a real histogram output for late-night
+    // users — the exact population this app serves) used to compute warnHour
+    // -0.5, and setHours(-1, 30) lands on YESTERDAY — the warning could never
+    // fire for any midnight-area window.
+    const warnHour = (temporal.peakHour - 0.5 + 24) % 24
+    const wh = Math.floor(warnHour)
+    const wm = Math.round((warnHour - wh) * 60)
     const warnAt = new Date(now)
-    warnAt.setHours(Math.floor(temporal.peakHour - 1), Math.round(((temporal.peakHour - 1) % 1) * 60) - 30, 0, 0)
+    warnAt.setHours(wh, wm, 0, 0)
+    // Already past today → arm TOMORROW's window instead of going silent. The
+    // scheduler replaces by fixed notification id, so re-arming is idempotent.
+    if (warnAt <= now) warnAt.setDate(warnAt.getDate() + 1)
     window = {
       peakHour: temporal.peakHour,
       label: windowLabel(temporal.peakHour),
-      warnAt: warnAt > now ? warnAt : null, // already past today → no warning
+      warnAt,
     }
   }
 
@@ -278,11 +319,64 @@ export async function runAssessment(now = new Date()) {
     summary: summarizeDay(),
     streak,
     lastBand: g.lastBand,
+    guardianSeed: g.seed || null, // day-0 survey priors, until real urge history exists
   })
   const g2 = readGuardian()
   g2.lastBand = assessment.band
+  g2.lastAssessAt = new Date().toISOString() // heartbeat for verifyGuardianStatus
   writeGuardian(g2)
   return assessment
+}
+
+/**
+ * The full tone profile from the stored survey — streakModel + theme AND the
+ * register-driving signals (slipResponse, missionConfidence, executionRate7d)
+ * so the tone engine's scaffold/strict switcher fires without the caller having
+ * to reassemble it. Reads settings; safe defaults when unset.
+ */
+export function guardianProfile() {
+  const s = storage.get('settings') || {}
+  return {
+    streakModel: s.streakModel,
+    theme: s.theme,
+    slipResponse: s.slipResponse,
+    missionConfidence: s.missionConfidence,
+    executionRate7d: s.executionRate7d,
+  }
+}
+
+/**
+ * Diagnostic self-check for the drift loop. By default it PROBES (runs one
+ * assessment) so the heartbeat is fresh, then verifies the pieces that keep the
+ * Guardian alive: the local sidecar is readable + writable, priors are armed,
+ * the assessment loop has run recently, and the engagement listener is bound.
+ * Returns { ok, checkedAt, checks } — never throws.
+ */
+export async function verifyGuardianStatus({ probe = true } = {}) {
+  if (probe) {
+    try {
+      await runAssessment()
+    } catch {
+      /* fall through — the checks below report the failure honestly */
+    }
+  }
+  const now = Date.now()
+  const g = readGuardian()
+  const seed = g.seed || null
+  const lastAssessAt = g.lastAssessAt ? Date.parse(g.lastAssessAt) : null
+  const checks = {
+    storeReadable: !!g && typeof g === 'object', // local sidecar sync
+    priorsArmed: !!(seed && (seed.temporalPrior || seed.slipRegister)), // day-0 survey priors present
+    baselineFolded: !!(g.baselines && (g.baselines.sleep != null || g.baselines.hrv != null)),
+    loopRecent: lastAssessAt != null && now - lastAssessAt < 20 * 60 * 1000, // 15m tick + slack
+    listenerBound: typeof subscribeEngagement === 'function', // engagement pub/sub wired
+    invocationsTracked: Array.isArray(g.invocations),
+    native: Capacitor.isNativePlatform(), // native scheduling available?
+  }
+  // "Fully active" = the loop is running, the store round-trips, and the event
+  // source is bound. Priors/baseline/native are informational, not required.
+  const ok = checks.storeReadable && checks.loopRecent && checks.listenerBound
+  return { ok, checkedAt: new Date().toISOString(), checks }
 }
 
 /** The tone-engine params every Guardian line needs, derived from live state. */
@@ -325,7 +419,10 @@ export function applyGuardian(layout, assessment, profile = {}) {
 }
 
 // ── Intervention 2: the pre-window warning (native, once per app-day) ────────
-export async function scheduleGuardianWarning(assessment, profile = {}) {
+// Fires ONE notification 30 min before the vulnerability hour (assessment.window
+// .warnAt). profile defaults to the stored survey profile so the tone register
+// (scaffold/strict) applies even if the caller passed nothing.
+export async function scheduleGuardianWarning(assessment, profile = guardianProfile()) {
   if (!Capacitor.isNativePlatform()) return { ok: false, reason: 'web' }
   if (!assessment || assessment.band === 'stable' || !assessment.window?.warnAt) return { ok: false, reason: 'no-window' }
   const day = appDayKey()

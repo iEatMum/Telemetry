@@ -63,15 +63,22 @@ describe('notification slot', () => {
 })
 
 describe('theme register', () => {
-  it('terminal uppercases the notification title', () => {
-    const n = voice({ streakModel: 'engagement', theme: 'terminal' }, 'warn.notification', P)
-    expect(n.title).toBe(n.title.toUpperCase())
+  it('lamplight lowercases the notification title — quiet after dark', () => {
+    const n = voice({ streakModel: 'engagement', theme: 'lamplight' }, 'warn.notification', P)
+    expect(n.title).toBe(n.title.toLowerCase())
   })
 
-  it('zen softens the urge-screen imperative', () => {
-    const z = voice({ streakModel: 'engagement', theme: 'zen' }, 'urge.open', P)
+  it('lamplight softens the urge-screen imperative', () => {
+    const z = voice({ streakModel: 'engagement', theme: 'lamplight' }, 'urge.open', P)
     expect(z).toContain('Walk the steps')
     expect(z).not.toContain('Work the steps.')
+  })
+
+  it('nothing shouts: no skin uppercases titles anymore', () => {
+    for (const theme of ['split_book', 'lamplight', 'carbon']) {
+      const n = voice({ streakModel: 'engagement', theme }, 'warn.notification', P)
+      expect(n.title).not.toBe(n.title.toUpperCase())
+    }
   })
 })
 

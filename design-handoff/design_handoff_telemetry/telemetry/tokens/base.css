@@ -1,0 +1,48 @@
+/* ============================================================
+   TELEMETRY · Base
+   Resets + terminal atmosphere. Dark by default.
+   Kept lean — Design Components style inline; this only handles
+   what inline styles can't (resets, selection, scrollbars).
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--t-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* machine-truth helper */
+.tl-mono {
+  font-family: var(--font-clock);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--track-mono);
+}
+
+/* section label — xs, uppercase, wide-tracked, muted */
+.tl-label {
+  font-family: var(--font-clock);
+  font-size: var(--t-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: var(--w-med);
+}
+
+a { color: inherit; text-decoration: none; }
+
+::selection { background: var(--accent-glow); color: var(--accent-ink); }
+
+/* thin terminal scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }

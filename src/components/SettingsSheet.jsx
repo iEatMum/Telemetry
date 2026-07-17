@@ -1,13 +1,15 @@
-// SettingsSheet.jsx — full Phase 2 settings.
-// Name · wake/bed times · money goal · report date · accountability partners
-// (multiple — they power the HELP button) · shoes · reading · Focus shortcut ·
-// export JSON · wipe all (double-confirmed).
+// SettingsSheet.jsx — settings for the shipping v1.
+// Name · wake/bed times · interface · opt-in modules · accountability partners
+// (multiple — they power the HELP button and the night page's one-tap text) ·
+// reading plan (feeds the faith card) · Focus shortcut · the fine print ·
+// export/import JSON · wipe all (double-confirmed).
 
 import { useRef, useState } from 'react'
 import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
 import { useTheme } from '../lib/theme.jsx'
 import { dateKey } from '../lib/dates.js'
+import { openLegal } from './LegalSheet.jsx'
 
 function downloadJSON(data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -27,8 +29,6 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
     updateSettings,
     addPartner,
     removePartner,
-    addShoe,
-    removeShoe,
     addReadingSection,
     exportData,
     importData,
@@ -55,26 +55,31 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
         faster — college sprinters ~0.7s (Mah 2011).
       </p>
 
+      {/* The dictated day — same list onboarding seeds and the deck's
+          "Dictate the day" line edits (App.jsx owns the sheet; the event
+          mounts it above this one). */}
+      <Section title="Your day, dictated" hint="The blocks the Today page prints. Yours to write — the app never invents them.">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('telemetry:open-dayplan'))}
+          className="w-full rounded-lg border border-line bg-surface2 py-2.5 text-sm text-ink"
+        >
+          Edit the day's blocks{(settings.dayBlocks || []).length ? ` (${settings.dayBlocks.length})` : ''}
+        </button>
+      </Section>
+
       <ThemePicker />
 
-      <div className="flex gap-3">
-        <Row label="Monthly goal">
-          <div className="flex items-center input">
-            <span className="font-clock text-muted">$</span>
-            <input type="number" value={settings.moneyGoal} onChange={(e) => updateSettings({ moneyGoal: Number(e.target.value) || 0 })} className="w-full bg-transparent pl-1 font-clock text-ink focus:outline-none" />
-          </div>
-        </Row>
-        <Row label="Report to college">
-          <input type="date" value={settings.reportDate} onChange={(e) => updateSettings({ reportDate: e.target.value })} className="input font-clock text-sm" />
-        </Row>
-      </div>
+      <ModulesSection settings={settings} updateSettings={updateSettings} />
+
+      <AiConsentSection />
 
       {/* Accountability partners — the HELP button */}
       <Section title="Accountability partners" hint="Everyone here shows up on the HELP NOW protocol for a one-tap text.">
         {(settings.partners || []).length > 0 && (
           <ul className="mb-3 space-y-2">
             {settings.partners.map((p) => (
-              <li key={p.id} className="flex items-center gap-2 rounded-xl bg-surface2 px-3 py-2">
+              <li key={p.id} className="flex items-center gap-2 rounded-lg bg-surface2 px-3 py-2">
                 <div className="flex-1">
                   <div className="text-sm text-ink">{p.name}</div>
                   <div className="font-clock text-xs text-muted">{p.phone || 'no number'}</div>
@@ -89,23 +94,8 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
         <AddPartner onAdd={addPartner} />
       </Section>
 
-      {/* Shoes */}
-      <Section title="Shoes" hint="Tag runs with a shoe on the Train tab to track mileage.">
-        {(settings.shoes || []).length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {settings.shoes.map((s) => (
-              <span key={s} className="flex items-center gap-1.5 rounded-full bg-surface2 px-3 py-1 text-sm text-ink">
-                {s}
-                <button type="button" onClick={() => removeShoe(s)} aria-label="Remove shoe" className="text-muted">×</button>
-              </span>
-            ))}
-          </div>
-        )}
-        <AddText placeholder="Add a shoe…" onAdd={addShoe} />
-      </Section>
-
       {/* Reading */}
-      <Section title="Reading plan" hint="Add the next book/section to your reading queue.">
+      <Section title="Reading plan" hint="Queue the next book or section — the faith card walks it.">
         <AddText placeholder="e.g. Proverbs 1" onAdd={addReadingSection} />
       </Section>
 
@@ -113,11 +103,48 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
         <input value={settings.focusShortcutName} onChange={(e) => updateSettings({ focusShortcutName: e.target.value })} placeholder="Sprint" className="input" />
       </Row>
 
+      {/* The fine print — the same documents the paywall links (3.1.2 requires
+          them reachable in-app; they're bundled, so this works offline). */}
+      <Section title="The fine print" hint="What the app does and doesn't do with your data.">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => openLegal('privacy')}
+            className="flex-1 rounded-lg border border-line bg-surface2 py-2.5 text-sm text-ink"
+          >
+            Privacy policy
+          </button>
+          <button
+            type="button"
+            onClick={() => openLegal('terms')}
+            className="flex-1 rounded-lg border border-line bg-surface2 py-2.5 text-sm text-ink"
+          >
+            Terms of use
+          </button>
+        </div>
+      </Section>
+
       <div className="space-y-2 border-t border-line pt-4">
-        <button type="button" onClick={onOpenReview} className="w-full rounded-2xl border border-accent py-3 text-sm font-medium text-accent">
+        <button type="button" onClick={onOpenReview} className="w-full rounded-md border border-line py-3 text-sm font-medium text-ink">
           Open weekly review (Sunday Debrief)
         </button>
-        <button type="button" onClick={() => downloadJSON(exportData())} className="w-full rounded-2xl border border-line bg-surface2 py-3 text-sm text-ink">
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = '/?onboarding'
+          }}
+          className="w-full rounded-lg border border-line bg-surface2 py-3 text-sm text-ink"
+        >
+          Retake the diagnostic (re-types your profile)
+        </button>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('telemetry:open-tour'))}
+          className="w-full rounded-lg border border-line bg-surface2 py-3 text-sm text-ink"
+        >
+          Replay the tour (how the book works)
+        </button>
+        <button type="button" onClick={() => downloadJSON(exportData())} className="w-full rounded-lg border border-line bg-surface2 py-3 text-sm text-ink">
           Export all data (JSON backup)
         </button>
         <ImportButton onImport={importData} />
@@ -139,17 +166,17 @@ function Row({ label, children }) {
 }
 
 const THEME_OPTIONS = [
-  { key: 'terminal', label: 'Terminal', sub: 'electric green · high signal' },
-  { key: 'zen', label: 'Zen', sub: 'calm · light · minimal' },
-  { key: 'night_ops', label: 'Night Ops', sub: 'deep black · low-light' },
+  { key: 'split_book', label: 'Split Book', sub: 'manila paper · carbon ink · daylight' },
+  { key: 'lamplight', label: 'Lamplight', sub: 'amber-washed · quiet · evening' },
+  { key: 'carbon', label: 'Carbon', sub: 'graphite dark · all-day' },
 ]
 
-// Live theme switcher. Writes settings.theme (persisted locally + synced across
-// devices via the settings slice); ThemeProvider repaints <html> on next render.
+// Live theme switcher. Writes settings.theme (persisted on this device);
+// ThemeProvider repaints <html> on next render.
 function ThemePicker() {
   const { theme, setTheme } = useTheme()
   return (
-    <Section title="Interface" hint="Your deck's visual system. Syncs across your devices.">
+    <Section title="Interface" hint="Your deck's visual system. Set per device.">
       <div className="grid grid-cols-3 gap-2">
         {THEME_OPTIONS.map((o) => {
           const on = theme === o.key
@@ -174,12 +201,121 @@ function ThemePicker() {
   )
 }
 
+// Opt-in modules (handoff Proposed Addition #4): this is WHERE faith/recovery
+// turn on — never inside a deck. Faith renders one un-scored card on Trends
+// (R3); the forge reads these gates for the urge protocol's step pool.
+const MODULE_OPTIONS = [
+  { key: 'faith', label: 'Faith', sub: 'a verse + reading position in Trends — never scored' },
+  { key: 'recovery', label: 'Recovery', sub: 'recovery framing in the urge protocol' },
+  { key: 'monk', label: 'Monk mode', sub: 'stricter defaults across the deck' },
+]
+
+function ModulesSection({ settings, updateSettings }) {
+  const modules = settings.modules || {}
+  return (
+    <Section title="Modules" hint="Opt-in only. Spiritual content is offered, not performed — and never a metric.">
+      <div className="space-y-2">
+        {MODULE_OPTIONS.map((m) => {
+          const on = !!modules[m.key]
+          return (
+            <button
+              key={m.key}
+              type="button"
+              role="switch"
+              aria-checked={on}
+              onClick={() => updateSettings({ modules: { ...modules, [m.key]: !on } })}
+              className={
+                'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors duration-quick ' +
+                (on ? 'border-accent-deep bg-pos-soft' : 'border-line bg-surface2')
+              }
+            >
+              <span
+                aria-hidden
+                className={`h-[7px] w-[7px] flex-none rounded-full ${on ? 'bg-accent shadow-glow-sm' : 'bg-line'}`}
+              />
+              <span className="flex-1">
+                <span className="block text-sm text-ink">{m.label}</span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-muted">{m.sub}</span>
+              </span>
+              <span className="font-clock text-[10px] uppercase tracking-widest2 text-muted">
+                {on ? 'On' : 'Off'}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </Section>
+  )
+}
+
+// The AI personalization switch the onboarding copy promises ("Change anytime
+// in Settings" — this is that place). Source of truth is the survey blob's
+// consent record, the same one the server-side Architect gate reads: when the
+// AI coach is live, ON lets Claude (Anthropic) read the survey to compose the
+// plan. This build composes on-device, so nothing leaves the phone either way
+// — the copy below says exactly that.
+const SURVEY_KEY = 'lockedin:__survey'
+
+function readAiConsent() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SURVEY_KEY) || 'null')
+    return !!s?.consent?.aiProcessing
+  } catch {
+    return false
+  }
+}
+
+function writeAiConsent(on) {
+  try {
+    const s = JSON.parse(localStorage.getItem(SURVEY_KEY) || 'null')
+    if (!s || typeof s !== 'object') return
+    s.consent = { ...(s.consent || {}), aiProcessing: on, provider: 'anthropic' }
+    localStorage.setItem(SURVEY_KEY, JSON.stringify(s))
+  } catch {
+    /* quota / disabled — the toggle simply won't stick */
+  }
+}
+
+function AiConsentSection() {
+  const [on, setOn] = useState(readAiConsent)
+  const toggle = () => {
+    writeAiConsent(!on)
+    setOn(!on)
+  }
+  return (
+    <Section
+      title="AI personalization — Claude"
+      hint="When the AI coach is live, this lets Claude (Anthropic) read your survey answers to compose your plan. This version composes everything on-device — nothing leaves your phone either way."
+    >
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        onClick={toggle}
+        className={
+          'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors duration-quick ' +
+          (on ? 'border-accent-deep bg-pos-soft' : 'border-line bg-surface2')
+        }
+      >
+        <span aria-hidden className={`h-[7px] w-[7px] flex-none rounded-full ${on ? 'bg-accent shadow-glow-sm' : 'bg-line'}`} />
+        <span className="flex-1">
+          <span className="block text-sm text-ink">Personalize with Claude</span>
+          <span className="mt-0.5 block text-[11px] leading-snug text-muted">Named provider, off by default, sends nothing in this version.</span>
+        </span>
+        <span className="font-clock text-[10px] uppercase tracking-widest2 text-muted">{on ? 'On' : 'Off'}</span>
+      </button>
+    </Section>
+  )
+}
+
+// De-boxed (G2): a section is a mono SectionLabel over a hairline, not a bordered
+// box — so Settings reads as the same ledger, not a rounder different app.
 function Section({ title, hint, children }) {
   return (
-    <div className="rounded-2xl border border-line p-4">
-      <div className="text-xs font-medium uppercase tracking-wider text-accent">{title}</div>
-      {hint && <p className="mt-1 mb-3 text-xs text-muted">{hint}</p>}
-      {children}
+    <div className="border-b border-line pb-5 pt-1">
+      <div className="font-clock text-[11px] font-medium uppercase tracking-widest2 text-muted">{title}</div>
+      {hint && <p className="mb-3 mt-1 text-xs leading-snug text-muted">{hint}</p>}
+      <div className="mt-3">{children}</div>
     </div>
   )
 }
@@ -197,7 +333,7 @@ function AddPartner({ onAdd }) {
         type="button"
         disabled={!name.trim()}
         onClick={() => { onAdd(name, phone); setName(''); setPhone('') }}
-        className="w-full rounded-xl bg-accent py-2 text-sm font-medium text-accent-ink disabled:opacity-40"
+        className="w-full rounded-lg bg-accent py-2 text-sm font-medium text-accent-ink disabled:opacity-40"
       >
         Add partner
       </button>
@@ -214,11 +350,48 @@ function AddText({ placeholder, onAdd }) {
         type="button"
         disabled={!val.trim()}
         onClick={() => { onAdd(val); setVal('') }}
-        className="rounded-xl border border-line bg-surface2 px-4 text-sm text-ink disabled:opacity-40"
+        className="rounded-lg border border-line bg-surface2 px-4 text-sm text-ink disabled:opacity-40"
       >
         Add
       </button>
     </div>
+  )
+}
+
+// Restore from a JSON backup — the counterpart of Export. Fail-soft: a bad or
+// unrecognized file leaves the store untouched and says so quietly.
+function ImportButton({ onImport }) {
+  const fileRef = useRef(null)
+  const [msg, setMsg] = useState('')
+  async function onPick(e) {
+    const file = e.target.files && e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    try {
+      const data = JSON.parse(await file.text())
+      setMsg(onImport(data) === false ? 'Import failed — file not recognized.' : 'Imported — data restored.')
+    } catch {
+      setMsg('Import failed — not valid JSON.')
+    }
+  }
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => fileRef.current && fileRef.current.click()}
+        className="w-full rounded-lg border border-line bg-surface2 py-3 text-sm text-ink"
+      >
+        Import from backup (JSON)
+      </button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={onPick}
+      />
+      {msg && <p className="text-center text-xs text-muted">{msg}</p>}
+    </>
   )
 }
 
@@ -234,10 +407,10 @@ function WipeButton({ onWipe }) {
   }
   return (
     <div className="flex gap-2">
-      <button type="button" onClick={() => setArmed(false)} className="flex-1 rounded-xl border border-line py-2 text-xs text-muted">
+      <button type="button" onClick={() => setArmed(false)} className="flex-1 rounded-lg border border-line py-2 text-xs text-muted">
         Cancel
       </button>
-      <button type="button" onClick={onWipe} className="flex-1 rounded-xl border border-muted py-2 text-xs text-ink">
+      <button type="button" onClick={onWipe} className="flex-1 rounded-lg border border-muted py-2 text-xs text-ink">
         Tap again — erase everything
       </button>
     </div>

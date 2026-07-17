@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;font-family:var(--font-sans)">
+  <div style="font-family:var(--font-clock);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">{{ title }}</div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <sc-for list="{{ items }}" as="it" hint-placeholder-count="4">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px">
+          <span style="font-size:13px;color:var(--text)">{{ it.label }}</span>
+          <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:12px;color:{{ it.rightColor }};white-space:nowrap">{{ it.right }}</span>
+        </div>
+        <dc-import name="BarMeter" value="{{ it.value }}" max="{{ it.max }}" tone="{{ it.tone }}" height="6" hint-size="100%,6px"></dc-import>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:232},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Goal Progress&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;items&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ label: string; value: number; max: number; right?: string; tone?: \&quot;accent\&quot; | \&quot;pos\&quot; | \&quot;warn\&quot; | \&quot;neg\&quot; }[]&quot;}}">
+const DEF = [
+  { label: "Clean days this quarter", value: 41, max: 90, right: "41 / 90", tone: "accent" },
+  { label: "Weekly mileage", value: 52, max: 60, right: "52 / 60 mi", tone: "pos" },
+  { label: "Deep-work hours", value: 14, max: 25, right: "14 / 25 h" },
+  { label: "Screen curfew hits", value: 23, max: 30, right: "23 / 30" },
+];
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const toneC = { accent: "var(--accent)", pos: "var(--pos)", warn: "var(--warn)", neg: "var(--neg)" };
+    const items = (p.items && p.items.length ? p.items : DEF).map(it => ({
+      label: it.label, value: it.value, max: it.max,
+      tone: it.tone || "accent",
+      right: it.right != null ? it.right : it.value + " / " + it.max,
+      rightColor: it.tone ? (toneC[it.tone] || "var(--text)") : "var(--text)",
+    }));
+    return { title: p.title || "Goal Progress", items };
+  }
+}
+</script>
+</body>
+</html>

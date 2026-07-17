@@ -1,0 +1,48 @@
+/* ============================================================
+   TELEMETRY · Spacing, Radius, Layout
+   Sharp terminal corners (3-10px). Phone-first, content max 520,
+   centered on larger screens. iPhone design frame 390x844.
+   ============================================================ */
+
+:root {
+  /* radii — sharp */
+  --r-3: 3px;
+  --r-4: 4px;
+  --r-5: 5px;
+  --r-6: 6px;
+  --r-8: 8px;
+  --r-10: 10px;
+  --r-pill: 999px;
+
+  /* space scale */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+
+  /* card + composition */
+  --pad-card: 14px;
+  --gap-widget: 12px;   /* between widgets in a deck */
+  --gap-stat: 10px;     /* between stat cells */
+
+  /* layout */
+  --content-max: 520px;
+  --page-pad: 16px;
+  --device-w: 390px;
+  --device-h: 844px;
+
+  /* iOS chrome geometry (simulated safe areas) */
+  --safe-top: env(safe-area-inset-top, 50px);
+  --safe-bottom: env(safe-area-inset-bottom, 34px);
+  --notch-clear: 50px;   /* space reserved under the notch */
+  --home-clear: 24px;    /* home-indicator zone */
+  --tabstrip-h: 46px;
+  --syncbar-h: 52px;
+
+  /* hairline width */
+  --hair: 1px;
+}

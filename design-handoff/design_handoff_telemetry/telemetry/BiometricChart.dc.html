@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;font-family:var(--font-sans)">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-bottom:9px">
+    <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">{{ label }}</span>
+    <span style="display:flex;align-items:baseline;gap:6px">
+      <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:24px;font-weight:500;line-height:1;color:{{ color }};text-shadow:{{ valGlow }}">{{ value }}</span>
+      <span style="font-family:var(--font-clock);font-size:11px;color:var(--muted)">{{ unit }}</span>
+      <sc-if value="{{ hasDelta }}"><span style="margin-left:2px"><dc-import name="DeltaTag" value="{{ delta }}" suffix="{{ deltaSuffix }}" hint-size="48px,16px"></dc-import></span></sc-if>
+    </span>
+  </div>
+  <svg width="100%" height="84" viewBox="0 0 300 84" preserveAspectRatio="none" style="display:block;overflow:visible">
+    <defs><linearGradient id="{{ gid }}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{{ fillTop }}"></stop><stop offset="1" stop-color="transparent"></stop></linearGradient></defs>
+    <path d="{{ area }}" fill="url(#{{ gid }})"></path>
+    <path d="{{ line }}" fill="none" stroke="{{ color }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 3px {{ fillTop }})"></path>
+  </svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:150},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Recovery (HRV)&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;value&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string | number&quot;},&quot;unit&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;delta&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:8,&quot;tsType&quot;:&quot;number&quot;},&quot;tone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;accent&quot;,&quot;pos&quot;,&quot;neg&quot;,&quot;warn&quot;],&quot;default&quot;:&quot;accent&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;data&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;number[]&quot;}}">
+const DEF_DATA = [58, 60, 59, 63, 66, 64, 70, 72, 71, 75, 78, 80, 79, 84, 86];
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const data = (p.data && p.data.length) ? p.data : DEF_DATA;
+    const W = 300, H = 84, pad = 6;
+    const mn = Math.min(...data), mx = Math.max(...data), rng = (mx - mn) || 1;
+    const n = data.length, iw = W - pad * 2, ih = H - pad * 2;
+    const pts = data.map((v, i) => [pad + (n === 1 ? iw / 2 : (iw * i) / (n - 1)), pad + ih - ((v - mn) / rng) * ih]);
+    const line = pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+    const area = "M " + pts[0][0].toFixed(1) + " " + (H - pad) + " " + pts.map(q => "L " + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ") + " L " + pts[n - 1][0].toFixed(1) + " " + (H - pad) + " Z";
+    const toneC = { accent: "var(--accent)", pos: "var(--pos)", neg: "var(--neg)", warn: "var(--warn)" };
+    const toneS = { accent: "var(--accent-glow)", pos: "rgba(22,240,139,.28)", neg: "rgba(255,73,95,.26)", warn: "rgba(255,178,36,.24)" };
+    const tone = p.tone || "accent";
+    const color = toneC[tone] || "var(--accent)";
+    const gid = this._gid || (this._gid = "bc" + Math.random().toString(36).slice(2, 8));
+    const value = p.value != null ? p.value : String(data[data.length - 1]);
+    return {
+      label: p.label || "Recovery (HRV)", value, unit: p.unit || "ms",
+      hasDelta: p.delta != null, delta: p.delta ?? 8, deltaSuffix: p.deltaSuffix ?? "",
+      line, area, color, fillTop: toneS[tone] || "var(--accent-glow)", gid,
+      valGlow: tone === "accent" ? "0 0 12px var(--accent-glow)" : "none",
+    };
+  }
+}
+</script>
+</body>
+</html>

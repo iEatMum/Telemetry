@@ -14,20 +14,19 @@
 import { useEffect, useState } from 'react'
 import Onboarding from '../pages/Onboarding.jsx'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
-import * as storage from '../lib/storage.js'
 
 const SURVEY_KEY = 'lockedin:__survey'
 
-// Synchronous local read — either the raw survey blob or, for a returning device
-// hydrated by sync.js, the survey-derived streakModel that rides the settings slice.
+// Synchronous local read. ONLY the raw survey blob counts as "interviewed".
+// There used to be a fallback here — any settings slice carrying a streakModel
+// passed the gate — but that let stale data from an old build wave a user past
+// onboarding: the app never asked its questions, then dealt a deck calibrated
+// to nobody. The one case the fallback served (returning user, fresh device,
+// settings hydrated by sync) is already covered by the async DB probe below,
+// which fetches the survey itself and re-seeds this blob.
 function hasLocalSurvey() {
   try {
-    if (localStorage.getItem(SURVEY_KEY)) return true
-  } catch {
-    /* storage disabled — fall through to the settings check */
-  }
-  try {
-    return !!storage.get('settings')?.streakModel
+    return !!localStorage.getItem(SURVEY_KEY)
   } catch {
     return false
   }
@@ -61,8 +60,11 @@ export default function RequireSurvey({ children }) {
         }
         if (alive) setState('ok')
       } catch {
-        // Offline / transient — don't trap a real user behind a network failure.
-        if (alive) setState('ok')
+        // Offline / transient with NO local survey: onboarding is the only
+        // surface that works from here (it's fully offline), and dropping into
+        // a deck with no baseline is the exact state this gate exists to
+        // prevent. AVE still holds — nobody is locked out, they're interviewed.
+        if (alive) setState('need')
       }
     })()
     return () => {

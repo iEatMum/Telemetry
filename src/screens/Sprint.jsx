@@ -144,12 +144,17 @@ export default function Sprint() {
   }
 
   // ---- Idle setup ----------------------------------------------------------
+  // The sprint page reads as a ledger section (Split Ledger, M2): ruled regions,
+  // mono labels, ink for the user's own numbers. Lane-red appears exactly once —
+  // Start, the committed act.
   return (
-    <div className="space-y-5 pt-3">
-      <h1 className="text-2xl font-semibold">Sprint</h1>
+    <div className="space-y-6 pt-3">
+      <h1 className="border-b border-line pb-2 font-clock text-[12px] uppercase tracking-widest2 text-muted">
+        Sprints
+      </h1>
 
-      <Card className="p-5">
-        {/* Preset toggle */}
+      <Card className="p-4">
+        {/* Length — a selection, not a commitment: the current-line treatment */}
         <div className="flex gap-2">
           {PRESETS.map((m) => (
             <button
@@ -159,10 +164,10 @@ export default function Sprint() {
                 setDurationMin(m)
                 setRemaining(m * 60)
               }}
-              className={`flex-1 rounded-xl border py-3 font-clock text-lg ${
+              className={`flex-1 rounded-md border py-3 font-clock tnum text-lg ${
                 durationMin === m
-                  ? 'border-accent bg-accent text-accent-ink'
-                  : 'border-line bg-surface2 text-muted'
+                  ? 'border-accent-deep bg-surface2 font-medium text-ink'
+                  : 'border-line bg-surface text-muted'
               }`}
             >
               {m} min
@@ -176,7 +181,7 @@ export default function Sprint() {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="What are you working on? (optional)"
-          className="mt-4 w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+          className="mt-4 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent-deep focus:outline-none"
         />
 
         <p className="mt-4 text-xs text-muted">Edge, not a rule: put the phone in another room for this one — a phone in reach is a small tax on focus.</p>
@@ -184,14 +189,14 @@ export default function Sprint() {
         <button
           type="button"
           onClick={startSprint}
-          className="mt-3 w-full rounded-2xl bg-accent py-4 text-lg font-bold uppercase tracking-wide text-accent-ink shadow-glow"
+          className="mt-4 w-full rounded-md bg-accent py-4 font-clock text-sm font-semibold uppercase tracking-widest2 text-accent-ink"
         >
           Start
         </button>
       </Card>
 
-      {/* Daily target — 6 dots */}
-      <Card className="p-5">
+      {/* Daily target — six marks, inked as they post */}
+      <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <SectionLabel>Today's target</SectionLabel>
           <span className="font-clock tnum text-sm text-muted">
@@ -204,12 +209,12 @@ export default function Sprint() {
           {Array.from({ length: DAILY_TARGET }).map((_, i) => (
             <span
               key={i}
-              className={`h-4 flex-1 rounded-full ${i < todayCount ? 'bg-accent' : 'bg-surface2'}`}
+              className={`h-[5px] flex-1 ${i < todayCount ? 'bg-ink' : 'bg-line'}`}
             />
           ))}
         </div>
         {todayCount > DAILY_TARGET && (
-          <div className="mt-2 text-right text-xs text-accent">+{todayCount - DAILY_TARGET} past target</div>
+          <div className="mt-2 text-right font-clock tnum text-xs text-ink">+{todayCount - DAILY_TARGET} past target</div>
         )}
       </Card>
 
@@ -255,9 +260,10 @@ function SprintTakeover({
           <div className="mt-2 max-w-xs text-center text-sm text-muted">{label}</div>
         )}
 
+        {/* Ink numerals; the breath rides them while running — never a recolor */}
         <div
-          className={`mt-6 font-clock tnum text-[5.5rem] leading-none scoreboard ${
-            running ? 'text-accent animate-pulse-accent' : 'text-ink'
+          className={`mt-6 font-clock tnum text-[5.5rem] font-medium leading-none scoreboard text-ink ${
+            running ? 'animate-pulse-accent' : ''
           }`}
         >
           {mm}:{ss}
@@ -280,7 +286,7 @@ function SprintTakeover({
               <button
                 type="button"
                 onClick={onPause}
-                className="w-full rounded-2xl border border-accent py-4 font-semibold text-accent"
+                className="w-full rounded-md border border-line py-4 font-clock text-sm uppercase tracking-widest2 text-ink"
               >
                 Pause
               </button>
@@ -288,7 +294,7 @@ function SprintTakeover({
               <button
                 type="button"
                 onClick={onResume}
-                className="w-full rounded-2xl bg-accent py-4 font-bold text-accent-ink shadow-glow"
+                className="w-full rounded-md bg-accent py-4 font-clock text-sm font-semibold uppercase tracking-widest2 text-accent-ink"
               >
                 Resume
               </button>
@@ -296,7 +302,7 @@ function SprintTakeover({
             <button
               type="button"
               onClick={onStop}
-              className="w-full rounded-2xl border border-line py-3.5 text-sm text-muted"
+              className="w-full rounded-md border border-line py-3.5 text-sm text-muted"
             >
               End {mode === 'break' ? 'break' : 'sprint'}
             </button>
@@ -305,7 +311,7 @@ function SprintTakeover({
               <button
                 type="button"
                 onClick={onExtend}
-                className="w-full rounded-2xl border border-line py-3 text-sm text-muted"
+                className="w-full rounded-md border border-line py-3 text-sm text-muted"
               >
                 +5 — finish this thought
               </button>
@@ -335,19 +341,19 @@ function SprintTakeover({
                   value={parkNote}
                   onChange={(e) => onParkNote(e.target.value)}
                   placeholder="Next sprint starts here…"
-                  className="w-full rounded-xl border border-line bg-surface2 px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none"
+                  className="w-full rounded-md border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-muted focus:border-accent-deep focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={onStartBreak}
-                  className="w-full rounded-2xl bg-accent py-4 font-bold text-accent-ink shadow-glow"
+                  className="w-full rounded-md bg-ink py-4 font-clock text-sm font-semibold uppercase tracking-widest2 text-bg"
                 >
                   Take a 5-min break
                 </button>
                 <button
                   type="button"
                   onClick={onDone}
-                  className="w-full rounded-2xl border border-line py-3.5 text-sm text-muted"
+                  className="w-full rounded-md border border-line py-3.5 text-sm text-muted"
                 >
                   Skip — done for now
                 </button>
@@ -356,7 +362,7 @@ function SprintTakeover({
               <button
                 type="button"
                 onClick={onDone}
-                className="w-full rounded-2xl bg-accent py-4 font-bold text-accent-ink shadow-glow"
+                className="w-full rounded-md bg-ink py-4 font-clock text-sm font-semibold uppercase tracking-widest2 text-bg"
               >
                 Back to it
               </button>
@@ -388,12 +394,12 @@ function WeekChart({ sprints }) {
           <div key={w.key} className="flex flex-1 flex-col items-center gap-2">
             <div className="flex w-full flex-1 items-end">
               <div
-                className={`w-full rounded-t-md ${w.count ? 'bg-accent' : 'bg-surface2'}`}
+                className={`w-full ${w.count ? 'bg-ink' : 'bg-line'}`}
                 style={{ height: `${(w.count / max) * 100}%`, minHeight: w.count ? '8px' : '3px' }}
                 title={`${w.count} sprint${w.count === 1 ? '' : 's'}`}
               />
             </div>
-            <span className={`font-clock tnum text-[11px] ${i === 6 ? 'text-accent' : 'text-muted'}`}>
+            <span className={`font-clock tnum text-[11px] ${i === 6 ? 'text-ink' : 'text-muted'}`}>
               {w.count}
             </span>
             <span className="text-[10px] uppercase text-muted">{w.day}</span>
@@ -407,7 +413,7 @@ function WeekChart({ sprints }) {
 // ---- One-time Focus setup explainer ---------------------------------------
 function FocusHelp({ focusName }) {
   return (
-    <details className="rounded-2xl border border-line bg-surface p-4 text-sm">
+    <details className="border-b border-line bg-surface p-4 text-sm">
       <summary className="cursor-pointer text-muted">
         Silence the phone during sprints (one-time setup)
       </summary>
@@ -420,7 +426,7 @@ function FocusHelp({ focusName }) {
           <li>Open the <span className="text-ink">Shortcuts</span> app → new shortcut.</li>
           <li>Add <span className="text-ink">Set Focus</span> → On → choose “Do Not Disturb”.</li>
           <li>
-            Name it exactly <span className="font-clock text-accent">{focusName || 'Sprint'}</span>.
+            Name it exactly <span className="font-clock text-ink">{focusName || 'Sprint'}</span>.
           </li>
           <li>Make a second one that turns Focus Off for when you're done.</li>
         </ol>

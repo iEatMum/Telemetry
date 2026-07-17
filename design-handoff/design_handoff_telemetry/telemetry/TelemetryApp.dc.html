@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ screenLabel }}" style="position:relative;width:390px;height:844px;background:var(--bg);color:var(--text);font-family:var(--font-sans);border-radius:48px;overflow:hidden;box-shadow:0 0 0 9px #10141a,0 0 0 10px #2a323b,0 24px 60px rgba(0,0,0,.55);display:flex;flex-direction:column">
+
+  <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:122px;height:31px;background:#000;border-radius:0 0 17px 17px;z-index:30"></div>
+
+  <div style="flex:none;padding:16px 20px 8px">
+    <dc-import name="StatusStrip" status="{{ ledStatus }}" clock="{{ clock }}" hint-size="100%,22px"></dc-import>
+  </div>
+
+  <div style="flex:none">
+    <dc-import name="TabStrip" tabs="{{ tabs }}" active="{{ tab }}" onSelect="{{ selectTab }}" hint-size="100%,46px"></dc-import>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:12px 12px 150px;scrollbar-width:none">
+    <div style="max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
+      <sc-for list="{{ deck }}" as="node" hint-placeholder-count="4">
+        <dc-import name="WidgetHost" node="{{ node }}" hint-size="100%,170px"></dc-import>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position:absolute;right:14px;bottom:106px;z-index:20">
+    <dc-import name="HelpNowPill" onPress="{{ openOutlast }}" hint-size="140px,42px"></dc-import>
+  </div>
+
+  <div style="position:absolute;left:12px;right:12px;bottom:30px;z-index:20">
+    <div style="position:absolute;inset:-26px -12px -30px;background:linear-gradient(to top,var(--bg) 62%,transparent);pointer-events:none"></div>
+    <div style="position:relative">
+      <dc-import name="SyncBar" state="{{ syncState }}" hint-size="100%,50px"></dc-import>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:9px;width:134px;height:5px;border-radius:999px;background:var(--text);opacity:.28;z-index:25"></div>
+
+  <sc-if value="{{ outlast }}">
+    <div style="position:absolute;inset:0;z-index:40">
+      <dc-import name="OutlastModal" onClose="{{ closeOutlast }}" hint-size="100%,100%"></dc-import>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:880},&quot;tab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;today&quot;,&quot;trends&quot;,&quot;mind&quot;],&quot;default&quot;:&quot;today&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;terminal&quot;,&quot;zen&quot;,&quot;night_ops&quot;],&quot;default&quot;:&quot;terminal&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;trendsEmpty&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;queued&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;clock&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;06:14&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;ledStatus&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;LIVE&quot;,&quot;LOCAL&quot;,&quot;OFFLINE&quot;],&quot;default&quot;:&quot;LIVE&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const TABS = [
+  { id: "today", label: "Today" },
+  { id: "trends", label: "Trends" },
+  { id: "mind", label: "Mind" },
+];
+const DECKS = {
+  today: [
+    { type: "DailyBriefing", props: {} },
+    { type: "ScheduleMatrix", props: {} },
+    { type: "DeepWorkTimer", props: {} },
+    { type: "GoalProgress", props: {} },
+  ],
+  trends: [
+    { type: "KpiGrid", props: { title: "This Week" } },
+    { type: "StatRow", props: {} },
+    { type: "EnergyTrendLine", props: {} },
+    { type: "MarketSentimentWidget", props: {} },
+  ],
+  mind: [
+    { type: "InsightCard", props: {} },
+    { type: "InsightCard", props: {
+      heading: "Counsel", source: "GUARDIAN \u00b7 WATCH", tone: "warn",
+      text: "Three nights under seven hours and the 21:30 curfew slid twice. That's the drift \u2014 not you. Tonight: screens off at 21:15, phone outside the room.",
+    } },
+    { type: "StatRow", props: {
+      title: "Lifetime \u2014 the piles",
+      items: [
+        { label: "Outlasted", value: "128", accent: true },
+        { label: "Clean days", value: "463" },
+        { label: "Days sealed", value: "62" },
+      ],
+    } },
+  ],
+};
+const TRENDS_EMPTY = [{ type: "EmptyState", props: {} }];
+class Component extends DCLogic {
+  state = { tab: null, outlast: false };
+  renderVals() {
+    const p = this.props;
+    const tab = this.state.tab ?? p.tab ?? "today";
+    let deck = DECKS[tab] || DECKS.today;
+    if (tab === "trends" && p.trendsEmpty) deck = TRENDS_EMPTY;
+    const labels = { today: "TODAY tab", trends: "TRENDS tab", mind: "MIND tab" };
+    return {
+      theme: p.theme || "terminal",
+      screenLabel: labels[tab] || "TODAY tab",
+      tabs: TABS,
+      tab,
+      deck,
+      clock: p.clock || "06:14",
+      ledStatus: p.trendsEmpty ? "LOCAL" : (p.ledStatus || "LIVE"),
+      syncState: p.queued ? "queued" : "idle",
+      outlast: this.state.outlast,
+      selectTab: id => this.setState({ tab: id }),
+      openOutlast: () => this.setState({ outlast: true }),
+      closeOutlast: () => this.setState({ outlast: false }),
+    };
+  }
+}
+</script>
+</body>
+</html>

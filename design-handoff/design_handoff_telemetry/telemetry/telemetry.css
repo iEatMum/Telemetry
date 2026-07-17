@@ -1,0 +1,109 @@
+/* ============================================================
+   TELEMETRY design system — built bundle (self-contained).
+   Consumers link THIS one file. Granular sources live in
+   tokens/*.css (kept in sync); this file inlines them so styles
+   apply in a single fetch with no flash-of-unstyled.
+   ============================================================ */
+
+/* ---------- BASE ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--t-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+.tl-mono { font-family: var(--font-clock); font-variant-numeric: tabular-nums; letter-spacing: var(--track-mono); }
+.tl-label {
+  font-family: var(--font-clock); font-size: var(--t-label);
+  letter-spacing: var(--track-label); text-transform: uppercase;
+  color: var(--muted); font-weight: var(--w-med);
+}
+a { color: inherit; text-decoration: none; }
+::selection { background: var(--accent-glow); color: var(--accent-ink); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- SPACING / RADIUS / LAYOUT ---------- */
+:root {
+  --r-3: 3px; --r-4: 4px; --r-5: 5px; --r-6: 6px; --r-8: 8px; --r-10: 10px; --r-pill: 999px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+  --pad-card: 14px; --gap-widget: 12px; --gap-stat: 10px;
+  --content-max: 520px; --page-pad: 16px; --device-w: 390px; --device-h: 844px;
+  --safe-top: env(safe-area-inset-top, 50px); --safe-bottom: env(safe-area-inset-bottom, 34px);
+  --notch-clear: 50px; --home-clear: 24px; --tabstrip-h: 46px; --syncbar-h: 52px; --hair: 1px;
+}
+
+/* ---------- TYPE ---------- */
+:root {
+  --font-clock: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Monaco, "Cascadia Mono", "Roboto Mono", "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --t-label: 10px; --t-xs: 11px; --t-sm: 12px; --t-base: 13px; --t-md: 15px;
+  --t-lg: 19px; --t-xl: 24px; --t-2xl: 32px; --t-clock: 40px; --t-hero: 46px;
+  --track-label: 0.16em; --track-wide: 0.08em; --track-mono: 0.01em;
+  --w-reg: 400; --w-med: 500; --w-semi: 600;
+  --lh-tight: 1.05; --lh-snug: 1.28; --lh-normal: 1.5;
+}
+
+/* ---------- MOTION ---------- */
+:root {
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-quick: 140ms; --dur-calm: 280ms; --dur-pulse: 1800ms; --dur-outlast: 1200ms;
+}
+@keyframes tl-led {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--_led, transparent); }
+  50%      { opacity: 0.5; box-shadow: 0 0 7px 1px var(--_led, transparent); }
+}
+@keyframes tl-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
+@keyframes tl-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.tl-breathe { animation: tl-breathe var(--dur-pulse) var(--ease) infinite; }
+.tl-led-pulse { animation: tl-led var(--dur-pulse) var(--ease) infinite; }
+.tl-blink { animation: tl-blink 1100ms steps(2, end) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tl-breathe, .tl-led-pulse, .tl-blink, *[class*="tl-"] { animation: none !important; }
+}
+
+/* ---------- COLOR (themes) ---------- */
+:root, [data-theme="terminal"] {
+  --bg: #05070a; --surface: #0a0e13; --surface-2: #10161d; --line: #1b232c;
+  --text: #d4dde3; --muted: #66727d;
+  --accent: #16f08b; --accent-deep: #0b9a58; --accent-ink: #04160d; --accent-glow: rgba(22, 240, 139, 0.45);
+  --pos: #16f08b; --neg: #ff495f; --warn: #ffb224;
+  --pos-soft: rgba(22, 240, 139, 0.12); --neg-soft: rgba(255, 73, 95, 0.12); --warn-soft: rgba(255, 178, 36, 0.12);
+  --num-glow: 0 0 10px rgba(22, 240, 139, 0.30);
+  --pos-glow: 0 0 10px rgba(22, 240, 139, 0.32);
+  --neg-glow: 0 0 10px rgba(255, 73, 95, 0.30);
+  --warn-glow: 0 0 10px rgba(255, 178, 36, 0.28);
+  --text-glow: 0 0 12px rgba(180, 210, 195, 0.06);
+  --led-live: var(--pos); --led-local: var(--warn); --led-offline: var(--muted);
+  --grid: rgba(255, 255, 255, 0.045); --scrim: rgba(0, 0, 0, 0.72);
+}
+[data-theme="zen"] {
+  --bg: #e9ede8; --surface: #f7f9f5; --surface-2: #edf1ea; --line: #d5ddd2;
+  --text: #1b2a22; --muted: #6a7770;
+  --accent: #0b9c5a; --accent-deep: #077a45; --accent-ink: #ffffff; --accent-glow: rgba(11, 156, 90, 0.20);
+  --pos: #0b9c5a; --neg: #d33b4e; --warn: #b7790a;
+  --pos-soft: rgba(11, 156, 90, 0.12); --neg-soft: rgba(211, 59, 78, 0.10); --warn-soft: rgba(183, 121, 10, 0.12);
+  --num-glow: none; --pos-glow: none; --neg-glow: none; --warn-glow: none; --text-glow: none;
+  --grid: rgba(0, 0, 0, 0.055); --scrim: rgba(20, 30, 24, 0.55);
+  --pad-card: 18px; --gap-widget: 16px; --gap-stat: 14px;
+}
+[data-theme="night_ops"] {
+  --bg: #0b0d10; --surface: #12151a; --surface-2: #181c22; --line: #242b33;
+  --text: #aab4bd; --muted: #59626c;
+  --accent: #5fbf92; --accent-deep: #3f8a68; --accent-ink: #06120b; --accent-glow: rgba(95, 191, 146, 0.22);
+  --pos: #5fbf92; --neg: #c76b76; --warn: #c79a52;
+  --pos-soft: rgba(95, 191, 146, 0.10); --neg-soft: rgba(199, 107, 118, 0.10); --warn-soft: rgba(199, 154, 82, 0.10);
+  --num-glow: 0 0 8px rgba(95, 191, 146, 0.14);
+  --pos-glow: 0 0 8px rgba(95, 191, 146, 0.14);
+  --neg-glow: 0 0 8px rgba(199, 107, 118, 0.12);
+  --warn-glow: none; --text-glow: none;
+  --grid: rgba(255, 255, 255, 0.03); --scrim: rgba(0, 0, 0, 0.72);
+}

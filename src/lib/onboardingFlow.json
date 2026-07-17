@@ -1,0 +1,173 @@
+{
+  "_README": "The onboarding decision graph — DATA, never code. Mirrors the deck SDUI contract (uiSchema.js) but for a survey flow: typed nodes resolved via INPUT_REGISTRY (Onboarding.jsx), branching expressed as declarative `next` rules evaluated by resolveNext() (flowResolver.js). No functions live in this payload; the security boundary is identical to registry.js. Normalized by normalizeFlow() before use — a dangling `goto` falls through to the next linear node, never a dead end.",
+  "schemaVersion": 1,
+  "entryId": "executionRate7d",
+  "nodes": [
+    {
+      "id": "executionRate7d",
+      "type": "BaselineGrid",
+      "meta": { "tag": "baseline", "title": "How many of the last 7 days did you execute?", "hint": "Count the days you did the most important thing you planned. Behavior, not self-image — this calibrates how aggressive the protocol starts." },
+      "config": { "min": 0, "max": 7, "cols": 4, "unit": "/7", "readout": "last 7d", "anchorLo": "00 · nothing shipped", "anchorHi": "07 · perfect week" },
+      "writes": "executionRate7d",
+      "validate": { "var": "executionRate7d", "op": "isInt" },
+      "next": {
+        "read": "executionRate7d",
+        "branches": [
+          { "when": { "op": "lte", "value": 2 }, "goto": "anchorHabit", "set": { "anchorRequired": true } },
+          { "when": { "op": "gte", "value": 6 }, "goto": "protocols" }
+        ],
+        "default": "anchorHabit"
+      }
+    },
+    {
+      "id": "anchorHabit",
+      "type": "SelectGrid",
+      "meta": { "tag": "anchor", "title": "Name the routine that never misses", "hint": "What already happens every day, no matter what? Your first block gets anchored to it — a cue you already obey beats a clock you don't." },
+      "config": { "optionsRef": "ANCHOR_HABITS" },
+      "writes": "anchorHabit",
+      "validate": { "var": "anchorHabit", "op": "truthy" },
+      "next": { "default": "protocols" }
+    },
+    {
+      "id": "protocols",
+      "type": "ProtocolPanel",
+      "meta": { "tag": "protocols", "title": "Configure your protocols", "hint": "Optional modules, and how your plan gets generated. Recovery unlocks the counter-move step when it applies." },
+      "writes": "modules",
+      "next": { "default": "timeLeak" }
+    },
+    {
+      "id": "timeLeak",
+      "type": "SelectGrid",
+      "meta": { "tag": "bottleneck", "title": "Identify your primary time-leak", "hint": "The one that costs you the most hours. The engine defends against it first." },
+      "config": { "optionsRef": "TIME_LEAKS" },
+      "writes": "timeLeak",
+      "validate": { "var": "timeLeak", "op": "truthy" },
+      "next": { "default": "dangerWindow" }
+    },
+    {
+      "id": "dangerWindow",
+      "type": "SelectGrid",
+      "meta": { "tag": "danger window", "title": "When does the leak hit hardest?", "hint": "Locate that leak in the day. This is the one window your Guardian will defend on day one." },
+      "config": { "optionsRef": "DANGER_WINDOWS" },
+      "writes": "dangerWindow",
+      "validate": { "var": "dangerWindow", "op": "truthy" },
+      "next": {
+        "read": "dangerWindow",
+        "branches": [
+          { "when": { "op": "eq", "value": "late-night" }, "andState": { "read": "modules.recovery", "op": "truthy" }, "goto": "counterMove" }
+        ],
+        "default": "engine"
+      }
+    },
+    {
+      "id": "counterMove",
+      "type": "SelectGrid",
+      "meta": { "tag": "counter-move", "title": "Pre-load your counter-move", "hint": "When the pull hits inside that window — what's your move? Deciding now is the whole trick." },
+      "config": { "optionsRef": "COUNTER_MOVES" },
+      "writes": "counterMove",
+      "validate": { "var": "counterMove", "op": "truthy" },
+      "next": { "default": "engine" }
+    },
+    {
+      "id": "engine",
+      "type": "EnginePanel",
+      "meta": { "tag": "engine", "title": "Set the engine", "hint": "When the clock starts, and when you actually run hottest." },
+      "validate": { "all": [ { "var": "wakeTime", "op": "truthy" }, { "var": "peakWindow", "op": "truthy" } ] },
+      "next": { "default": "focusGoal" }
+    },
+    {
+      "id": "focusGoal",
+      "type": "RawChoice",
+      "meta": { "tag": "focus", "title": "What is this mostly for?", "hint": "Directs the blocks seeded into your schedule and targets." },
+      "config": { "optionsRef": "FOCUS_GOALS" },
+      "writes": "focusGoal",
+      "validate": { "var": "focusGoal", "op": "truthy" },
+      "next": { "default": "dayBlocks" }
+    },
+    {
+      "id": "dayBlocks",
+      "type": "DayBlocksPanel",
+      "meta": { "tag": "dictation", "title": "Dictate your day", "hint": "Write the blocks your day actually contains — class, training, work, the call you keep skipping. The book takes dictation; it never invents your life. At least one line. Times optional; edit any day from the deck." },
+      "writes": "dayBlocks",
+      "next": { "default": "mission" }
+    },
+    {
+      "id": "mission",
+      "type": "MissionField",
+      "meta": { "tag": "mission", "title": "Name the mission", "hint": "The single thing this is all pointed at. Optional — but it sharpens everything downstream." },
+      "writes": "mission",
+      "next": {
+        "read": "mission",
+        "branches": [
+          { "when": { "op": "truthy" }, "goto": "missionConfidence" }
+        ],
+        "default": "slipResponse"
+      }
+    },
+    {
+      "id": "missionConfidence",
+      "type": "BaselineGrid",
+      "meta": { "tag": "confidence", "title": "What are the odds you actually execute it?", "hint": "Confidence in THIS mission, not discipline in general. Low is fine — it just tells the engine to scaffold instead of push." },
+      "config": { "min": 1, "max": 10, "cols": 5, "unit": "/10", "readout": "confidence", "anchorLo": "01 · no shot", "anchorHi": "10 · certain" },
+      "writes": "missionConfidence",
+      "validate": { "var": "missionConfidence", "op": "isInt" },
+      "next": { "default": "slipResponse" }
+    },
+    {
+      "id": "slipResponse",
+      "type": "SelectGrid",
+      "meta": { "tag": "the tape", "title": "When a streak breaks, what does the tape show?", "hint": "Your historical pattern, not your intention. No judgment — this calibrates every message you get after a reset." },
+      "config": { "optionsRef": "SLIP_RESPONSES" },
+      "writes": "slipResponse",
+      "validate": { "var": "slipResponse", "op": "truthy" },
+      "next": {
+        "read": "slipResponse",
+        "branches": [
+          { "when": { "op": "eq", "value": "ghost" }, "goto": "streakModel", "set": { "recommendSocial": true } }
+        ],
+        "default": "streakModel",
+        "defaultSet": { "recommendSocial": false }
+      }
+    },
+    {
+      "id": "streakModel",
+      "type": "SelectGrid",
+      "meta": { "tag": "goal model", "title": "How should your streak work?", "hint": "How the engine scores you — and how a missed day is handled." },
+      "config": { "optionsRef": "STREAK_MODELS" },
+      "writes": "streakModel",
+      "validate": { "var": "streakModel", "op": "truthy" },
+      "next": { "default": "theme" }
+    },
+    {
+      "id": "theme",
+      "type": "SelectGrid",
+      "meta": { "tag": "interface", "title": "Pick your interface", "hint": "The visual system for your whole deck. Change it anytime in Settings." },
+      "config": { "optionsRef": "THEMES" },
+      "writes": "theme",
+      "validate": { "var": "theme", "op": "truthy" },
+      "next": { "default": "healthIntegration" }
+    },
+    {
+      "id": "healthIntegration",
+      "type": "HealthLinkPanel",
+      "meta": { "tag": "health", "title": "Link your health data", "hint": "Optional. Streams sleep, activity, and heart-rate into your biometric readouts. Runs on-device; skip to leave it disabled." },
+      "writes": "healthIntegration",
+      "next": { "default": "stakePref" }
+    },
+    {
+      "id": "stakePref",
+      "type": "StakePanel",
+      "meta": { "tag": "your corner", "title": "Set your accountability", "hint": "A witness makes a miss cost something. They get a one-tap text from the night page — sent by you, never by the app." },
+      "config": { "optionsRef": "STAKES" },
+      "writes": "stakePref",
+      "validate": { "var": "stakePref", "op": "truthy" },
+      "next": { "default": "initialize" }
+    },
+    {
+      "id": "initialize",
+      "type": "terminal",
+      "meta": { "tag": "commit", "title": "Initialize", "hint": "" },
+      "terminal": true
+    }
+  ]
+}

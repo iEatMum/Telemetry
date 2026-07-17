@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  screenshot-frames.html — the manila App Store screenshot FRAME SYSTEM (D8 scaffold).
+
+  This is the reusable frame, NOT the final art. Ian / the design tool drop a real
+  screen capture into each .shot-screen slot (drag a PNG in, or set it as the CSS
+  background), then export each .frame at the store sizes (6.9" 1290×2796,
+  6.5" 1284×2778, portrait). One manila frame system, value prop top-left, a
+  carbon caption on manila (high-contrast + OCR-legible for keyword ranking).
+  Heroes, per the handoff G9: book · heat sheet · night · Guardian · week · onboarding.
+  Shot 1 stays honest — add a social-proof band ONLY when a real rating exists.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Telemetry — App Store frames</title>
+    <style>
+      :root {
+        --bg: #ede4ce;
+        --surface: #f6efdd;
+        --line: #c9bc9c;
+        --ink: #1f1b12;
+        --muted: #6b6150;
+        --accent: #c93f22;
+        --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        --sans: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #d8ccae; font-family: var(--sans); color: var(--ink); padding: 24px; }
+      .sheet { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
+      /* One store frame. Export each at the store pixel size (scale up from here). */
+      .frame {
+        width: 300px; aspect-ratio: 1290 / 2796;
+        background: var(--bg); border: 1px solid var(--line);
+        display: flex; flex-direction: column; padding: 22px 20px;
+      }
+      .caption { font-family: var(--sans); font-weight: 600; font-size: 20px; line-height: 1.15; color: var(--ink); }
+      .caption .accent { color: var(--accent); }
+      .kicker { font-family: var(--mono); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+      /* Drop the real capture here: set background-image, or place an <img>. */
+      .shot-screen {
+        flex: 1; margin-top: 18px; border: 1px solid var(--line); background: var(--surface);
+        display: flex; align-items: center; justify-content: center;
+        background-size: cover; background-position: top center;
+      }
+      .shot-screen .placeholder { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+      .seal { color: var(--accent); font-size: 13px; }
+      .band { margin-top: 12px; font-family: var(--mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+      h1 { font-family: var(--mono); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); font-weight: 500; width: 100%; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <h1>Telemetry · App Store frame system — drop captures into each slot, export at store sizes</h1>
+    <div class="sheet">
+      <!-- 1 · BOOK (hero). Honest social-proof band only when a real rating exists. -->
+      <div class="frame">
+        <div class="kicker">The book · <span class="seal">◆</span></div>
+        <div class="caption">Every pro keeps a book.<br /><span class="accent">It never shames you.</span></div>
+        <div class="shot-screen"><span class="placeholder">deck · days on the book</span></div>
+        <!-- <div class="band">★ 4.8 · from real reviews only</div> -->
+      </div>
+
+      <!-- 2 · HEAT SHEET -->
+      <div class="frame">
+        <div class="kicker">The day</div>
+        <div class="caption">Post the day.<br />A miss is just an <span class="accent">unposted line.</span></div>
+        <div class="shot-screen"><span class="placeholder">heat sheet · ◆ high-impact</span></div>
+      </div>
+
+      <!-- 3 · NIGHT PAGE (inverted) -->
+      <div class="frame">
+        <div class="kicker">The hard hours</div>
+        <div class="caption">A night page for 2 a.m.<br />988 always one tap away.</div>
+        <div class="shot-screen"><span class="placeholder">outlast it · counts up</span></div>
+      </div>
+
+      <!-- 4 · GUARDIAN -->
+      <div class="frame">
+        <div class="kicker">The coach</div>
+        <div class="caption">It reads the drift<br />before it lands.</div>
+        <div class="shot-screen"><span class="placeholder">guardian · the reasoning</span></div>
+      </div>
+
+      <!-- 5 · WEEK (retention hero) -->
+      <div class="frame">
+        <div class="kicker">The week</div>
+        <div class="caption">Seven ruled days.<br /><span class="accent">No streak-break mark exists.</span></div>
+        <div class="shot-screen"><span class="placeholder">week's balance · share card</span></div>
+      </div>
+
+      <!-- 6 · ONBOARDING -->
+      <div class="frame">
+        <div class="kicker">Day zero</div>
+        <div class="caption">Opens to your book<br />in ninety seconds.</div>
+        <div class="shot-screen"><span class="placeholder">opening your book · initialize</span></div>
+      </div>
+    </div>
+  </body>
+</html>

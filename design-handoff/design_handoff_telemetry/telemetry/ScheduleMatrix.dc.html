@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-6);padding:14px;font-family:var(--font-sans)">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <span style="font-family:var(--font-clock);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">{{ title }}</span>
+    <span style="font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:11px;letter-spacing:.06em;color:var(--accent)">{{ summary }} <span style="color:var(--muted)">EXEC</span></span>
+  </div>
+  <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)">
+      <span style="flex:none;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center">
+        <sc-if value="{{ r.mDone }}" hint-placeholder-val="{{ true }}"><span style="width:20px;height:20px;border-radius:var(--r-4);background:var(--accent);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 9px var(--accent-glow)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--accent-ink)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span></sc-if>
+        <sc-if value="{{ r.mLate }}"><span style="width:20px;height:20px;border-radius:var(--r-4);border:1.5px solid var(--warn);background:var(--warn-soft);display:inline-flex;align-items:center;justify-content:center"><span style="width:8px;height:2px;background:var(--warn);border-radius:2px"></span></span></sc-if>
+        <sc-if value="{{ r.mMissed }}"><span style="width:20px;height:20px;border-radius:var(--r-4);border:1.5px dashed var(--muted);display:inline-flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="var(--muted)" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span></sc-if>
+        <sc-if value="{{ r.mOpen }}"><span style="width:20px;height:20px;border-radius:var(--r-4);border:1px solid var(--line);background:var(--surface-2)"></span></sc-if>
+        <sc-if value="{{ r.mSkip }}"><span style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center"><span style="width:9px;height:2px;background:var(--muted);border-radius:2px;opacity:.65"></span></span></sc-if>
+      </span>
+      <span style="flex:none;width:44px;font-family:var(--font-clock);font-variant-numeric:tabular-nums;font-size:13px;letter-spacing:.02em;color:{{ r.timeColor }}">{{ r.time }}</span>
+      <span style="flex:1;min-width:0;display:flex;align-items:center;gap:6px">
+        <span style="font-size:13px;color:{{ r.blockColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.block }}</span>
+        <sc-if value="{{ r.isHigh }}"><span style="flex:none;color:var(--accent);font-size:9px;text-shadow:var(--num-glow)">&#9670;</span></sc-if>
+      </span>
+      <sc-if value="{{ r.hasDelta }}"><span style="flex:none"><dc-import name="DeltaTag" value="{{ r.deltaValue }}" dir="{{ r.deltaDir }}" suffix="{{ r.deltaSuffix }}" hint-size="56px,16px"></dc-import></span></sc-if>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:362},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Schedule Matrix&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{ time: string; block: string; status: \&quot;hit\&quot; | \&quot;done\&quot; | \&quot;late\&quot; | \&quot;missed\&quot; | \&quot;open\&quot; | \&quot;skip\&quot;; impact?: \&quot;high\&quot;; delta?: { value: number; dir?: string; suffix?: string } }[]&quot;}}">
+const DEFAULT_ROWS = [
+  { time: "05:40", block: "Wake \u00b7 cold plunge", status: "hit" },
+  { time: "06:10", block: "Journal \u00b7 3 lines", status: "done" },
+  { time: "07:00", block: "Track \u00b7 tempo 6\u00d7800", status: "hit", impact: "high", delta: { value: 6, dir: "up", suffix: "s" } },
+  { time: "09:30", block: "Deep work \u00b7 thesis", status: "late", impact: "high", delta: { value: -18, dir: "down", suffix: "m" } },
+  { time: "11:15", block: "Emails \u00b7 triage", status: "done", delta: { value: 12, dir: "up", suffix: "m" } },
+  { time: "13:00", block: "Recovery + mobility", status: "open" },
+  { time: "15:00", block: "Client build", status: "open", impact: "high" },
+  { time: "21:30", block: "Screens off", status: "missed" },
+];
+const S = {
+  hit:    { marker: "done",   time: "var(--text)",  block: "var(--text)" },
+  done:   { marker: "done",   time: "var(--text)",  block: "var(--text)" },
+  late:   { marker: "late",   time: "var(--warn)",  block: "var(--text)" },
+  missed: { marker: "missed", time: "var(--muted)", block: "var(--muted)" },
+  open:   { marker: "open",   time: "var(--muted)", block: "var(--text)" },
+  skip:   { marker: "skip",   time: "var(--muted)", block: "var(--muted)" },
+};
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const src = p.rows && p.rows.length ? p.rows : DEFAULT_ROWS;
+    let done = 0;
+    const rows = src.map(r => {
+      const cfg = S[r.status] || S.open;
+      if (r.status === "hit" || r.status === "done") done++;
+      const d = r.delta;
+      return {
+        time: r.time, block: r.block,
+        timeColor: cfg.time, blockColor: cfg.block,
+        isHigh: r.impact === "high",
+        mDone: cfg.marker === "done", mLate: cfg.marker === "late",
+        mMissed: cfg.marker === "missed", mOpen: cfg.marker === "open", mSkip: cfg.marker === "skip",
+        hasDelta: !!d,
+        deltaValue: d ? d.value : 0,
+        deltaDir: d && d.dir ? d.dir : "auto",
+        deltaSuffix: d && d.suffix ? d.suffix : "",
+      };
+    });
+    return { rows, title: p.title || "Schedule Matrix", summary: done + "/" + src.length };
+  }
+}
+</script>
+</body>
+</html>

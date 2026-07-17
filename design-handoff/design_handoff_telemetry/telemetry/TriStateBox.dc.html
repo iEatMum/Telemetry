@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="telemetry.css">
+</helmet>
+<sc-if value="{{ isDone }}" hint-placeholder-val="{{ true }}">
+  <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-4);background:var(--accent);border:1px solid var(--accent);box-shadow:0 0 10px var(--accent-glow)">
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--accent-ink)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+  </span>
+</sc-if>
+<sc-if value="{{ isMissed }}">
+  <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--r-4);background:transparent;border:1.5px dashed var(--muted)">
+    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--muted)" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+  </span>
+</sc-if>
+<sc-if value="{{ isOpen }}">
+  <span style="display:inline-block;width:22px;height:22px;border-radius:var(--r-4);background:var(--surface-2);border:1px solid var(--line)"></span>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:40,&quot;height&quot;:40},&quot;status&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;done&quot;,&quot;missed&quot;,&quot;open&quot;],&quot;default&quot;:&quot;done&quot;,&quot;tsType&quot;:&quot;\&quot;done\&quot; | \&quot;missed\&quot; | \&quot;open\&quot;&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.status || "done";
+    return { isDone: s === "done", isMissed: s === "missed", isOpen: s === "open" };
+  }
+}
+</script>
+</body>
+</html>
