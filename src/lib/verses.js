@@ -7,7 +7,7 @@
 // Themes lean where the spec asked: the race, self-control, purity, work,
 // courage, perseverance. 37 verses — add your own to the array anytime.
 
-import { dayOfYear } from './dates.js'
+import { dayOfYear, appDayDate } from './dates.js'
 
 export const VERSES = [
   {
@@ -221,7 +221,9 @@ export const VERSES = [
   },
 ]
 
-// Stable for the whole day: the same verse from wake to sleep, rotating by date.
-export function verseForDay(d = new Date()) {
+// Stable for the whole APP-day (3am rollover): the same verse from wake past
+// midnight to sleep. Defaulting to the calendar date flipped the verse at
+// 12:00am mid-evening — exactly when the late-night reader is holding onto it.
+export function verseForDay(d = appDayDate()) {
   return VERSES[dayOfYear(d) % VERSES.length]
 }

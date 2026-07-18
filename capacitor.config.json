@@ -1,5 +1,11 @@
 {
   "appId": "com.ianpalsgaard.telemetry",
   "appName": "Telemetry",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "Keyboard": {
+      "resize": "native",
+      "resizeOnFullScreen": true
+    }
+  }
 }

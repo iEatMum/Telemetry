@@ -28,7 +28,7 @@ const THEME_LABEL = {
 function DiagRow({ label, value, tone = 'text-ink' }) {
   return (
     <div className="flex items-baseline justify-between px-4 py-2.5">
-      <span className="text-[11px] uppercase tracking-widest2 text-muted">{label}</span>
+      <span className="text-[0.6875rem] uppercase tracking-widest2 text-muted">{label}</span>
       <span className={`font-clock text-xs ${tone}`}>{value}</span>
     </div>
   )
@@ -42,15 +42,15 @@ export default function CommandPanel({ conn, onOpenSettings, onOpenReview }) {
     <div className="space-y-5">
       {/* Identity — what the engines are calibrated to */}
       <div>
-        <SectionLabel className="mb-2 px-1">Operator</SectionLabel>
+        <SectionLabel className="mb-2 px-1">You</SectionLabel>
         <Card>
           <DiagRow label="Name" value={settings.name || '—'} />
           <div className="border-t border-line/50" />
-          <DiagRow label="Engine type" value={MODEL_LABEL[settings.streakModel] || 'not set yet'} />
+          <DiagRow label="How you run" value={MODEL_LABEL[settings.streakModel] || 'not set yet'} />
           <div className="border-t border-line/50" />
           <DiagRow label="Interface" value={THEME_LABEL[settings.theme] || 'Split Book'} />
           <div className="border-t border-line/50" />
-          <DiagRow label="Wake anchor" value={settings.wakeTime} />
+          <DiagRow label="Wake time" value={settings.wakeTime} />
         </Card>
       </div>
 
@@ -83,14 +83,14 @@ export default function CommandPanel({ conn, onOpenSettings, onOpenReview }) {
         <button
           type="button"
           onClick={onOpenSettings}
-          className="w-full rounded-md border border-line bg-surface px-4 py-3.5 text-left text-[15px] text-ink"
+          className="w-full rounded-md border border-line bg-surface px-4 py-3.5 text-left text-[0.9375rem] text-ink"
         >
           Settings — profile, partners, themes, data
         </button>
         <button
           type="button"
           onClick={onOpenReview}
-          className="w-full rounded-md border border-line bg-surface px-4 py-3.5 text-left text-[15px] text-ink"
+          className="w-full rounded-md border border-line bg-surface px-4 py-3.5 text-left text-[0.9375rem] text-ink"
         >
           Weekly review
         </button>

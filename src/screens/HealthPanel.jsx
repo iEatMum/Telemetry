@@ -103,16 +103,16 @@ export default function HealthPanel() {
         <SectionLabel className="mb-2 px-1">Apple Health</SectionLabel>
         {linked ? (
           <Card className="flex items-center justify-between px-4 py-3">
-            <span className="text-[13px] text-ink">
+            <span className="text-[0.8125rem] text-ink">
               Connected — sleep, activity, heart-rate
               {settings.healthIntegration?.nativeAvailable === false && (
-                <span className="block text-[11px] text-muted">real streams arrive on the phone build</span>
+                <span className="block text-[0.6875rem] text-muted">live readings arrive from Apple Health on your iPhone</span>
               )}
             </span>
             <button
               type="button"
               onClick={disconnectHealth}
-              className="font-clock text-[10px] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+              className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
             >
               Disconnect
             </button>
@@ -137,10 +137,10 @@ export default function HealthPanel() {
             <span className={`font-clock text-lg font-semibold uppercase tracking-widest2 ${readiness ? READY_TONE[readiness] : 'text-muted'}`}>
               {readiness || '—'}
             </span>
-            <span className="text-[11px] text-muted">sleep + HRV</span>
+            <span className="text-[0.6875rem] text-muted">sleep + HRV</span>
           </div>
-          <p className="mt-2 text-[13px] leading-relaxed text-muted">
-            {readiness ? READY_LINE[readiness] : 'No biometric signal on this build — the band waits for real data.'}
+          <p className="mt-2 text-[0.8125rem] leading-relaxed text-muted">
+            {readiness ? READY_LINE[readiness] : 'Nothing on the record yet — the band waits for real sleep data.'}
           </p>
         </Card>
       </div>
@@ -161,7 +161,7 @@ export default function HealthPanel() {
           <LedgerNotice>Reading HealthKit…</LedgerNotice>
         ) : snap === null ? (
           <LedgerNotice>
-            Biometrics arrive on the phone build — HealthKit is native-only. The manual check-in
+            Sleep, activity, and heart-rate arrive from Apple Health on your iPhone. The manual check-in
             below still feeds the Guardian.
           </LedgerNotice>
         ) : (
@@ -190,7 +190,7 @@ export default function HealthPanel() {
         <button
           type="button"
           onClick={() => setCheckinOpen(true)}
-          className="mt-2 w-full rounded-md border border-line bg-surface px-4 py-3 text-left text-[14px] text-ink"
+          className="mt-2 w-full rounded-md border border-line bg-surface px-4 py-3 text-left text-[0.875rem] text-ink"
         >
           {today ? 'Update today’s check-in' : 'Log this morning’s check-in'}
         </button>

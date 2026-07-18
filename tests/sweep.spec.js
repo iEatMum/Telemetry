@@ -69,7 +69,7 @@ test('a lapsed subscriber sees the winback page, not a false trial promise', asy
     __coach: { status: 'expired', productId: 'telemetry.coach.yearly', source: 'dev-mock' },
   })
 
-  await page.getByRole('button', { name: 'Trends' }).click()
+  await page.getByRole('tab', { name: 'Trends' }).click()
   await page
     .getByRole('button', { name: /open the coach/i })
     .first()
@@ -102,7 +102,7 @@ test('the fine print opens from Settings and from the paywall (3.1.2 functional 
   // Paywall → Terms of use, rendered OVER the open paywall. (Back to the deck
   // first — the Trends tab lives on the deck surface, not Command.)
   await page.getByRole('button', { name: 'Deck', exact: true }).click()
-  await page.getByRole('button', { name: 'Trends' }).click()
+  await page.getByRole('tab', { name: 'Trends' }).click()
   await page
     .getByRole('button', { name: /open the coach/i })
     .first()

@@ -10,6 +10,8 @@ import * as storage from './storage.js'
 import * as sync from './sync.js'
 import { appDayKey, dateKey } from './dates.js'
 import { computeNextDue, seedTasks } from './tasks.js'
+import { cancelAllOwnedNotifications } from './notifications.js'
+import { deleteAllSnapshots } from './snapshots.js'
 import { synthesizeConsideration } from './guardian.js'
 
 const StoreContext = createContext(null)
@@ -212,11 +214,14 @@ export function StoreProvider({ children }) {
     if (!clean) return
     commit('tasks', setTasks, (prev) => [
       ...prev,
-      { id: newId(), title: clean, cat, recurrence, nextDue: dateKey(), done: false, history: [] },
+      { id: newId(), title: clean, cat, recurrence, nextDue: appDayKey(), done: false, history: [] },
     ])
   }
   function completeTask(id) {
-    const today = dateKey()
+    // App-day, not calendar day (P1 rollover unification): a task completed at
+    // 12:30am belongs to the evening being finished, and the idempotence guard
+    // below must hold across midnight.
+    const today = appDayKey()
     commit('tasks', setTasks, (prev) =>
       prev.map((t) => {
         if (t.id !== id) return t
@@ -240,7 +245,7 @@ export function StoreProvider({ children }) {
     )
   }
   function missTask(id) {
-    const today = dateKey()
+    const today = appDayKey()
     commit('tasks', setTasks, (prev) =>
       prev.map((t) => {
         if (t.id !== id) return t
@@ -257,10 +262,10 @@ export function StoreProvider({ children }) {
   // keeps the list clean, and never available for Run tasks (training doesn't
   // get pushed) or recurring tasks (those use skip).
   function pushTask(id) {
-    const today = dateKey()
+    const today = appDayKey()
     const t = new Date()
     t.setDate(t.getDate() + 1)
-    const tomorrow = dateKey(t)
+    const tomorrow = appDayKey(t)
     commit('tasks', setTasks, (prev) =>
       prev.map((task) => {
         if (task.id !== id) return task
@@ -432,6 +437,12 @@ export function StoreProvider({ children }) {
     return true
   }
   function wipeData() {
+    // Silence the phone and burn the disk copies BEFORE the store goes: pending
+    // native notifications (their ids are read synchronously inside the call,
+    // ahead of wipeAll deleting the sidecar) and the sandbox snapshots — a
+    // "fresh start" must leave neither a reminder nor a recoverable book behind.
+    cancelAllOwnedNotifications()
+    deleteAllSnapshots()
     storage.wipeAll()
     setSettings(initSettings())
     setStreak(initStreak())

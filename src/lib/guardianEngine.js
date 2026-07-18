@@ -308,13 +308,20 @@ export function assessDrift({ now = new Date(), health = null, baselines = {}, w
 // ── The impure wrapper: gather → assess → persist band ───────────────────────
 export async function runAssessment(now = new Date()) {
   const health = await readToday().catch(() => null) // null on web — fail-soft
+  // Assess against the PRE-fold baselines (yesterday's EWMA), then fold today's
+  // reading in for tomorrow. Folding first contaminated the baseline with the
+  // very reading being assessed: every deficit attenuated by alpha (a 3h short
+  // night read as 2.25h), and day 1 could never register debt because the
+  // baseline seeded to today's own value. Pre-fold {} on day 1 → the vectors'
+  // null-guards report "no baseline yet" honestly instead.
+  const preBaselines = { ...(readGuardian().baselines || {}) }
   const g = foldBaseline(health)
   const streak = storage.get('streak')
   const wellness = storage.get('wellness')
   const assessment = assessDrift({
     now,
     health,
-    baselines: g.baselines,
+    baselines: preBaselines,
     wellnessToday: wellness[appDayKey(now)] || null,
     summary: summarizeDay(),
     streak,

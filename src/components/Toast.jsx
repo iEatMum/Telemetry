@@ -15,7 +15,7 @@ export default function Toast() {
       style={{ bottom: 'calc(env(safe-area-inset-bottom) + 5.5rem)' }}
       role="status"
     >
-      <div className="rounded-md border border-line bg-surface px-4 py-2.5 text-[13px] text-ink shadow-glow-sm">
+      <div className="rounded-md border border-line bg-surface px-4 py-2.5 text-[0.8125rem] text-ink shadow-glow-sm">
         {toast.text}
       </div>
     </div>

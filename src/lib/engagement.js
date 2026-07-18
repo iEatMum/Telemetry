@@ -78,7 +78,10 @@ export function recordSeen(block, day = appDayKey()) {
   w.seen += 1
   w.type = block.type || w.type
   d.widgets[block.id] = w
-  if (block.config && block.config.highImpact) {
+  // A block carrying impactId DELEGATES its impact record to that shared id
+  // (the DeepWorkTimer ↔ anchor schedule row pair) — registering under its own
+  // id here is what double-counted the day's one anchor block.
+  if (block.config && block.config.highImpact && !block.config.impactId) {
     if (!d.impact[block.id]) {
       d.impact[block.id] = { label: block.config.label || block.type, status: 'pending', at: null }
     }
@@ -99,20 +102,26 @@ export function recordUse(block, day = appDayKey()) {
   write(s)
 }
 
-/** Declare a high-impact item exists today (e.g. a flagged schedule row). */
+/** Declare a high-impact item exists today (e.g. a flagged schedule row).
+ *  Refused on a sealed day — the tape is final in BOTH directions (P1): the
+ *  undo already refused post-seal, but completes/registers still wrote,
+ *  letting a tap flip a sealed 'missed' to 'done' after the stakes check and
+ *  the stashed payload had already read missed. */
 export function registerImpact(id, label, day = appDayKey()) {
   if (!id) return
   const s = read()
   const d = dayRec(s, day)
+  if (d.closed) return
   if (!d.impact[id]) d.impact[id] = { label: label || id, status: 'pending', at: null }
   write(s)
 }
 
-/** Mark a high-impact item completed. */
+/** Mark a high-impact item completed. Refused once the day is sealed. */
 export function completeImpact(id, day = appDayKey()) {
   if (!id) return
   const s = read()
   const d = dayRec(s, day)
+  if (d.closed) return
   if (!d.impact[id]) d.impact[id] = { label: id, status: 'pending', at: null }
   d.impact[id].status = 'done'
   d.impact[id].at = new Date().toISOString()

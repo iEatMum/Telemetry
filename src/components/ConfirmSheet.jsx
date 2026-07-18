@@ -11,7 +11,7 @@ import { HoldButton } from './ui.jsx'
 export default function ConfirmSheet({ title, body, holdLabel = 'Hold to seal', onSeal, onCancel }) {
   return (
     <Sheet title={title} onClose={onCancel}>
-      {body && <p className="text-[14px] leading-relaxed text-muted">{body}</p>}
+      {body && <p className="text-[0.875rem] leading-relaxed text-muted">{body}</p>}
       <HoldButton commit onComplete={onSeal}>
         {holdLabel}
       </HoldButton>

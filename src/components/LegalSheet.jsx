@@ -61,7 +61,7 @@ export default function LegalSheet({ doc = 'privacy', onClose }) {
           ✕
         </button>
         <div className="pt-10">
-          <div className="border-b border-line pb-2 font-clock text-[11px] uppercase tracking-widest2 text-muted">
+          <div className="border-b border-line pb-2 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
             The fine print · {title}
           </div>
         </div>
@@ -102,25 +102,25 @@ function Markdown({ text }) {
       {blocks.map((b, i) => {
         if (b.kind === 'h1')
           return (
-            <h1 key={i} className="mt-6 text-[20px] font-semibold leading-tight">
+            <h1 key={i} className="mt-6 text-[1.25rem] font-semibold leading-tight">
               {b.text}
             </h1>
           )
         if (b.kind === 'h2')
           return (
-            <h2 key={i} className="mt-6 border-b border-line pb-1.5 font-clock text-[11px] uppercase tracking-widest2 text-muted">
+            <h2 key={i} className="mt-6 border-b border-line pb-1.5 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
               {b.text}
             </h2>
           )
         if (b.kind === 'h3')
           return (
-            <h3 key={i} className="mt-4 text-[14px] font-medium text-ink">
+            <h3 key={i} className="mt-4 text-[0.875rem] font-medium text-ink">
               {b.text}
             </h3>
           )
         if (b.kind === 'quote')
           return (
-            <p key={i} className="mt-3 border-l-2 border-line pl-3 font-serif text-[13px] italic leading-relaxed text-muted">
+            <p key={i} className="mt-3 border-l-2 border-line pl-3 font-serif text-[0.8125rem] italic leading-relaxed text-muted">
               {b.text}
             </p>
           )
@@ -128,7 +128,7 @@ function Markdown({ text }) {
           return (
             <ul key={i} className="mt-2 space-y-1.5 pl-1">
               {b.items.map((it, j) => (
-                <li key={j} className="flex gap-2 text-[13px] leading-relaxed text-ink">
+                <li key={j} className="flex gap-2 text-[0.8125rem] leading-relaxed text-ink">
                   <span className="text-muted" aria-hidden>
                     ·
                   </span>
@@ -138,7 +138,7 @@ function Markdown({ text }) {
             </ul>
           )
         return (
-          <p key={i} className="mt-3 text-[13px] leading-relaxed text-ink">
+          <p key={i} className="mt-3 text-[0.8125rem] leading-relaxed text-ink">
             {b.text}
           </p>
         )

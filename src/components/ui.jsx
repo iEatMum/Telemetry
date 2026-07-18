@@ -52,7 +52,7 @@ export function Stat({ value, label, accent = false, delta, deltaDir, deltaSuffi
   const dir = deltaDir || (typeof delta === 'number' ? (delta >= 0 ? 'up' : 'down') : 'flat')
   return (
     <div className="flex flex-col px-1 py-2">
-      <div className="text-[10px] uppercase tracking-widest2 text-muted">{label}</div>
+      <div className="text-[0.625rem] uppercase tracking-widest2 text-muted">{label}</div>
       <div className="mt-1.5 flex items-baseline gap-1.5">
         <span
           className={`font-clock tnum text-2xl leading-none ${accent ? 'text-accent' : 'text-ink'}`}
@@ -116,14 +116,14 @@ export function CheckRow({ state, onCycle, label, tag, action }) {
     >
       <TriStateBox state={state} />
       <span
-        className={`flex-1 text-[15px] ${
+        className={`flex-1 text-[0.9375rem] ${
           done ? 'text-muted line-through' : missed ? 'text-muted' : 'text-ink'
         }`}
       >
         {label}
       </span>
       {missed && (
-        <span className="text-[10px] uppercase tracking-wide text-muted">missed</span>
+        <span className="text-[0.625rem] uppercase tracking-wide text-muted">missed</span>
       )}
       {tag && !missed && <span className="text-xs text-muted">{tag}</span>}
       {action}
@@ -144,7 +144,7 @@ export function Chip({ active, onClick, children, className = '' }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-clock text-[11px] uppercase tracking-widest2 transition-colors duration-quick ${
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-clock text-[0.6875rem] uppercase tracking-widest2 transition-colors duration-quick ${
         active ? 'border-accent-deep bg-pos-soft text-accent' : 'border-line bg-surface2 text-muted'
       } ${className}`}
     >
@@ -187,7 +187,7 @@ export function ScoreboardUnit({ value, label, size = 'big' }) {
   return (
     <div className="flex flex-col items-center">
       <span className={`font-clock tnum leading-none ${numClass}`}>{value}</span>
-      <span className="mt-2 text-[10px] uppercase tracking-widest3 text-muted">
+      <span className="mt-2 text-[0.625rem] uppercase tracking-widest3 text-muted">
         {label}
       </span>
     </div>
@@ -216,7 +216,7 @@ export function LifetimePile({ value, label }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="font-clock tnum text-3xl leading-none text-ink">{value}</span>
-      <span className="text-[10px] uppercase tracking-wide text-muted">{label}</span>
+      <span className="text-[0.625rem] uppercase tracking-wide text-muted">{label}</span>
     </div>
   )
 }
@@ -234,18 +234,18 @@ export function ConsiderCard({ c, onDismiss }) {
   return (
     <div className="rounded-2xl bg-surface p-4">
       <div className="flex items-center justify-between">
-        <span className="font-clock text-[11px] uppercase tracking-widest2 text-muted">
+        <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
           {c.heading || 'Consider'}
           {c.source ? ` · ${c.source}` : ''}
         </span>
         {c.synthesis === 'local' && (
-          <span className="font-clock text-[10px] uppercase tracking-wide text-muted/70">
+          <span className="font-clock text-[0.625rem] uppercase tracking-wide text-muted/70">
             draft
           </span>
         )}
       </div>
 
-      <p className="mt-2 text-[15px] leading-relaxed text-ink">{c.text}</p>
+      <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink">{c.text}</p>
 
       {c.resource && <ConsiderResource r={c.resource} />}
 
@@ -253,7 +253,7 @@ export function ConsiderCard({ c, onDismiss }) {
         <button
           type="button"
           onClick={onDismiss}
-          className="mt-3 text-[11px] uppercase tracking-wide text-muted"
+          className="mt-3 text-[0.6875rem] uppercase tracking-wide text-muted"
         >
           Let it go
         </button>
@@ -267,22 +267,22 @@ export function ConsiderResource({ r }) {
   const label = `${r.type || 'resource'} · ${r.by || ''}`.replace(/ · $/, '')
   return (
     <div className="mt-3 border-t border-line pt-3">
-      <div className="font-clock text-[10px] uppercase tracking-wide text-muted">
+      <div className="font-clock text-[0.625rem] uppercase tracking-wide text-muted">
         For the next 24h
       </div>
-      <div className="mt-1 text-[14px] text-ink">{r.title}</div>
-      <div className="mt-0.5 text-[12px] text-muted">{label}</div>
+      <div className="mt-1 text-[0.875rem] text-ink">{r.title}</div>
+      <div className="mt-0.5 text-[0.75rem] text-muted">{label}</div>
       {r.url ? (
         <a
           href={r.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-block text-[12px] text-accent underline-offset-2 hover:underline"
+          className="mt-2 inline-block text-[0.75rem] text-accent underline-offset-2 hover:underline"
         >
           Open →
         </a>
       ) : (
-        <div className="mt-1 text-[11px] text-muted/80">
+        <div className="mt-1 text-[0.6875rem] text-muted/80">
           link pending — add it in counselLibrary.json
         </div>
       )}
@@ -463,7 +463,7 @@ export function StatusLED({ status = 'LIVE', label }) {
           boxShadow: still ? 'none' : `0 0 8px var(${cssVar})`,
         }}
       />
-      <span className="font-clock text-[11px] uppercase tracking-widest2 text-muted">
+      <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
         {label || key}
       </span>
     </span>
@@ -480,7 +480,7 @@ export function StatusLED({ status = 'LIVE', label }) {
  */
 export function LedgerNotice({ children }) {
   return (
-    <div className="border-l border-line pl-4 text-[13px] leading-relaxed text-muted">
+    <div className="border-l border-line pl-4 text-[0.8125rem] leading-relaxed text-muted">
       {children}
     </div>
   )
@@ -509,7 +509,7 @@ export function BackHeader({ title, onBack, right }) {
         </svg>
         <span className="text-sm">Back</span>
       </button>
-      <span className="font-clock text-[13px] uppercase tracking-widest2 text-muted">
+      <span className="font-clock text-[0.8125rem] uppercase tracking-widest2 text-muted">
         {title}
       </span>
       <div className="w-16 text-right">{right}</div>
@@ -568,7 +568,7 @@ export function DeltaTag({ value, dir, suffix = '' }) {
   const tone = d === 'up' ? 'pos' : d === 'down' ? 'neg' : 'muted'
   const glow = d === 'up' ? 'glow-pos' : d === 'down' ? 'glow-neg' : ''
   return (
-    <span className={`font-clock tnum text-[11px] leading-none ${TEXT_TONE[tone]} ${glow}`}>
+    <span className={`font-clock tnum text-[0.6875rem] leading-none ${TEXT_TONE[tone]} ${glow}`}>
       <span aria-hidden>{ARROW[d] || ARROW.flat}</span> {display}
     </span>
   )
@@ -663,7 +663,7 @@ export function BarMeter({ value = 0, max = 100, tone = 'accent', label, right, 
       {(label || right != null) && (
         <div className="mb-1.5 flex items-baseline justify-between gap-2">
           {label && (
-            <span className="text-[10px] uppercase tracking-widest2 text-muted">{label}</span>
+            <span className="text-[0.625rem] uppercase tracking-widest2 text-muted">{label}</span>
           )}
           {right != null && <span className="font-clock tnum text-xs text-ink">{right}</span>}
         </div>
@@ -699,7 +699,7 @@ export function KpiTile({
   return (
     <div className="py-2.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-widest2 text-muted">{label}</span>
+        <span className="text-[0.625rem] uppercase tracking-widest2 text-muted">{label}</span>
         {delta != null && <DeltaTag value={delta} dir={dir} suffix={deltaSuffix} />}
       </div>
       <div className="mt-2 flex items-baseline gap-1">
@@ -733,7 +733,7 @@ export function DataTable({ columns = [], rows = [], className = '', onRowClick 
             {columns.map((c) => (
               <th
                 key={c.key}
-                className={`px-3 py-2 text-[10px] font-medium uppercase tracking-widest2 text-muted ${
+                className={`px-3 py-2 text-[0.625rem] font-medium uppercase tracking-widest2 text-muted ${
                   c.align === 'right' ? 'text-right' : ''
                 }`}
               >
@@ -752,7 +752,7 @@ export function DataTable({ columns = [], rows = [], className = '', onRowClick 
               {columns.map((c) => (
                 <td
                   key={c.key}
-                  className={`px-3 py-2.5 text-[13px] ${c.numeric ? 'font-clock tnum' : ''} ${
+                  className={`px-3 py-2.5 text-[0.8125rem] ${c.numeric ? 'font-clock tnum' : ''} ${
                     c.align === 'right' ? 'text-right' : ''
                   } ${TEXT_TONE[c.tone] || 'text-ink'}`}
                 >

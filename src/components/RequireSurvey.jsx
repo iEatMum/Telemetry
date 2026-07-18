@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react'
 import Onboarding from '../pages/Onboarding.jsx'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
+import { latestSnapshot, restoreSnapshot } from '../lib/snapshots.js'
 
 const SURVEY_KEY = 'lockedin:__survey'
 
@@ -43,13 +44,19 @@ export default function RequireSurvey({ children }) {
       // No backend / no session → nothing to hydrate; gate straight to intake.
       if (!isSupabaseConfigured || !supabase) return alive && setState('need')
       try {
-        const { data: sess } = await supabase.auth.getUser()
-        if (!sess?.user) return alive && setState('need')
-        const { data, error } = await supabase
-          .from('user_profile')
-          .select('survey')
-          .eq('user_id', sess.user.id)
-          .maybeSingle()
+        // getSession is a LOCAL read (no round-trip) — getUser here meant any
+        // persisted session on a flaky connection blocked the entire boot,
+        // crisis nav included, for the OS fetch timeout. And the profile fetch
+        // races a 4s clock: past it we take the same fallback the catch below
+        // already documents — interview rather than hang (P1).
+        const { data: sess } = await supabase.auth.getSession()
+        const user = sess?.session?.user
+        if (!user) return alive && setState('need')
+        const timeout = new Promise((resolve) => setTimeout(() => resolve({ timedOut: true }), 4000))
+        const probe = supabase.from('user_profile').select('survey').eq('user_id', user.id).maybeSingle()
+        const res = await Promise.race([probe, timeout])
+        if (res.timedOut) return alive && setState('need')
+        const { data, error } = res
         if (error || !data?.survey) return alive && setState('need')
         // Returning user on a fresh device: seed the local marker so future loads
         // pass instantly, then let them in.
@@ -75,12 +82,77 @@ export default function RequireSurvey({ children }) {
   if (state === 'checking') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg text-muted">
-        <span className="animate-pulse-accent font-clock text-[11px] uppercase tracking-widest2">
+        <span className="animate-pulse-accent font-clock text-[0.6875rem] uppercase tracking-widest2">
           Syncing profile…
         </span>
       </div>
     )
   }
-  if (state === 'need') return <Onboarding />
+  if (state === 'need') return <MaybeRestore />
   return children
+}
+
+// The empty-boot backstop (P1 "the book survives"): a missing survey on a device
+// that HAS a sandbox snapshot is almost never a new user — it's iOS having
+// purged WKWebView storage out from under an existing one. Sending that person
+// back through onboarding silently discards their whole record. So before the
+// interview, one async peek at the sandbox: if a snapshot exists, offer it.
+// A genuinely new install has no snapshot and never sees this (the web build
+// short-circuits the same way — latestSnapshot() is null off-native).
+function MaybeRestore() {
+  const [snap, setSnap] = useState(undefined) // undefined=looking · null=none → onboard
+  useEffect(() => {
+    let alive = true
+    latestSnapshot().then((s) => alive && setSnap(s), () => alive && setSnap(null))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  if (snap === undefined) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg text-muted">
+        <span className="animate-pulse-accent font-clock text-[0.6875rem] uppercase tracking-widest2">
+          Opening the book…
+        </span>
+      </div>
+    )
+  }
+  if (snap === null) return <Onboarding />
+
+  const restore = () => {
+    if (restoreSnapshot(snap)) window.location.reload()
+    else setSnap(null) // nothing restorable after all — interview as normal
+  }
+  const day = snap.day || (snap.at || '').slice(0, 10)
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-bg px-6 text-ink">
+      <div className="w-full max-w-[420px]">
+        <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">The book was found</span>
+        <h1 className="mt-3 text-[1.625rem] font-semibold leading-tight">
+          This phone holds a copy of your record from {day}.
+        </h1>
+        <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted">
+          The app’s storage came up empty — that can happen when iOS clears space — but your book was kept safe
+          on this device. Restore it and pick up where you left off, or start a new one.
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={restore}
+            className="min-h-[48px] rounded-md bg-accent px-6 font-clock text-[0.8125rem] font-semibold uppercase tracking-widest2 text-accent-ink"
+          >
+            Restore my book
+          </button>
+          <button
+            type="button"
+            onClick={() => setSnap(null)}
+            className="min-h-[44px] rounded-md border border-line px-6 font-clock text-[0.75rem] uppercase tracking-widest2 text-muted"
+          >
+            Start fresh instead
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }

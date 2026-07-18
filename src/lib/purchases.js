@@ -189,7 +189,19 @@ const COACH_IDS = new Set(PLANS.map((p) => p.productId))
 // A false negative just labels a trial 'active' (still gated correctly); it
 // never over-grants.
 function txIsTrial(t) {
-  return Boolean(t && (t.isTrialPeriod || t.isInIntroPricePeriod))
+  if (!t) return false
+  if (t.isTrialPeriod || t.isInIntroPricePeriod) return true
+  // REALITY CHECK (P1, tournament-verified): the installed iOS implementation
+  // (TransactionHelpers.swift) never writes either field above — on device they
+  // are always undefined, so trial detection was structurally dead and every
+  // trial subscriber read 'active'. Derive it from data iOS DOES send: both
+  // coach plans carry a 7-day intro trial in ASC, so a subscriber's first 7
+  // days of ownership ARE that trial. originalPurchaseDate marks first
+  // ownership — a lapsed-and-returned subscriber keeps an old original date
+  // and correctly reads paid. A false positive only mislabels the status text;
+  // the gates are identical either way.
+  const first = Date.parse(t.originalPurchaseDate || t.purchaseDate || '')
+  return Number.isFinite(first) && Date.now() - first < 7 * 24 * 3600 * 1000
 }
 
 /**
@@ -210,10 +222,16 @@ async function readOwnership(native) {
     const now = Date.now()
     const match = purchases.find((t) => {
       if (!t || !COACH_IDS.has(t.productIdentifier)) return false
-      if (t.isActive === false) return false
       // Refunded / revoked keeps a future expirationDate but must NOT grant.
       if (t.revocationDate) return false
       if (t.subscriptionState === 'expired' || t.subscriptionState === 'revoked') return false
+      // BILLING GRACE (P1): a renewal that failed but Apple says keep serving.
+      // The installed plugin computes isActive purely as expirationDate>now, so
+      // a grace-period subscriber fails BOTH checks below while still paying —
+      // they were getting locked out and shown the winback page. Apple's truth
+      // rides in subscriptionState; honor it before the date math.
+      if (t.subscriptionState === 'inGracePeriod' || t.subscriptionState === 'inBillingRetryPeriod') return true
+      if (t.isActive === false) return false
       if (t.expirationDate) {
         const exp = Date.parse(t.expirationDate)
         if (Number.isFinite(exp) && exp <= now) return false

@@ -191,6 +191,52 @@ const sanitizers = {
       .map((a) => ({ key: str(a.key, 40), day: str(a.day, 10) }))
     return { drafts, considerations, counselAck }
   },
+
+  // Reading plan (P1): index MUST come out a clamped number — a corrupt
+  // {index:'abc'} used to survive the merge, then advanceReading's index+1
+  // string-concatenated ('abc1') and the reader showed undefined forever.
+  reading(r) {
+    if (!isObj(r)) return { index: 0, history: [], plan: [] }
+    const plan = asArr(r.plan)
+      .filter((p) => typeof p === 'string')
+      .slice(0, 500)
+      .map((p) => str(p, 80))
+    const history = asArr(r.history)
+      .filter(isObj)
+      .slice(0, 1000)
+      .map((h) => ({ label: str(h.label, 80), at: str(h.at, 40) }))
+    return { index: num(r.index, { min: 0, max: Math.max(plan.length, 0), fallback: 0 }), history, plan }
+  },
+
+  // Morning checklist: { 'YYYY-MM-DD': { itemKey: 'done'|'missed'|true } }.
+  // true is the legacy boolean shape (cycleChecklistItem still migrates it).
+  checklist(c) {
+    if (!isObj(c)) return {}
+    const out = {}
+    for (const [day, items] of Object.entries(c)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !isObj(items)) continue
+      const clean = {}
+      for (const [k, v] of Object.entries(items)) {
+        if (v === 'done' || v === 'missed' || v === true) clean[str(k, 40)] = v
+      }
+      out[day] = clean
+    }
+    return out
+  },
+
+  reviews(list) {
+    return asArr(list)
+      .filter((r) => isObj(r) && typeof r.weekOf === 'string')
+      .slice(0, 200)
+      .map((r) => ({
+        ...r,
+        weekOf: str(r.weekOf, 10),
+        worked: str(r.worked, 2000),
+        broke: str(r.broke, 2000),
+        oneChange: str(r.oneChange, 2000),
+        stats: isObj(r.stats) ? r.stats : {},
+      }))
+  },
 }
 
 export function sanitize(name, value) {

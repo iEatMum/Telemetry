@@ -21,7 +21,10 @@ export default function Sheet({ title, onClose, children }) {
       className="fixed inset-0 z-40 flex flex-col justify-end"
     >
       <div aria-hidden onClick={onClose} className="absolute inset-0 bg-black/60" />
-      <div className="relative mx-auto max-h-[90vh] w-full max-w-app overflow-y-auto rounded-t-sheet border-t border-line bg-surface p-5 pb-safe">
+      <div
+        className="relative mx-auto max-h-[90vh] w-full max-w-app overflow-y-auto rounded-t-sheet border-t border-line bg-surface p-5 pb-safe"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--keyboard-inset, 0px))' }}
+      >
         <button
           ref={closeRef}
           type="button"

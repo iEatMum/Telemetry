@@ -149,7 +149,7 @@ export default function Sprint() {
   // Start, the committed act.
   return (
     <div className="space-y-6 pt-3">
-      <h1 className="border-b border-line pb-2 font-clock text-[12px] uppercase tracking-widest2 text-muted">
+      <h1 className="border-b border-line pb-2 font-clock text-[0.75rem] uppercase tracking-widest2 text-muted">
         Sprints
       </h1>
 
@@ -181,7 +181,7 @@ export default function Sprint() {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="What are you working on? (optional)"
-          className="mt-4 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-[15px] text-ink placeholder:text-muted focus:border-accent-deep focus:outline-none"
+          className="mt-4 w-full rounded-md border border-line bg-surface px-3 py-2.5 text-[0.9375rem] text-ink placeholder:text-muted focus:border-accent-deep focus:outline-none"
         />
 
         <p className="mt-4 text-xs text-muted">Edge, not a rule: put the phone in another room for this one — a phone in reach is a small tax on focus.</p>
@@ -399,10 +399,10 @@ function WeekChart({ sprints }) {
                 title={`${w.count} sprint${w.count === 1 ? '' : 's'}`}
               />
             </div>
-            <span className={`font-clock tnum text-[11px] ${i === 6 ? 'text-ink' : 'text-muted'}`}>
+            <span className={`font-clock tnum text-[0.6875rem] ${i === 6 ? 'text-ink' : 'text-muted'}`}>
               {w.count}
             </span>
-            <span className="text-[10px] uppercase text-muted">{w.day}</span>
+            <span className="text-[0.625rem] uppercase text-muted">{w.day}</span>
           </div>
         ))}
       </div>

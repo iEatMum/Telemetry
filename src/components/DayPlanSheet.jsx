@@ -37,7 +37,7 @@ export default function DayPlanSheet({ onClose }) {
 
   return (
     <Sheet title="Dictate the day" onClose={close}>
-      <p className="text-[12px] leading-relaxed text-muted">
+      <p className="text-[0.75rem] leading-relaxed text-muted">
         Your blocks, in your words — the Today page prints them in time order (untimed lines follow).
         ◆ marks the block the day hinges on; it becomes the deep-work timer.
       </p>
@@ -50,7 +50,7 @@ export default function DayPlanSheet({ onClose }) {
               value={b.time || ''}
               onChange={(e) => patch(b.id, 'time', e.target.value)}
               aria-label={`Block ${i + 1} time (optional)`}
-              className="w-[96px] flex-none rounded-md border border-line bg-surface2 px-1 py-2.5 text-center font-clock tnum text-[13px] text-ink outline-none focus:border-accent-deep"
+              className="min-w-[112px] flex-none rounded-md border border-line bg-surface2 px-1 py-2.5 text-center font-clock tnum text-[0.8125rem] text-ink outline-none focus:border-accent-deep"
             />
             <input
               type="text"
@@ -58,7 +58,7 @@ export default function DayPlanSheet({ onClose }) {
               onChange={(e) => patch(b.id, 'block', e.target.value)}
               placeholder="The block, in your words"
               aria-label={`Block ${i + 1}`}
-              className="min-w-0 flex-1 rounded-md border border-line bg-surface2 px-3 py-2.5 text-[14px] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
+              className="min-w-0 flex-1 rounded-md border border-line bg-surface2 px-3 py-2.5 text-[0.875rem] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
             />
             <button
               type="button"
@@ -66,7 +66,7 @@ export default function DayPlanSheet({ onClose }) {
               aria-pressed={b.impact === 'high'}
               aria-label={`Mark block ${i + 1} high-impact`}
               className={
-                'w-10 flex-none rounded-md border font-clock text-[14px] transition-colors ' +
+                'w-10 flex-none rounded-md border font-clock text-[0.875rem] transition-colors ' +
                 (b.impact === 'high'
                   ? 'border-accent-deep bg-surface2 text-accent'
                   : 'border-line bg-surface2 text-muted')
@@ -78,14 +78,14 @@ export default function DayPlanSheet({ onClose }) {
               type="button"
               onClick={() => remove(b.id)}
               aria-label={`Remove block ${i + 1}`}
-              className="w-10 flex-none rounded-md border border-line bg-surface2 text-[14px] text-muted"
+              className="w-10 flex-none rounded-md border border-line bg-surface2 text-[0.875rem] text-muted"
             >
               ✕
             </button>
           </div>
         ))}
         {!blocks.length && (
-          <p className="rounded-md border border-dashed border-line px-4 py-5 text-center text-[13px] text-muted">
+          <p className="rounded-md border border-dashed border-line px-4 py-5 text-center text-[0.8125rem] text-muted">
             Nothing dictated yet — the page is waiting on your words.
           </p>
         )}

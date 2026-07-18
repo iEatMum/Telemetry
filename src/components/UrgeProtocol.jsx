@@ -24,12 +24,13 @@
 // the signal resolveOutcomes() reads (reset within 6h of invocation), so the
 // forge learns without any engine change.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { forgeProtocol } from '../lib/protocolForge.js'
 import { recordInvocation, getInvocations } from '../lib/guardianEngine.js'
 import { voice } from '../lib/toneEngine.js'
 import { streakDays } from '../lib/dates.js'
+import { verseForDay } from '../lib/verses.js'
 import { HoldButton } from './ui.jsx'
 import { sealCommit } from '../lib/haptics.js'
 import {
@@ -50,23 +51,81 @@ const armCountdown = (secs) => `${Math.floor(secs / 60)}:${String(secs % 60).pad
 const STAY_ARM_SECONDS = import.meta.env.DEV ? 3 : 60
 const TEXT_BODY = 'Urge hit — texting you before I act, like I said I would. Doing the protocol. Check on me in 15.'
 
+// ── Ride persistence (MASTERPLAN P1 · crisis path) ───────────────────────────
+// The protocol SENDS the user away from the phone — "phone in another room" is
+// step one — and iOS is free to kill the process while they're gone. Before
+// this sidecar, coming back meant a blank deck: ride clock gone, steps gone, a
+// fresh invocation logged if they reopened HELP. Now the live ride (start
+// instant, the dealt hand, progress) survives process death; the shell reopens
+// it on boot and the clock re-syncs off the wall clock. An hour-old ride is
+// treated as an abandoned crash, not resumed — nobody rides one urge for an
+// hour, and resurrecting last night's crisis screen at breakfast would be its
+// own kind of harm.
+const RIDE_KEY = 'lockedin:__urge'
+const RIDE_TTL_MS = 60 * 60 * 1000
+
+export function activeRide() {
+  try {
+    const raw = localStorage.getItem(RIDE_KEY)
+    if (!raw) return null
+    const r = JSON.parse(raw)
+    if (!r || typeof r.startedAt !== 'number' || !Array.isArray(r.steps) || !r.steps.length) throw new Error('shape')
+    if (Date.now() - r.startedAt > RIDE_TTL_MS) throw new Error('stale')
+    return r
+  } catch {
+    try {
+      localStorage.removeItem(RIDE_KEY)
+    } catch {
+      /* already gone */
+    }
+    return null
+  }
+}
+export const hasActiveRide = () => activeRide() !== null
+function saveRide(r) {
+  try {
+    localStorage.setItem(RIDE_KEY, JSON.stringify(r))
+  } catch {
+    /* quota — the ride still works in memory */
+  }
+}
+function clearRide() {
+  try {
+    localStorage.removeItem(RIDE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 export default function UrgeProtocol({ onClose, severity = 'normal' }) {
   const { settings, streak, logUrgeSurvived, logReset } = useStore()
   // The ride clock counts UP (Split Ledger 03 — a dive bezel measures survival,
   // not deadline). DURATION is the crest: past it, the survived copy unlocks.
   const [elapsed, setElapsed] = useState(0)
-  const [phase, setPhase] = useState('active') // active | stayed | slipped
+  // A crashed-but-fresh ride resumes exactly where it stood; otherwise HELP
+  // opens on the LANDING frame — a still page that starts nothing. The old
+  // behavior (tap HELP → a running 15-minute clock + a logged invocation) meant
+  // an accidental tap polluted the forge's outcome data and greeted a curious
+  // user with a countdown already judging them.
+  const [ride, setRide] = useState(() => activeRide())
+  const [phase, setPhase] = useState(ride ? 'active' : 'landing') // landing | active | stayed | slipped
   // The pile as rendered on a close screen — captured at the moment of the
   // outcome so the ceremony number doesn't shift under a re-render.
   const [closePile, setClosePile] = useState(0)
-  const endRef = useRef(null)
 
   const partners = (settings.partners || []).filter((p) => p.phone)
   const [pinged, setPinged] = useState({})
 
-  // Deal the hand ONCE per open (useMemo, not per render) and log the invocation
-  // so the forge can attribute tonight's outcome to exactly these steps.
-  const protocol = useMemo(() => {
+  // Strictly-in-order progression: stepDone = how many steps are complete; only
+  // the step at that index is tappable. "Set aside" steps count as passed but
+  // keep their own mark. Both survive process death inside the ride sidecar.
+  const [stepDone, setStepDone] = useState(() => (ride && ride.stepDone) || 0)
+  const [skipped, setSkipped] = useState(() => new Set((ride && ride.skipped) || []))
+
+  // Deal the hand ONCE — at "Start the ride", never on mount — and log the
+  // invocation so the forge can attribute tonight's outcome to exactly these
+  // steps. A resumed ride reuses its original hand and logs nothing new.
+  function begin() {
     const dealt = forgeProtocol({
       severity,
       invocations: getInvocations(),
@@ -75,12 +134,22 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
       hasPartner: partners.length > 0,
     })
     recordInvocation({ steps: dealt.steps.map((s) => s.id), severity })
-    return dealt
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  // Strictly-in-order progression: stepDone = how many steps are complete; only
-  // the step at that index is tappable.
-  const [stepDone, setStepDone] = useState(0)
+    const fresh = {
+      startedAt: Date.now(),
+      severity,
+      steps: dealt.steps.map(({ id, label, special }) => ({ id, label, special })),
+      stepDone: 0,
+      skipped: [],
+    }
+    saveRide(fresh)
+    setRide(fresh)
+    setStepDone(0)
+    setSkipped(new Set())
+    setElapsed(0)
+    setPhase('active')
+  }
+
+  const steps = (ride && ride.steps) || []
 
   // Profile for the tone engine + its params.
   const profile = { streakModel: settings.streakModel, theme: settings.theme }
@@ -90,15 +159,18 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
     winsNext: (streak.urgesSurvived || []).length + 1,
   }
 
-  // Auto-start the ride clock + keep the screen on. The clock is WALL-CLOCK
-  // anchored: the protocol literally sends the user away from the phone, and
-  // iOS suspends JS timers when the screen is off — so elapsed is computed
-  // from the real start instant and re-synced (plus the wake lock reacquired)
-  // when they come back.
+  // The ride clock + screen wake, alive only once a ride exists. The clock is
+  // WALL-CLOCK anchored to the ride's persisted start instant: the protocol
+  // literally sends the user away from the phone, iOS suspends JS timers when
+  // the screen is off (or kills the process outright) — so elapsed is computed
+  // from ride.startedAt and re-synced (plus the wake lock reacquired) when they
+  // come back, across suspends AND relaunches.
+  const startedAt = ride ? ride.startedAt : null
   useEffect(() => {
-    endRef.current = Date.now()
+    if (!startedAt) return undefined
     requestWakeLock()
-    const tick = () => setElapsed(Math.max(0, Math.round((Date.now() - endRef.current) / 1000)))
+    const tick = () => setElapsed(Math.max(0, Math.round((Date.now() - startedAt) / 1000)))
+    tick()
     const onVis = () => {
       reacquireWakeLockIfNeeded()
       tick()
@@ -110,22 +182,26 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
       document.removeEventListener('visibilitychange', onVis)
       releaseWakeLock()
     }
-  }, [])
+  }, [startedAt])
 
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0')
   const ss = String(elapsed % 60).padStart(2, '0')
   const passed = elapsed >= DURATION
 
-  function advance(i) {
+  function advance(i, viaSkip = false) {
     if (i !== stepDone) return // strictly in order
+    const nextSkipped = viaSkip ? new Set(skipped).add(steps[i].id) : skipped
+    if (viaSkip) setSkipped(nextSkipped)
     setStepDone(i + 1)
+    if (ride) saveRide({ ...ride, stepDone: i + 1, skipped: [...nextSkipped] })
   }
 
   function stay() {
     // The WIN carries the protocol fingerprint — this is how the forge learns.
     setClosePile(params.winsNext)
-    logUrgeSurvived({ steps: protocol.steps.map((s) => s.id), severity })
+    logUrgeSurvived({ steps: steps.map((s) => s.id), severity })
     sealCommit() // "I stayed" is a commitment — the one sanctioned success haptic
+    clearRide()
     setPhase('stayed')
   }
 
@@ -134,7 +210,15 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
     // invocation) — component wiring only, no engine change. Data, not verdict.
     setClosePile(params.wins)
     logReset({ context: 'outlast' })
+    clearRide()
     setPhase('slipped')
+  }
+
+  // The quiet ✕: logs nothing AND leaves no ride behind — an abandoned open
+  // must not resurrect itself as a "resumed crisis" on the next boot.
+  function quietClose() {
+    clearRide()
+    onClose()
   }
 
   // ── Close screens ──────────────────────────────────────────────────────────
@@ -142,13 +226,13 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
     return (
       <Shell>
         <div className="flex flex-1 flex-col items-center justify-center text-center">
-          <div className="font-clock text-[12px] uppercase tracking-[0.25em] text-accent">
+          <div className="font-clock text-[0.75rem] uppercase tracking-[0.25em] text-accent">
             Position held
           </div>
-          <div className="scoreboard mt-6 font-clock tnum text-[56px] leading-none text-accent">
+          <div className="scoreboard mt-6 font-clock tnum text-[3.5rem] leading-none text-accent">
             {closePile}
           </div>
-          <div className="mt-2 font-clock text-[11px] uppercase tracking-widest2 text-muted">
+          <div className="mt-2 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
             Urges outlasted
           </div>
           <p className="mx-auto mt-6 max-w-xs text-sm leading-relaxed text-muted">
@@ -181,11 +265,11 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
     return (
       <Shell>
         <div className="flex flex-1 flex-col items-center justify-center text-center">
-          <div className="font-clock text-[12px] uppercase tracking-[0.25em] text-muted">
+          <div className="font-clock text-[0.75rem] uppercase tracking-[0.25em] text-muted">
             Logged · the book stays open
           </div>
-          <div className="mt-6 font-clock tnum text-[56px] leading-none text-ink">{closePile}</div>
-          <div className="mt-2 font-clock text-[11px] uppercase tracking-widest2 text-muted">
+          <div className="mt-6 font-clock tnum text-[3.5rem] leading-none text-ink">{closePile}</div>
+          <div className="mt-2 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
             Urges outlasted · still yours
           </div>
           <p className="mx-auto mt-6 max-w-xs text-sm leading-relaxed text-ink">
@@ -204,13 +288,63 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
     )
   }
 
+  // ── The landing frame ──────────────────────────────────────────────────────
+  // HELP's front door (P1): a still page. No clock runs, nothing is logged,
+  // until "Start the ride" — so an accidental or curious tap costs nothing and
+  // teaches the room. The crisis line is here too: someone who came for the
+  // hotline shouldn't have to start a protocol to find it.
+  if (phase === 'landing') {
+    return (
+      <Shell label="Help — the night page">
+        <button
+          type="button"
+          onClick={quietClose}
+          aria-label="Close"
+          className="absolute right-2 top-0 flex min-h-[44px] min-w-[44px] items-center justify-center text-muted pt-safe"
+        >
+          ✕
+        </button>
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <div className="font-clock text-[0.75rem] uppercase tracking-[0.25em] text-muted">
+            <span className="text-accent" aria-hidden>
+              ●
+            </span>{' '}
+            The night page
+          </div>
+          <h1 className="mx-auto mt-6 max-w-xs text-[1.5rem] font-semibold leading-tight text-ink">
+            You made it here. That was the hard part.
+          </h1>
+          <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-muted">
+            An urge is a wave — it crests and it passes. The ride deals you a few concrete moves and a
+            15-minute clock to outlast it. Nothing starts, and nothing is written, until you say so.
+          </p>
+          {params.wins > 0 && (
+            <div className="mt-6 flex items-baseline gap-2 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
+              <span>Urges outlasted</span>
+              <span className="tnum text-base text-accent">{params.wins}</span>
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={begin}
+          className="mt-8 w-full rounded-md bg-accent py-4 font-clock text-sm font-semibold uppercase tracking-widest2 text-accent-ink"
+        >
+          Start the ride
+        </button>
+        <CrisisLine />
+      </Shell>
+    )
+  }
+
   // ── The active override ────────────────────────────────────────────────────
   return (
     <Shell>
-      {/* Quiet escape (no logging) — an accidental open must not force a verdict */}
+      {/* Quiet escape (no logging, no ride left behind) — an accidental open
+          must not force a verdict */}
       <button
         type="button"
-        onClick={onClose}
+        onClick={quietClose}
         aria-label="Close"
         className="absolute right-2 top-0 flex min-h-[44px] min-w-[44px] items-center justify-center text-muted pt-safe"
       >
@@ -221,16 +355,18 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
           position (the number a reset can never touch), this ride is the line
           beneath it. Ink numerals; the accent stays with commitment. */}
       <div className="pt-8 text-center">
-        <div className="font-clock text-[12px] uppercase tracking-[0.25em] text-muted">
+        <div className="font-clock text-[0.75rem] uppercase tracking-[0.25em] text-muted">
           <span className="text-accent" aria-hidden>
             ●
           </span>{' '}
           Outlast it · <span className="text-muted">urge protocol</span>
         </div>
-        <div className="mt-6 font-clock text-[10px] uppercase tracking-widest2 text-muted">
+        {/* 11px floor on the whole night page (P1 a11y): the reader is
+            dysregulated and possibly in the dark — no micro-type here. */}
+        <div className="mt-6 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
           Outlasted — lifetime
         </div>
-        <div className="mt-1.5 font-clock tnum text-[56px] font-medium leading-none text-ink">
+        <div className="mt-1.5 font-clock tnum text-[3.5rem] font-medium leading-none text-ink">
           {params.wins}
         </div>
         <div
@@ -240,7 +376,7 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
         >
           {mm}:{ss}
         </div>
-        <div className="mt-1 font-clock text-[10px] uppercase tracking-widest2 text-faint">
+        <div className="mt-1 font-clock text-[0.6875rem] uppercase tracking-widest2 text-faint">
           this ride
         </div>
         <p className="mx-auto mt-3 max-w-xs text-sm text-muted">
@@ -255,7 +391,7 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
         {/* The win lands beside the pile it grows (BLUEPRINT P-8) — the
             lifetime number is the one a reset can never touch. */}
         {passed && (
-          <div className="mt-4 flex items-baseline justify-center gap-2 font-clock text-[11px] uppercase tracking-widest2 text-muted">
+          <div className="mt-4 flex items-baseline justify-center gap-2 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
             <span>Urges outlasted</span>
             <span className="tnum text-base text-accent">{params.wins}</span>
             <span>· this one makes {params.winsNext}</span>
@@ -265,9 +401,10 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
 
       {/* Steps — the forged hand, strictly in order */}
       <ol className="mt-8 space-y-2.5">
-        {protocol.steps.map((step, i) => {
+        {steps.map((step, i) => {
           const isDone = i < stepDone
           const isNow = i === stepDone
+          const wasSkipped = skipped.has(step.id)
           if (step.special === 'partner') {
             return (
               <li
@@ -280,7 +417,7 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
                   <StepMark n={i + 1} done={isDone} now={isNow} />
                   <div className="flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`text-[15px] ${isDone ? 'text-muted' : 'text-ink'}`}>
+                      <span className={`text-[0.9375rem] ${isDone ? 'text-muted' : 'text-ink'}`}>
                         Text {partners.length === 1 ? partners[0].name : 'someone in your corner'}.
                       </span>
                       {isNow && <NowChip />}
@@ -331,9 +468,24 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
                       : 'border-line bg-surface opacity-60'
                 }`}
               >
-                <StepMark n={i + 1} done={isDone} now={isNow} />
-                <span className={`flex-1 text-[15px] ${isDone ? 'text-muted line-through' : 'text-ink'}`}>
-                  {step.label}
+                <StepMark n={i + 1} done={isDone} now={isNow} skipped={wasSkipped} />
+                <span className="flex-1">
+                  <span
+                    className={`block text-[0.9375rem] ${
+                      isDone ? (wasSkipped ? 'text-muted' : 'text-muted line-through') : 'text-ink'
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  {/* The verse step SHOWS the verse — "read tonight's verse"
+                      with no verse was an instruction into a void. Same daily
+                      verse as the deck's card (verseForDay), faith-gated
+                      upstream by the forge. */}
+                  {step.id === 'verse' && (isNow || isDone) && (
+                    <span className="mt-1.5 block text-[0.8125rem] leading-relaxed text-muted">
+                      “{verseForDay().text}” — {verseForDay().ref}
+                    </span>
+                  )}
                 </span>
                 {isNow && <NowChip />}
               </button>
@@ -341,6 +493,21 @@ export default function UrgeProtocol({ onClose, severity = 'normal' }) {
           )
         })}
       </ol>
+
+      {/* "Can't do this one" (P1): a step you can't take right now — no partner
+          signal, a shared room at 2am, a body that won't do pushups tonight —
+          must not wall off the rest of the ladder. Setting it aside advances
+          the ride and marks the step —, not ✓: the book records what happened,
+          and an unworkable step is data for the forge, never a fault. */}
+      {stepDone < steps.length && (
+        <button
+          type="button"
+          onClick={() => advance(stepDone, true)}
+          className="mt-2.5 min-h-[44px] w-full rounded-md px-3 text-left font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted"
+        >
+          Can’t do this one — set it aside
+        </button>
+      )}
 
       <div className="flex-1" />
 
@@ -441,26 +608,29 @@ function Shell({ children, label = 'Outlast it — the night page' }) {
   )
 }
 
-function StepMark({ n, done, now }) {
+function StepMark({ n, done, now, skipped }) {
+  // A set-aside step wears — in muted, not the accent ✓: passed, not performed.
   return (
     <span
-      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border font-clock text-[13px] ${
+      className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border font-clock text-[0.8125rem] ${
         done
-          ? 'border-line text-accent'
+          ? skipped
+            ? 'border-line text-muted'
+            : 'border-line text-accent'
           : now
             ? 'border-accent-deep text-ink'
             : 'border-line text-muted'
       }`}
       aria-hidden
     >
-      {done ? '✓' : n}
+      {done ? (skipped ? '—' : '✓') : n}
     </span>
   )
 }
 
 function NowChip() {
   return (
-    <span className="rounded border border-accent-deep px-1.5 py-0.5 font-clock text-[9px] uppercase tracking-widest2 text-accent">
+    <span className="rounded border border-accent-deep px-1.5 py-0.5 font-clock text-[0.6875rem] uppercase tracking-widest2 text-accent">
       now
     </span>
   )

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import LiveDeck from './components/LiveDeck.jsx'
 import NavBar from './components/NavBar.jsx'
-import UrgeProtocol from './components/UrgeProtocol.jsx'
+import UrgeProtocol, { hasActiveRide } from './components/UrgeProtocol.jsx'
 import Paywall from './components/Paywall.jsx'
 import { LegalOverlay } from './components/LegalSheet.jsx'
 import SettingsSheet from './components/SettingsSheet.jsx'
@@ -18,6 +18,11 @@ import { trackDailyOpen } from './lib/analytics.js'
 import { syncDailyBriefingWidget } from './lib/widgets.js'
 import { refreshEntitlement } from './lib/purchases.js'
 import { initDynamicType } from './lib/dynamicType.js'
+import { writeSnapshot } from './lib/snapshots.js'
+import { initKeyboardInsets } from './lib/nativeChrome.js'
+import { Capacitor } from '@capacitor/core'
+import { appDayKey } from './lib/dates.js'
+import StorageAlert from './components/StorageAlert.jsx'
 import { queuedCount, status as syncStatus } from './lib/sync.js'
 import * as storage from './lib/storage.js'
 import { StatusLED } from './components/ui.jsx'
@@ -77,7 +82,10 @@ function useQueued(active) {
 // footer), so nothing is ever trapped beneath a floating banner.
 export default function App() {
   const [surface, setSurface] = useState('deck')
-  const [urgeOpen, setUrgeOpen] = useState(false)
+  // A ride that survived process death reopens with the shell (P1 crisis path):
+  // the user walked away mid-protocol, iOS killed the app, and coming back must
+  // land them back ON the ride — not on a deck pretending nothing was happening.
+  const [urgeOpen, setUrgeOpen] = useState(() => hasActiveRide())
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [dayPlanOpen, setDayPlanOpen] = useState(false)
   // The tour auto-opens exactly once: the shell only mounts past RequireSurvey,
@@ -104,12 +112,22 @@ export default function App() {
   const impactDone = summary.impact?.done ?? 0
   const engagedPercent = summary.engagementRate ?? 0
   const cardsEngaged = (summary.used || []).length
+  // The widget's HERO stat must be a real dependency (P1): reading it inside
+  // the effect meant marking today clean without moving an engagement stat
+  // left the home-screen widget on yesterday's count. A storage subscription
+  // keeps it live — streak writes land in state, state lands in the deps.
+  const [daysOnBook, setDaysOnBook] = useState(() => (storage.get('streak')?.cleanDates || []).length)
+  useEffect(
+    () =>
+      storage.subscribe((name) => {
+        if (name === 'streak') setDaysOnBook((storage.get('streak')?.cleanDates || []).length)
+      }),
+    []
+  )
   useEffect(() => {
-    // The manila widget heroes "DAYS ON THE BOOK" — read the days total from
-    // storage at push time (native-only; a no-op on web).
-    const daysOnBook = (storage.get('streak')?.cleanDates || []).length
+    // The manila widget heroes "DAYS ON THE BOOK" (native-only; no-op on web).
     syncDailyBriefingWidget(impactDone, engagedPercent, cardsEngaged, daysOnBook)
-  }, [impactDone, engagedPercent, cardsEngaged])
+  }, [impactDone, engagedPercent, cardsEngaged, daysOnBook])
 
   // The deck's in-flow "Open the night page" line routes here — the urge
   // overlay is owned by the shell (it must cover every surface), so deep
@@ -141,6 +159,40 @@ export default function App() {
   // root type accordingly. No-op on web (the event never fires there).
   useEffect(() => initDynamicType(), [])
 
+  // Keyboard inset seam (native only): sheets read --keyboard-inset to keep
+  // their inputs clear of the iOS keyboard.
+  useEffect(() => {
+    let teardown = () => {}
+    initKeyboardInsets().then((fn) => {
+      teardown = fn || teardown
+    })
+    return () => teardown()
+  }, [])
+
+  // The crash barrier (P1 "the book survives"): snapshot the whole store to the
+  // app sandbox on mount, on every backgrounding (visibilitychange→hidden fires
+  // on Capacitor pause), and at the 3am rollover while the app stays open.
+  // No-op on web; an empty store never overwrites a good snapshot.
+  useEffect(() => {
+    writeSnapshot()
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') writeSnapshot()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    let lastDay = appDayKey()
+    const tick = setInterval(() => {
+      const day = appDayKey()
+      if (day !== lastDay) {
+        lastDay = day
+        writeSnapshot()
+      }
+    }, 15 * 60_000)
+    return () => {
+      document.removeEventListener('visibilitychange', onVis)
+      clearInterval(tick)
+    }
+  }, [])
+
   // Re-mirror Apple's entitlement on launch and every foreground return. Without
   // this the local __coach cache only ever refreshes on a Paywall tap, so a
   // cancelled or expired subscription would keep the coach unlocked forever (and
@@ -164,25 +216,31 @@ export default function App() {
         <div className="flex items-center gap-2.5">
           <StatusLED status={conn.label} />
           {conn.label === 'OFFLINE' && queued > 0 && (
-            <span className="font-clock tnum text-[10px] uppercase tracking-widest2 text-muted">
+            <span className="font-clock tnum text-[0.625rem] uppercase tracking-widest2 text-muted">
               queued {queued}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2.5">
-          <span className="flex items-end gap-[2px]" aria-hidden>
-            {[3, 5, 7, 9].map((h, i) => (
-              <span
-                key={h}
-                className={`w-[3px] rounded-sm ${
-                  i < (conn.label === 'OFFLINE' ? 1 : 4) ? 'bg-muted' : 'bg-line'
-                }`}
-                style={{ height: h }}
-              />
-            ))}
-          </span>
-          <span className="font-clock tnum text-[11px] tracking-widest2 text-muted">{clock}</span>
-        </div>
+        {/* On native the phone's REAL status bar sits right above this strip —
+            painting a second clock and fake signal bars under it reads as a
+            cheap imitation (P1 platform). Web/PWA keeps them: there's no
+            system chrome to defer to in a standalone web view. */}
+        {!Capacitor.isNativePlatform() && (
+          <div className="flex items-center gap-2.5">
+            <span className="flex items-end gap-[2px]" aria-hidden>
+              {[3, 5, 7, 9].map((h, i) => (
+                <span
+                  key={h}
+                  className={`w-[3px] rounded-sm ${
+                    i < (conn.label === 'OFFLINE' ? 1 : 4) ? 'bg-muted' : 'bg-line'
+                  }`}
+                  style={{ height: h }}
+                />
+              ))}
+            </span>
+            <span className="font-clock tnum text-[0.6875rem] tracking-widest2 text-muted">{clock}</span>
+          </div>
+        )}
       </div>
 
       {/* The active surface. DECK owns its own scroll padding (LayoutHost's
@@ -191,6 +249,9 @@ export default function App() {
           itself down by, or on a notched phone the first ~48px of every surface
           (the Day-one hero) renders trapped beneath the strip. */}
       <div className="pt-[calc(env(safe-area-inset-top)+1.75rem)]">
+        {/* Storage honesty strip — only renders after a write refusal or a
+            quarantined page; in-flow so it can never trap content beneath it. */}
+        <StorageAlert />
         {surface === 'deck' ? (
           <LiveDeck />
         ) : (
@@ -210,7 +271,7 @@ export default function App() {
       </div>
 
       {/* HELP lives IN the nav (M2) — a docked slot can never float over content */}
-      <NavBar active={surface} onChange={setSurface} onHelp={() => setUrgeOpen(true)} />
+      <NavBar active={surface} onChange={setSurface} onHelp={() => setUrgeOpen(true)} helpActive={urgeOpen} />
 
       {urgeOpen && <UrgeProtocol onClose={() => setUrgeOpen(false)} />}
       {paywallOpen && <Paywall onClose={() => setPaywallOpen(false)} />}

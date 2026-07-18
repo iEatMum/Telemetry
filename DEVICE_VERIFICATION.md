@@ -30,8 +30,11 @@ below is about confirming it on device. Run it top to bottom on an iPhone.
    review, or a counsel note). Expect the **CoachGate** ("Hire the coach — 7 days
    free"), not coach content.
 2. Through the paywall → buy **yearly** → the system sheet reads "7 days free,
-   then $39.99/year" → complete. Gates unlock live; sidecar status = **`trial`**
-   (intro period → `isTrialPeriod`), not `active`.
+   then $39.99/year" → complete. Gates unlock live; sidecar status = **`trial`**.
+   NOTE (P1 correction): the installed iOS plugin never emits `isTrialPeriod` /
+   `isInIntroPricePeriod` — trial is now DERIVED in `txIsTrial`: first 7 days
+   since `originalPurchaseDate` = the intro trial. So `trial` should appear on a
+   fresh purchase regardless of those fields.
 3. Force-quit → relaunch → **still unlocked** (`refreshEntitlement()` re-mirrors
    on launch).
 4. "Restore purchases" on the **same** account → stays unlocked, no double charge.
@@ -78,8 +81,17 @@ below is about confirming it on device. Run it top to bottom on an iPhone.
 
 - **StoreKit "Cannot connect"** → sandbox account not signed in, ASC products not
   approved/"Ready to Submit", or bundle-id / product-id mismatch.
-- **Trial shows `active` not `trial`** → your StoreKit test path has no intro
-  offer (`isTrialPeriod` false). Gate still works; only the label differs.
+- **Trial shows `active` not `trial`** → check `originalPurchaseDate` on the
+  transaction: the derived-trial rule is "within 7 days of first ownership". A
+  StoreKit-config clock warp past 7 days correctly reads `active`. Gate behavior
+  is identical either way.
+- **Billing grace (new case):** in the .storekit config, simulate "Billing Grace
+  Period" on a renewal — the coach must STAY unlocked (`subscriptionState:
+  'inGracePeriod'` is accepted by `readOwnership` before the expiry-date math)
+  and the winback page must NOT fire.
+- **Store-build guard:** before archiving, `npm run ios:store` must be the build
+  path — it throws if `VITE_TESTER` is set and strips Supabase keys + the PWA
+  service worker from the bundle. Never archive from a plain `vite build`.
 - **Notification never fires** → permission denied, or the window already passed
   today (one-per-day cap).
 - **Widget blank** → App Group not enabled on **both** targets, or the extension

@@ -26,7 +26,7 @@
 // Reachable at /?onboarding and as RequireSurvey's intake gate. Writes through
 // storage.js.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as storage from '../lib/storage.js'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient.js'
 import { buildInitialLayout } from '../lib/architectClient.js'
@@ -36,6 +36,9 @@ import { deriveGuardianSeed, writeGuardianSeed } from '../lib/guardianSeed.js'
 import { isHealthAvailable, requestHealthAuth } from '../lib/health.js'
 import { sealCommit } from '../lib/haptics.js'
 import { track } from '../lib/analytics.js'
+
+// The mid-interview draft (P1 kill-resilience). A sidecar, wiped with the rest.
+const INTAKE_DRAFT_KEY = 'lockedin:__intake_draft'
 
 // ── Option sets. Stable keys, UI labels. Referenced from the flow by name so the
 // JSON graph stays label-free (single source of truth for copy lives here). ────
@@ -130,7 +133,7 @@ const HEALTH_METRICS = [
 const OPTION_SETS = { TIME_LEAKS, PEAK_WINDOWS, DANGER_WINDOWS, ANCHOR_HABITS, COUNTER_MOVES, SLIP_RESPONSES, STREAK_MODELS, THEMES, STAKES, FOCUS_GOALS }
 
 const Label = ({ children, className = '' }) => (
-  <span className={'font-clock text-[11px] uppercase tracking-widest2 text-muted ' + className}>{children}</span>
+  <span className={'font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted ' + className}>{children}</span>
 )
 
 function Toggle({ on, onChange, label, sub }) {
@@ -145,8 +148,8 @@ function Toggle({ on, onChange, label, sub }) {
       aria-label={label}
     >
       <span className="min-w-0">
-        <span className="block text-[14px] text-ink">{label}</span>
-        {sub && <span className="mt-0.5 block text-[12px] leading-snug text-muted">{sub}</span>}
+        <span className="block text-[0.875rem] text-ink">{label}</span>
+        {sub && <span className="mt-0.5 block text-[0.75rem] leading-snug text-muted">{sub}</span>}
       </span>
       <span className={'relative h-6 w-11 flex-none rounded-full transition-colors ' + (on ? 'bg-ink' : 'border border-line bg-surface2')}>
         <span className={'absolute top-0.5 h-5 w-5 rounded-full transition-all ' + (on ? 'left-[22px] bg-bg' : 'left-0.5 bg-muted')} />
@@ -188,7 +191,7 @@ function BaselineGrid({ value, onChange, config = {} }) {
               aria-pressed={on}
               style={{ animationDelay: `${i * 28}ms` }}
               className={
-                'animate-data-stream flex aspect-square items-center justify-center rounded-md border font-clock tnum text-[19px] transition-colors ' +
+                'animate-data-stream flex aspect-square items-center justify-center rounded-md border font-clock tnum text-[1.1875rem] transition-colors ' +
                 (on
                   ? 'border-accent-deep bg-surface2 font-medium text-ink'
                   : 'border-line bg-surface text-muted hover:border-linebright hover:text-ink')
@@ -239,10 +242,10 @@ function SelectGrid({ options, value, onChange, recommended = null }) {
             }
           >
             {rec && (
-              <span className="absolute right-2 top-2 font-clock text-[9px] uppercase tracking-widest2 text-muted">suggested</span>
+              <span className="absolute right-2 top-2 font-clock text-[0.5625rem] uppercase tracking-widest2 text-muted">suggested</span>
             )}
-            <span className={'text-[14px] leading-tight ' + (on ? 'font-medium text-ink' : 'text-ink')}>{o.label}</span>
-            <span className="mt-2 block text-[11px] leading-snug text-muted">{o.sub}</span>
+            <span className={'text-[0.875rem] leading-tight ' + (on ? 'font-medium text-ink' : 'text-ink')}>{o.label}</span>
+            <span className="mt-2 block text-[0.6875rem] leading-snug text-muted">{o.sub}</span>
           </button>
         )
       })}
@@ -262,7 +265,7 @@ function Segmented({ options, value, onChange }) {
             onClick={() => onChange(o.key)}
             aria-pressed={on}
             className={
-              'rounded py-3 font-clock text-[12px] uppercase tracking-widest2 transition-colors ' +
+              'rounded py-3 font-clock text-[0.75rem] uppercase tracking-widest2 transition-colors ' +
               (on ? 'bg-ink text-bg' : 'text-muted hover:text-ink')
             }
           >
@@ -297,7 +300,7 @@ const NODE_RENDERERS = {
           type="time"
           value={answers.wakeTime}
           onChange={(e) => set('wakeTime', e.target.value)}
-          className="w-full rounded-md border border-line bg-surface px-5 py-5 text-center font-clock tnum text-[44px] text-ink outline-none focus:border-accent-deep"
+          className="w-full rounded-md border border-line bg-surface px-5 py-5 text-center font-clock tnum text-[2.75rem] text-ink outline-none focus:border-accent-deep"
         />
       </div>
       <div className="flex flex-col gap-2.5">
@@ -329,7 +332,7 @@ const NODE_RENDERERS = {
               sub="When the AI coach is live, this lets it read your survey answers to compose your plan. Off by default — and in this version your plan is built on-device, so nothing leaves your phone either way. Change anytime in Settings."
             />
           </div>
-          <p className="mt-1 text-[11px] leading-relaxed text-faint">
+          <p className="mt-1 text-[0.6875rem] leading-relaxed text-faint">
             We name the provider up front — Anthropic's Claude — and send nothing unless this switch is on. This version transmits nothing; your answers stay on your device.
           </p>
         </div>
@@ -364,8 +367,8 @@ const NODE_RENDERERS = {
               style={{ accentColor: 'var(--text)' }}
             />
             <span className="min-w-0">
-              <span className={'block text-[14px] ' + (value === o.key ? 'font-medium text-ink' : 'text-ink')}>{o.label}</span>
-              <span className="block text-[11px] text-muted">{o.sub}</span>
+              <span className={'block text-[0.875rem] ' + (value === o.key ? 'font-medium text-ink' : 'text-ink')}>{o.label}</span>
+              <span className="block text-[0.6875rem] text-muted">{o.sub}</span>
             </span>
           </label>
         ))}
@@ -380,7 +383,7 @@ const NODE_RENDERERS = {
       const arr = hi[arrKey] || []
       patch({ [arrKey]: arr.includes(key) ? arr.filter((k) => k !== key) : [...arr, key] })
     }
-    const row = 'flex min-h-[44px] cursor-pointer items-center gap-3 border-b border-line px-1 py-2.5 text-[14px] text-ink'
+    const row = 'flex min-h-[44px] cursor-pointer items-center gap-3 border-b border-line px-1 py-2.5 text-[0.875rem] text-ink'
     const box = { accentColor: 'var(--text)' }
     return (
       <div className="flex flex-col gap-5">
@@ -444,7 +447,7 @@ const NODE_RENDERERS = {
               value={b.time}
               onChange={(e) => patch(i, 'time', e.target.value)}
               aria-label={`Block ${i + 1} time (optional)`}
-              className="w-[104px] flex-none rounded-md border border-line bg-surface px-2 py-3 text-center font-clock tnum text-[14px] text-ink outline-none focus:border-accent-deep"
+              className="w-[104px] flex-none rounded-md border border-line bg-surface px-2 py-3 text-center font-clock tnum text-[0.875rem] text-ink outline-none focus:border-accent-deep"
             />
             <input
               type="text"
@@ -452,7 +455,7 @@ const NODE_RENDERERS = {
               onChange={(e) => patch(i, 'block', e.target.value)}
               placeholder={hints[i]}
               aria-label={`Block ${i + 1}`}
-              className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-3 text-[14px] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
+              className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-3 text-[0.875rem] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
             />
             <button
               type="button"
@@ -460,7 +463,7 @@ const NODE_RENDERERS = {
               aria-pressed={b.impact === 'high'}
               aria-label={`Mark block ${i + 1} high-impact`}
               className={
-                'w-11 flex-none rounded-md border font-clock text-[15px] transition-colors ' +
+                'w-11 flex-none rounded-md border font-clock text-[0.9375rem] transition-colors ' +
                 (b.impact === 'high' ? 'border-accent-deep bg-surface2 text-accent' : 'border-line bg-surface text-muted')
               }
             >
@@ -468,7 +471,7 @@ const NODE_RENDERERS = {
             </button>
           </div>
         ))}
-        <p className="text-[11px] leading-relaxed text-muted">
+        <p className="text-[0.6875rem] leading-relaxed text-muted">
           ◆ marks the block the day hinges on — it becomes the deep-work timer. One line is enough to start.
         </p>
       </div>
@@ -483,7 +486,7 @@ const NODE_RENDERERS = {
         value={answers.mission}
         onChange={(e) => set('mission', e.target.value)}
         placeholder="e.g. break 1:50 in the 800m · ship the app · 90 clean days"
-        className="w-full rounded-md border border-line bg-surface px-4 py-4 text-[15px] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
+        className="w-full rounded-md border border-line bg-surface px-4 py-4 text-[0.9375rem] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
       />
     </div>
   ),
@@ -497,7 +500,7 @@ const NODE_RENDERERS = {
         onChange={(k) => { set('stakePref', k); set('stakeTarget', k === 'witness' ? { type: 'witness', ...answers.stakeTarget } : {}) }}
       />
       {flowState.recommendSocial && answers.stakePref !== 'witness' && (
-        <p className="-mt-3 font-serif text-[13px] italic leading-relaxed text-muted">
+        <p className="-mt-3 font-serif text-[0.8125rem] italic leading-relaxed text-muted">
           You said you go dark after a miss — a witness is the strongest counter to that. Just a suggestion.
         </p>
       )}
@@ -513,7 +516,7 @@ const NODE_RENDERERS = {
             onChange={(e) => set('stakeTarget', { ...answers.stakeTarget, type: 'witness', name: e.target.value })}
             placeholder="Name"
             aria-label="Witness name"
-            className="w-full rounded-md border border-line bg-surface px-4 py-4 text-[15px] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
+            className="w-full rounded-md border border-line bg-surface px-4 py-4 text-[0.9375rem] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
           />
           <Label>witness · phone, for the one-tap text</Label>
           <input
@@ -522,11 +525,11 @@ const NODE_RENDERERS = {
             onChange={(e) => set('stakeTarget', { ...answers.stakeTarget, type: 'witness', phone: e.target.value })}
             placeholder="+1 555…"
             aria-label="Witness phone number"
-            className="w-full rounded-md border border-line bg-surface px-4 py-4 font-clock text-[15px] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
+            className="w-full rounded-md border border-line bg-surface px-4 py-4 font-clock text-[0.9375rem] text-ink outline-none placeholder:text-muted focus:border-accent-deep"
           />
-          <p className="text-[11px] leading-relaxed text-muted">They land on your night page as a one-tap text. You send it; the app never contacts them.</p>
+          <p className="text-[0.6875rem] leading-relaxed text-muted">They land on your night page as a one-tap text. You send it; the app never contacts them.</p>
           {!stakeTargetSatisfied(answers) && (
-            <p role="status" className="text-[11px] leading-relaxed text-muted">
+            <p role="status" className="text-[0.6875rem] leading-relaxed text-muted">
               Initialize unlocks when both the name and the number are down.
             </p>
           )}
@@ -640,7 +643,21 @@ export default function Onboarding() {
   const flow = useMemo(() => normalizeFlow(FLOW), [])
 
   const [phase, setPhase] = useState('form') // form | processing
-  const [answers, setAnswers] = useState({
+  // The interview survives a kill (P1): a phone call or iOS jetsam at step 13
+  // of 16 used to restart the whole intake — answers lived only in useState.
+  // Every change mirrors {answers, flowState} to a draft sidecar; a fresh
+  // mount rehydrates it; initialize() burns it. A draft whose saved node no
+  // longer exists (flow changed between builds) is discarded whole.
+  const draft = useMemo(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem(INTAKE_DRAFT_KEY) || 'null')
+      if (d && d.answers && d.flowState && getNode(flow, d.flowState.currentId)) return d
+    } catch {
+      /* unreadable draft — start clean */
+    }
+    return null
+  }, [flow])
+  const [answers, setAnswers] = useState(() => ({
     executionRate7d: null,
     anchorHabit: null,
     modules: { faith: false, recovery: false, monk: false },
@@ -664,8 +681,20 @@ export default function Onboarding() {
     healthIntegration: { linked: false, providers: [], synchronizedMetrics: [] },
     stakePref: null,
     stakeTarget: {},
-  })
-  const [flowState, setFlowState] = useState({ currentId: flow.entryId, visited: [flow.entryId], anchorRequired: false, recommendSocial: false })
+    ...(draft ? draft.answers : {}),
+  }))
+  const [flowState, setFlowState] = useState(
+    () => (draft ? draft.flowState : { currentId: flow.entryId, visited: [flow.entryId], anchorRequired: false, recommendSocial: false })
+  )
+
+  useEffect(() => {
+    if (phase !== 'form') return
+    try {
+      localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify({ answers, flowState, at: new Date().toISOString() }))
+    } catch {
+      /* quota — the interview still works, it just won't survive a kill */
+    }
+  }, [answers, flowState, phase])
 
   const node = getNode(flow, flowState.currentId)
   // Every node writes a top-level answer key (modules/stakeTarget are whole
@@ -746,20 +775,27 @@ export default function Onboarding() {
     // it no-ops (isHealthAvailable false) and the mock streams stand in.
     await linkHealth(survey)
     applyLocally(survey)
-    const floor = new Promise((r) => setTimeout(r, 1300)) // keep the opening screen visible
-    await writeProfile(survey, {
-      theme_preference: answers.theme,
-      streak_model: answers.streakModel,
-      stake_preference: answers.stakePref,
-      stake_target: answers.stakeTarget,
-    })
-    if (answers.consent) {
-      try {
-        await buildInitialLayout()
-      } catch {
-        /* fail soft — local deck still works */
-      }
+    // The book is safe locally from this line on — burn the interview draft.
+    try {
+      localStorage.removeItem(INTAKE_DRAFT_KEY)
+    } catch {
+      /* ignore */
     }
+    const floor = new Promise((r) => setTimeout(r, 1300)) // keep the opening screen visible
+    // TIMEBOXED network (P1): the survey is already saved locally above, so a
+    // flaky/paused backend must never strand the user on the Processing screen
+    // — 5s each, then the deck opens regardless.
+    const timebox = (p, ms) => Promise.race([Promise.resolve(p).catch(() => {}), new Promise((r) => setTimeout(r, ms))])
+    await timebox(
+      writeProfile(survey, {
+        theme_preference: answers.theme,
+        streak_model: answers.streakModel,
+        stake_preference: answers.stakePref,
+        stake_target: answers.stakeTarget,
+      }),
+      5000
+    )
+    if (answers.consent) await timebox(buildInitialLayout(), 5000)
     await floor
     window.location.href = '/'
   }
@@ -773,7 +809,7 @@ export default function Onboarding() {
     <div className="relative min-h-screen bg-bg font-sans text-ink">
       <div className="relative mx-auto flex min-h-screen max-w-[520px] flex-col px-6 py-8 pt-safe">
         <div className="flex items-baseline justify-between">
-          <div className="font-clock text-[13px] font-medium tracking-[0.22em]">TELEMETRY</div>
+          <div className="font-clock text-[0.8125rem] font-medium tracking-[0.22em]">TELEMETRY</div>
           <Label>opening your book · {String(depth + 1).padStart(2, '0')}/{String(totalSteps).padStart(2, '0')}</Label>
         </div>
         {/* progress rule — ink fills the line, drawn against the deepest branch
@@ -793,7 +829,7 @@ export default function Onboarding() {
 
         <div className="mt-8 flex items-center gap-3 pb-safe">
           {flowState.visited.length > 1 && (
-            <FlashButton onClick={back} className="rounded-md border border-line px-5 py-3.5 font-clock text-[12px] uppercase tracking-widest2 text-muted">
+            <FlashButton onClick={back} className="rounded-md border border-line px-5 py-3.5 font-clock text-[0.75rem] uppercase tracking-widest2 text-muted">
               ← Back
             </FlashButton>
           )}
@@ -803,7 +839,7 @@ export default function Onboarding() {
             onClick={advance}
             disabled={!canAdvance}
             className={
-              'ml-auto rounded-md px-7 py-3.5 font-clock text-[13px] font-semibold uppercase tracking-widest2 ' +
+              'ml-auto rounded-md px-7 py-3.5 font-clock text-[0.8125rem] font-semibold uppercase tracking-widest2 ' +
               (isLast ? 'bg-accent text-accent-ink' : 'bg-ink text-bg')
             }
           >
@@ -820,11 +856,11 @@ function Step({ index, tag, title, hint, children }) {
     <div className="flex flex-col gap-5">
       <div>
         <div className="mb-2 flex items-baseline gap-2 border-b border-line pb-2">
-          <span className="font-clock tnum text-[12px] text-muted">{index}</span>
+          <span className="font-clock tnum text-[0.75rem] text-muted">{index}</span>
           {tag && <Label>{tag}</Label>}
         </div>
-        <h1 className="m-0 text-[24px] font-semibold leading-tight tracking-[-0.01em] text-ink">{title}</h1>
-        {hint && <p className="mt-2 text-[14px] leading-relaxed text-muted">{hint}</p>}
+        <h1 className="m-0 text-[1.5rem] font-semibold leading-tight tracking-[-0.01em] text-ink">{title}</h1>
+        {hint && <p className="mt-2 text-[0.875rem] leading-relaxed text-muted">{hint}</p>}
       </div>
       {children}
     </div>
@@ -842,9 +878,9 @@ function Processing({ consent }) {
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-bg px-6 text-ink">
       <div className="flex items-center gap-3">
         <span className="h-2 w-2 rounded-full bg-accent animate-pulse-accent" />
-        <span className="font-clock text-[15px] uppercase tracking-[0.24em] text-ink">Opening the book</span>
+        <span className="font-clock text-[0.9375rem] uppercase tracking-[0.24em] text-ink">Opening the book</span>
       </div>
-      <div className="flex flex-col gap-1.5 font-clock text-[12px] text-muted">
+      <div className="flex flex-col gap-1.5 font-clock text-[0.75rem] text-muted">
         {lines.map((l, i) => (
           <span key={i} className="animate-data-stream" style={{ animationDelay: `${i * 220}ms` }}>{l}</span>
         ))}

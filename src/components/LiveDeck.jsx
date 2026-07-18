@@ -43,23 +43,23 @@ function BookHeader({ store }) {
   return (
     <header className="flex items-end justify-between px-4 pb-3 pt-4">
       <div>
-        <div className="font-clock text-[10px] uppercase tracking-widest2 text-muted">
+        <div className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
           {empty ? 'The book opens' : 'Days on the book'}
         </div>
         {empty ? (
           <>
             <div className="mt-1.5 font-clock text-3xl font-medium leading-none text-ink">Day one</div>
-            <div className="mt-1.5 text-[13px] leading-snug text-muted">Your first entry goes here.</div>
+            <div className="mt-1.5 text-[0.8125rem] leading-snug text-muted">Your first entry goes here.</div>
           </>
         ) : (
           <div className="mt-1.5 font-clock tnum text-5xl font-medium leading-none text-ink">{total}</div>
         )}
       </div>
       <div className="flex flex-col items-end">
-        <div className="font-clock tnum text-[11px] uppercase tracking-widest2 text-muted">
+        <div className="font-clock tnum text-[0.6875rem] uppercase tracking-widest2 text-muted">
           {wd} · {md}
         </div>
-        <div className="mt-1 font-clock tnum text-[11px] lowercase text-faint">
+        <div className="mt-1 font-clock tnum text-[0.6875rem] lowercase text-faint">
           run {run} · wk {wk}
         </div>
         {/* The page as an image (M4) — the hero frame is the app's shareable
@@ -72,7 +72,7 @@ function BookHeader({ store }) {
             type="button"
             onClick={() => shareBookCard({ total, run, wk })}
             aria-label="Share the book page"
-            className="-mb-3 -mr-3 flex min-h-[44px] min-w-[44px] items-center justify-end px-3 pb-3 font-clock text-[10px] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+            className="-mb-3 -mr-3 flex min-h-[44px] min-w-[44px] items-center justify-end px-3 pb-3 font-clock text-[0.625rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
           >
             Share
           </button>
@@ -100,8 +100,6 @@ function readMilestones() {
 
 function MilestoneShareCard({ total, run, wk }) {
   const [seen, setSeen] = useState(readMilestones)
-  const due = SHARE_MILESTONES.find((m) => total >= m && !seen[m])
-  if (!due) return null
   const settle = () => {
     // Marking every milestone ≤ total keeps an imported/long-running book from
     // replaying old asks (a 100-day book should never see the day-7 card).
@@ -114,14 +112,25 @@ function MilestoneShareCard({ total, run, wk }) {
     }
     setSeen(next)
   }
+  // The ask EXPIRES (P1, three design judges): "DAY 30" pinned atop a day-37
+  // deck is a week-stale claim sitting under the true figure. A milestone is
+  // offered only while it's fresh (the milestone day + 2); past that it's
+  // marked passed silently — the ledger never carries last week's date.
+  const due = SHARE_MILESTONES.find((m) => total >= m && !seen[m])
+  const stale = due != null && total > due + 2
+  useEffect(() => {
+    if (stale) settle()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stale])
+  if (!due || stale) return null
   return (
     // bg-surface, not surface2: muted text must hold ≥4.5:1 on this card's own
     // ground, and the two actions pay for 44px hit areas with negative margins.
     <div className="mx-4 mb-1 border-l-2 border-linebright bg-surface px-4 py-3">
-      <div className="font-clock text-[10px] uppercase tracking-widest2 text-muted">
+      <div className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
         Day {due} on the book
       </div>
-      <p className="mt-1 font-serif text-[14px] italic leading-relaxed text-muted">
+      <p className="mt-1 font-serif text-[0.875rem] italic leading-relaxed text-muted">
         A page worth showing.
       </p>
       <div className="mt-1 flex items-center gap-2">
@@ -131,14 +140,14 @@ function MilestoneShareCard({ total, run, wk }) {
             settle()
             shareBookCard({ total, run, wk })
           }}
-          className="-ml-3 flex min-h-[44px] items-center px-3 font-clock text-[11px] uppercase tracking-widest2 text-ink underline decoration-line underline-offset-4"
+          className="-ml-3 flex min-h-[44px] items-center px-3 font-clock text-[0.6875rem] uppercase tracking-widest2 text-ink underline decoration-line underline-offset-4"
         >
           Share the page
         </button>
         <button
           type="button"
           onClick={settle}
-          className="flex min-h-[44px] items-center px-3 font-clock text-[11px] uppercase tracking-widest2 text-muted"
+          className="flex min-h-[44px] items-center px-3 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted"
         >
           Not now
         </button>
@@ -157,7 +166,7 @@ function DictateLine() {
       onClick={() => window.dispatchEvent(new Event('telemetry:open-dayplan'))}
       className="mt-2 flex min-h-[44px] w-full items-center justify-between border-t border-line pt-3 text-left"
     >
-      <span className="text-[13px] text-muted">
+      <span className="text-[0.8125rem] text-muted">
         This is your page. <span className="text-ink">Dictate the day</span>
       </span>
       <span className="text-muted" aria-hidden>
@@ -178,7 +187,7 @@ function NightPageLine() {
       onClick={() => window.dispatchEvent(new Event('telemetry:open-urge'))}
       className="mt-4 flex min-h-[44px] w-full items-center justify-between border-t border-line pt-3 text-left"
     >
-      <span className="text-[13px] text-muted">
+      <span className="text-[0.8125rem] text-muted">
         Slipping? <span className="text-ink">Open the night page</span>
       </span>
       <span className="text-muted" aria-hidden>

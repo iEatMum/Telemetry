@@ -4,7 +4,7 @@
 
 import Sheet from './Sheet.jsx'
 import { useStore } from '../lib/store.jsx'
-import { appDayKey, lastNDates } from '../lib/dates.js'
+import { appDayKey, appDayDate, lastNDates } from '../lib/dates.js'
 import { DIMS, readiness, rhrTrend } from '../lib/wellness.js'
 import { readToday, toReadinessInputs } from '../lib/health.js'
 
@@ -26,7 +26,10 @@ export default function WellnessSheet({ onClose }) {
   const hr = rhrTrend(wellness, day, entry.rhr)
 
   // Last-7 readiness, for the trend strip (the self-monitoring artifact).
-  const trend = lastNDates(7).map((k) => ({ k, score: readiness(wellness[k])?.score || 0 }))
+  // App-day end (P1 rollover unification): the wellness store is keyed by
+  // appDayKey, so the 7-day window must end on the app-day too — a 1am check-in
+  // used to render under the second-to-last slot.
+  const trend = lastNDates(7, appDayDate()).map((k) => ({ k, score: readiness(wellness[k])?.score || 0 }))
 
   return (
     <Sheet title="Morning readiness" onClose={onClose}>
@@ -73,7 +76,7 @@ export default function WellnessSheet({ onClose }) {
           <span className="font-clock text-xs text-muted">bpm</span>
         </div>
         {hr?.elevated && (
-          <span className="text-[11px] text-muted">
+          <span className="text-[0.6875rem] text-muted">
             HR’s up ({hr.rhr} vs ~{hr.baseline}). Body’s working on something — respect it today.
           </span>
         )}

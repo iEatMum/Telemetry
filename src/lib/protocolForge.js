@@ -106,10 +106,18 @@ export function stepStats(invocations = [], streak = {}) {
     for (const id of inv.steps || []) bump(id, inv.outcome === 'survived' ? 'wins' : 'losses')
   }
   // Wins synced from other devices (steps recorded on the entry itself) that
-  // this device has no invocation for.
-  const seenAts = new Set(invocations.map((i) => i.at))
+  // this device has no invocation for. "Has no invocation" must mean the same
+  // thing attribution means: a win falling inside ANY local invocation's
+  // WIN_WINDOW was already counted by resolveOutcomes above. The old dedupe
+  // compared the win's tap-time timestamp against invocation OPEN times —
+  // never equal — so every locally-survived protocol's steps were counted
+  // twice and one later loss couldn't correct the Laplace ranking.
+  const invTimes = invocations.map((i) => Date.parse(i.at)).filter(Number.isFinite)
+  const attributed = (wAt) => invTimes.some((at) => wAt >= at && wAt - at <= WIN_WINDOW_MIN * 60000)
   for (const w of streak.urgesSurvived || []) {
-    if (!Array.isArray(w.steps) || seenAts.has(w.at)) continue
+    if (!Array.isArray(w.steps)) continue
+    const wAt = Date.parse(w.at)
+    if (Number.isFinite(wAt) && attributed(wAt)) continue
     for (const id of w.steps) bump(id, 'wins')
   }
 

@@ -69,8 +69,8 @@ test('the live deck itself stays local when the layout fetch errors (500)', asyn
   await expect(page.getByText('First steps', { exact: true })).toBeVisible()
   await expect(page.getByText('Open the night page')).toBeVisible()
   // Tabs from the local payload are present and navigable.
-  await expect(page.getByRole('button', { name: 'Trends' })).toBeVisible()
-  await page.getByRole('button', { name: 'Trends' }).click()
+  await expect(page.getByRole('tab', { name: 'Trends' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Trends' }).click()
   await expect(page.getByText('Readiness · 14d')).toBeVisible()
   // Day-0 honesty (CONSTITUTION M1): an all-zero book has no tape to read, so
   // the sentiment card must be absent — never a computed score over no data.

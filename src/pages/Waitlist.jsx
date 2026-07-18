@@ -19,7 +19,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const APP_STORE_URL = ''
 
 const Micro = ({ children, className = '' }) => (
-  <span className={'font-clock text-[11px] uppercase tracking-widest2 text-muted ' + className}>{children}</span>
+  <span className={'font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted ' + className}>{children}</span>
 )
 
 // Honest capture: email in, a plain confirmation out. No invented rank, no
@@ -56,7 +56,7 @@ function Capture() {
     return (
       <div className="flex flex-col gap-3 border-t border-line pt-5">
         <Micro className="text-accent">On the list</Micro>
-        <p className="max-w-[440px] text-[15px] leading-relaxed text-muted">
+        <p className="max-w-[440px] text-[0.9375rem] leading-relaxed text-muted">
           You’re on the list — you’ll get it first when Telemetry opens on the App Store. No spam, and you can
           delete anytime.
         </p>
@@ -68,7 +68,7 @@ function Capture() {
     return (
       <div className="flex flex-col gap-3 border-t border-line pt-5">
         <Micro>The list didn’t take the entry</Micro>
-        <p className="max-w-[440px] text-[15px] leading-relaxed text-muted">
+        <p className="max-w-[440px] text-[0.9375rem] leading-relaxed text-muted">
           Something on our side is down, and pretending otherwise isn’t how this book works.{' '}
           <a
             className="text-ink underline decoration-line underline-offset-4"
@@ -81,7 +81,7 @@ function Capture() {
         <button
           type="button"
           onClick={() => setState('idle')}
-          className="self-start rounded-md border border-line px-5 py-3 font-clock text-[12px] uppercase tracking-widest2 text-muted"
+          className="self-start rounded-md border border-line px-5 py-3 font-clock text-[0.75rem] uppercase tracking-widest2 text-muted"
         >
           Try again
         </button>
@@ -94,7 +94,7 @@ function Capture() {
       {APP_STORE_URL ? (
         <a
           href={APP_STORE_URL}
-          className="self-start rounded-md bg-accent px-7 py-4 font-clock text-[13px] font-semibold uppercase tracking-widest2 text-accent-ink"
+          className="self-start rounded-md bg-accent px-7 py-4 font-clock text-[0.8125rem] font-semibold uppercase tracking-widest2 text-accent-ink"
         >
           Get it on the App Store →
         </a>
@@ -107,12 +107,12 @@ function Capture() {
           placeholder="you@email.com"
           aria-label="Email address"
           required
-          className="min-w-0 flex-[1_1_240px] rounded-md border border-line bg-surface px-4 py-4 text-[15px] text-ink outline-none focus:border-accent-deep"
+          className="min-w-0 flex-[1_1_240px] rounded-md border border-line bg-surface px-4 py-4 text-[0.9375rem] text-ink outline-none focus:border-accent-deep"
         />
         <button
           type="submit"
           disabled={state === 'submitting'}
-          className="rounded-md bg-accent px-7 font-clock text-[13px] font-semibold uppercase tracking-widest2 text-accent-ink disabled:opacity-60"
+          className="rounded-md bg-accent px-7 font-clock text-[0.8125rem] font-semibold uppercase tracking-widest2 text-accent-ink disabled:opacity-60"
         >
           {state === 'submitting' ? 'Adding…' : 'Join the list'}
         </button>
@@ -137,8 +137,8 @@ function SamplePage() {
     <div className="rounded-xl border border-line bg-surface p-6">
       <div className="text-center">
         <Micro>Days on the book</Micro>
-        <div className="mt-2 font-clock tnum text-[64px] leading-none text-ink">212</div>
-        <div className="mt-1 font-clock text-[11px] uppercase tracking-widest2 text-faint">run 3 · wk 30</div>
+        <div className="mt-2 font-clock tnum text-[4rem] leading-none text-ink">212</div>
+        <div className="mt-1 font-clock text-[0.6875rem] uppercase tracking-widest2 text-faint">run 3 · wk 30</div>
       </div>
       <div className="mt-6 border-t border-line">
         {rows.map((r) => (
@@ -148,23 +148,23 @@ function SamplePage() {
               r.state === 'now' ? 'border-l-2 border-accent-deep bg-surface2 pl-3' : ''
             }`}
           >
-            <span className="min-w-[44px] font-clock tnum text-[12px] text-muted">{r.t}</span>
+            <span className="min-w-[44px] font-clock tnum text-[0.75rem] text-muted">{r.t}</span>
             <span
-              className={`flex-1 text-[13px] ${
+              className={`flex-1 text-[0.8125rem] ${
                 r.state === 'missed' ? 'text-faint line-through decoration-dashed' : 'text-ink'
               }`}
             >
               {r.label}
             </span>
             {r.state === 'now' ? (
-              <span className="font-clock text-[10px] uppercase tracking-widest2 text-accent">◆ now</span>
+              <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-accent">◆ now</span>
             ) : (
-              <span className="font-clock text-[12px] text-muted">{mark[r.state]}</span>
+              <span className="font-clock text-[0.75rem] text-muted">{mark[r.state]}</span>
             )}
           </div>
         ))}
       </div>
-      <div className="mt-4 text-center font-clock text-[10px] uppercase tracking-widest2 text-faint">
+      <div className="mt-4 text-center font-clock text-[0.625rem] uppercase tracking-widest2 text-faint">
         A miss is logged, never punished
       </div>
     </div>
@@ -182,7 +182,7 @@ export default function Waitlist() {
   return (
     <div className="min-h-screen bg-bg text-ink">
       <header className="mx-auto flex max-w-[1180px] items-center justify-between px-8 py-6">
-        <div className="font-clock text-[14px] font-semibold uppercase tracking-[0.22em]">Telemetry</div>
+        <div className="font-clock text-[0.875rem] font-semibold uppercase tracking-[0.22em]">Telemetry</div>
         <div className="rounded-md border border-line px-3 py-1.5">
           <Micro>pre-launch</Micro>
         </div>
@@ -196,7 +196,7 @@ export default function Waitlist() {
             <br />
             <span className="text-accent">It never shames you.</span>
           </h1>
-          <p className="m-0 max-w-[480px] text-[18px] leading-relaxed text-muted">
+          <p className="m-0 max-w-[480px] text-[1.125rem] leading-relaxed text-muted">
             Telemetry keeps the tape — your schedule, your streaks, and the night page for the hard hours. A miss is
             logged, never punished. The book is free forever; hire the AI coach when you want the read.
           </p>
@@ -204,8 +204,8 @@ export default function Waitlist() {
           <ul className="border-t border-line">
             {VALUE.map(([t, s]) => (
               <li key={t} className="border-b border-line py-3">
-                <div className="text-[14px] text-ink">{t}</div>
-                <div className="text-[12px] text-muted">{s}</div>
+                <div className="text-[0.875rem] text-ink">{t}</div>
+                <div className="text-[0.75rem] text-muted">{s}</div>
               </li>
             ))}
           </ul>

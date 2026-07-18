@@ -171,3 +171,23 @@ export async function scheduleDailyBlocks(layout) {
 
 // The name the layout hook calls — same engine, reads better at the call site.
 export const syncNotificationsFromLayout = scheduleDailyBlocks
+
+// Wipe support (MASTERPLAN P1): a data wipe must also silence the phone — a
+// "fresh start" that still fires yesterday's block reminders (possibly naming
+// a user-authored block) isn't fresh. Cancels every id we own (the layout set
+// from the sidecar + the Guardian's fixed warn id 1900000077, defined in
+// guardianEngine.js) BEFORE the sidecar itself is deleted by wipeAll. The ids
+// are read synchronously up front, so the caller can fire-and-forget this and
+// wipe localStorage immediately after without a race.
+const GUARDIAN_WARN_ID = 1900000077
+export async function cancelAllOwnedNotifications() {
+  const ids = [...loadIds(), GUARDIAN_WARN_ID]
+  if (!native()) return { ok: false, reason: 'web' }
+  try {
+    await LocalNotifications.cancel({ notifications: ids.map((id) => ({ id })) })
+    saveIds([])
+    return { ok: true, cancelled: ids.length }
+  } catch (error) {
+    return { ok: false, reason: 'cancel-error', error }
+  }
+}

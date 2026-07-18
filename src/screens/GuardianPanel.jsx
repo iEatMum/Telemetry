@@ -28,9 +28,9 @@ function VectorRow({ v }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
       <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${tone}`} />
-      <span className="flex-1 text-[13px] text-ink">{v.note}</span>
+      <span className="flex-1 text-[0.8125rem] text-ink">{v.note}</span>
       {!v.evidence && (
-        <span className="font-clock text-[10px] uppercase tracking-wide text-muted/70">no data</span>
+        <span className="font-clock text-[0.625rem] uppercase tracking-wide text-muted/70">no data</span>
       )}
     </div>
   )
@@ -87,7 +87,7 @@ export default function GuardianPanel() {
                     <VectorRow key={v.key} v={v} />
                   ))}
                 </div>
-                <p className="border-t border-line px-4 py-3 text-[12px] leading-relaxed text-muted">
+                <p className="border-t border-line px-4 py-3 text-[0.75rem] leading-relaxed text-muted">
                   {BAND_LINE[drift.band]}
                 </p>
               </>
@@ -117,7 +117,7 @@ export default function GuardianPanel() {
                 <div key={i} className="flex items-center justify-between px-4 py-2.5">
                   {/* Ledger, not scoreboard: win and reset rows carry IDENTICAL
                       visual weight — only the word differs (BLUEPRINT P-6). */}
-                  <span className="font-clock text-[11px] uppercase tracking-widest2 text-muted">
+                  <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
                     {e.kind}
                   </span>
                   <span className="font-clock tnum text-xs text-muted">

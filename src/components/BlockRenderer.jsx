@@ -19,7 +19,7 @@ import { recordSeen, recordUse, completeImpact } from '../lib/engagement.js'
 function Placeholder({ title, detail }) {
   return (
     <div className="rounded-lg border border-dashed border-line bg-surface/50 px-4 py-5 text-center">
-      <div className="font-clock text-[11px] uppercase tracking-widest2 text-muted">{title}</div>
+      <div className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">{title}</div>
       {detail && <div className="mt-1 text-xs text-muted/80">{detail}</div>}
     </div>
   )
@@ -111,11 +111,20 @@ export function LayoutHost({ layout, header, footer }) {
         {header}
         {/* Sticks BELOW the shell's fixed LED strip (safe-area inset + 1.75rem),
             so the payload tabs never slide under it mid-scroll. */}
-        <nav className="sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-10 flex gap-1 overflow-x-auto border-b border-line bg-bg/90 px-2 backdrop-blur">
+        {/* Real tab semantics (P1 a11y): tablist/tab/aria-selected so VoiceOver
+            announces "TODAY, tab, 1 of 2 — selected" instead of a bare button. */}
+        <nav
+          role="tablist"
+          aria-label="Deck pages"
+          className="sticky top-[calc(env(safe-area-inset-top)+1.75rem)] z-10 flex gap-1 overflow-x-auto border-b border-line bg-bg/90 px-2 backdrop-blur"
+        >
           {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
+              role="tab"
+              aria-selected={t.key === active}
+              aria-controls={`deck-panel-${t.key}`}
               onClick={() => {
                 setActive(t.key)
                 // Contract: deck scroll position resets on a tab switch.
@@ -131,7 +140,12 @@ export function LayoutHost({ layout, header, footer }) {
         </nav>
 
         {/* gap rides the theme token so Zen's extra air applies as a token. */}
-        <main className="pb-deck flex flex-col px-4 pt-5" style={{ gap: 'var(--gap-widget)' }}>
+        <main
+          role="tabpanel"
+          id={`deck-panel-${current?.key}`}
+          className="pb-deck flex flex-col px-4 pt-5"
+          style={{ gap: 'var(--gap-widget)' }}
+        >
           {(current?.blocks || []).map((b, i) => (
             <BlockRenderer key={b.id ?? i} block={b} index={i} />
           ))}

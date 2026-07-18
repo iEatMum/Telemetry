@@ -17,7 +17,7 @@ test('FaithCard appears on TRENDS only after the faith module is switched on', a
   await expect(page.getByText('Open the night page')).toBeVisible()
 
   // OFF: TRENDS has no faith surface.
-  await page.getByRole('button', { name: 'Trends', exact: true }).click()
+  await page.getByRole('tab', { name: 'Trends', exact: true }).click()
   await expect(page.getByText('Offered', { exact: true })).toHaveCount(0)
 
   // Opt in through Settings (COMMAND surface → Settings → Modules → Faith).
@@ -28,7 +28,7 @@ test('FaithCard appears on TRENDS only after the faith module is switched on', a
 
   // ON: exactly one un-scored card — header, verse position, the cue line.
   await page.getByRole('button', { name: 'Deck', exact: true }).click()
-  await page.getByRole('button', { name: 'Trends', exact: true }).click()
+  await page.getByRole('tab', { name: 'Trends', exact: true }).click()
   await expect(page.getByText('Offered', { exact: true })).toBeVisible()
   await expect(page.getByText(/offered, not performed/i)).toBeVisible()
 })

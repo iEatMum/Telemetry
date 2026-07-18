@@ -22,6 +22,7 @@ import {
 } from './ui.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { registerImpact, completeImpact, uncompleteImpact, recordPost, unrecordPost, postedIds, summarizeDay } from '../lib/engagement.js'
+import { useStore } from '../lib/store.jsx'
 import { sealCommit } from '../lib/haptics.js'
 import { useEntitlement } from '../lib/purchases.js'
 import { shareWeekCard } from '../lib/shareCard.js'
@@ -107,8 +108,8 @@ export function ScheduleMatrix({ config = {}, block }) {
       <WidgetHead
         label={config.title || 'Schedule'}
         right={
-          <span className="font-clock tnum text-[10px] uppercase tracking-widest2 text-muted">
-            {executed}/{view.length} exec
+          <span className="font-clock tnum text-[0.625rem] uppercase tracking-widest2 text-muted">
+            {executed}/{view.length} posted
           </span>
         }
       />
@@ -127,21 +128,21 @@ export function ScheduleMatrix({ config = {}, block }) {
             >
               {r.impact === 'high' && (
                 <span
-                  className="absolute left-0 top-1/2 -translate-y-1/2 text-[9px] leading-none text-accent"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 text-[0.5625rem] leading-none text-accent"
                   aria-hidden
                 >
                   ◆
                 </span>
               )}
               <span
-                className={`w-11 flex-none font-clock tnum text-[12px] ${
+                className={`w-11 flex-none font-clock tnum text-[0.75rem] ${
                   r._status === 'late' ? 'text-warn' : 'text-muted'
                 }`}
               >
                 {r.time || '—'}
               </span>
               <span
-                className={`flex-1 truncate text-[13px] ${
+                className={`flex-1 truncate text-[0.8125rem] ${
                   r._status === 'missed' || r._status === 'skip' ? 'text-muted' : 'text-ink'
                 }`}
               >
@@ -179,7 +180,7 @@ function rowA11yLabel(r) {
 // never an ✕); pending is a faint unposted dash. Ink is applied or withheld,
 // so color never has to carry a verdict.
 function StateGlyph({ status }) {
-  const base = 'flex h-5 w-5 flex-none items-center justify-center font-clock text-[13px] leading-none'
+  const base = 'flex h-5 w-5 flex-none items-center justify-center font-clock text-[0.8125rem] leading-none'
   if (status === 'hit' || status === 'done')
     return (
       <span className={`${base} text-ink`} aria-hidden>
@@ -271,7 +272,7 @@ export function BiometricChart({ config = {} }) {
   return (
     <Card className="p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-widest2 text-muted">{config.label}</span>
+        <span className="text-[0.625rem] uppercase tracking-widest2 text-muted">{config.label}</span>
         {config.delta != null && (
           <DeltaTag value={config.delta} dir={dir} suffix={config.deltaSuffix || ''} />
         )}
@@ -328,6 +329,7 @@ export function DeepWorkTimer({ config = {}, block }) {
   const [remaining, setRemaining] = useState(total)
   const [cockpit, setCockpit] = useState(false)
   const endRef = useRef(0)
+  const { completeSprint } = useStore()
 
   // Wall-clock anchored: an interval can be throttled in a background tab, so
   // remaining is always recomputed from the target instant, never decremented.
@@ -340,8 +342,14 @@ export function DeepWorkTimer({ config = {}, block }) {
         setPhase('done')
         setCockpit(false)
         sealCommit() // "Posted." — a deep-work block sealed is a commit
-        // The rep completed — THIS is when the high-impact block counts.
-        if (config.highImpact) completeImpact(block && block.id)
+        // The rep completed — THIS is when the high-impact block counts. The
+        // record lands on the SHARED anchor id (config.impactId), so the
+        // schedule row and this timer post the same single entry (P1).
+        if (config.highImpact) completeImpact(config.impactId || (block && block.id))
+        // And the rep feeds the weekly deep-work target: a finished block IS a
+        // sprint in the focus-goal ledger — without this the Targets bar only
+        // moved from the Sprints cockpit, never from the deck's own anchor.
+        completeSprint(config.label || 'Deep work')
       }
     }
     tick()
@@ -379,12 +387,12 @@ export function DeepWorkTimer({ config = {}, block }) {
 
   const head = (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-[10px] uppercase tracking-widest2 text-muted">
+      <span className="text-[0.625rem] uppercase tracking-widest2 text-muted">
         {config.label || 'Deep Work'}
         {config.at && <span className="ml-1.5 font-clock tnum normal-case">@ {config.at}</span>}
       </span>
       {config.highImpact && (
-        <span className="rounded border border-accent-deep px-1.5 py-0.5 font-clock text-[9px] uppercase tracking-widest2 text-accent">
+        <span className="rounded border border-accent-deep px-1.5 py-0.5 font-clock text-[0.5625rem] uppercase tracking-widest2 text-accent">
           ◆ high impact
         </span>
       )}
@@ -438,7 +446,7 @@ export function DeepWorkTimer({ config = {}, block }) {
   if (cockpit) {
     return (
       <div data-invert className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-bg px-6 text-ink">
-        <span className="text-[11px] uppercase tracking-widest2 text-muted">
+        <span className="text-[0.6875rem] uppercase tracking-widest2 text-muted">
           {config.label || 'Deep Work'}
         </span>
         <span
@@ -451,7 +459,7 @@ export function DeepWorkTimer({ config = {}, block }) {
         <button
           type="button"
           onClick={() => setCockpit(false)}
-          className="mt-8 pb-safe font-clock text-[11px] uppercase tracking-widest2 text-muted"
+          className="mt-8 pb-safe font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted"
         >
           ▾ Collapse
         </button>
@@ -466,7 +474,7 @@ export function DeepWorkTimer({ config = {}, block }) {
         type="button"
         onClick={() => (running || phase === 'paused') && setCockpit(true)}
         aria-label={`Timer ${clock}${running || phase === 'paused' ? ' — open full screen' : ''}`}
-        className={`mt-3 block text-left font-clock tnum text-[46px] font-medium leading-none text-ink ${running ? 'animate-pulse-accent' : ''}`}
+        className={`mt-3 block text-left font-clock tnum text-[2.875rem] font-medium leading-none text-ink ${running ? 'animate-pulse-accent' : ''}`}
       >
         {clock}
       </button>
@@ -497,23 +505,23 @@ export function InsightCard({ config = {} }) {
   return (
     <section className={`border-l-2 bg-surface2 px-4 py-3.5 ${raised ? 'border-warn' : 'border-linebright'}`}>
       <div className="flex items-center gap-2">
-        <span className="truncate font-clock text-[10px] uppercase tracking-widest2 text-muted">
+        <span className="truncate font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
           {config.heading || 'Margin note'}
         </span>
         {/* muted, not faint: this tag is the honesty marker (live vs counsel)
             and sits on the card surface, where faint dips under 4.5:1 */}
         {config.source && (
-          <span className="ml-auto flex-none font-clock tnum text-[10px] uppercase tracking-widest2 text-muted">
+          <span className="ml-auto flex-none font-clock tnum text-[0.625rem] uppercase tracking-widest2 text-muted">
             {config.source}
           </span>
         )}
       </div>
-      <p className="mt-2 font-serif text-[15px] italic leading-relaxed text-ink">{config.text}</p>
+      <p className="mt-2 font-serif text-[0.9375rem] italic leading-relaxed text-ink">{config.text}</p>
       {typeof config.onDismiss === 'function' && (
         <button
           type="button"
           onClick={config.onDismiss}
-          className="mt-3 font-clock text-[11px] uppercase tracking-widest2 text-muted"
+          className="mt-3 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted"
         >
           {config.dismissLabel || 'Let it go'}
         </button>
@@ -538,11 +546,11 @@ export function DailyBriefing({ config = {} }) {
       <div className="flex items-center justify-between">
         {/* A report header, not a commitment — it prints in ink, and the old
             terminal glyph goes with the shout (accent stays reserved). */}
-        <span className="font-clock text-[11px] uppercase tracking-widest2 text-muted">
+        <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
           Daily Briefing
         </span>
         {config.date && (
-          <span className="font-clock text-[10px] uppercase tracking-widest2 text-muted">
+          <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
             {config.date}
           </span>
         )}
@@ -552,7 +560,7 @@ export function DailyBriefing({ config = {} }) {
         <Grid cols={stats.length} gap={4} className="mt-3">
           {stats.map((s, i) => (
             <div key={i} className="flex flex-col px-1">
-              <span className="text-[10px] uppercase tracking-widest2 text-muted">{s.label}</span>
+              <span className="text-[0.625rem] uppercase tracking-widest2 text-muted">{s.label}</span>
               <span className={`mt-1 font-clock tnum text-xl leading-none ${TONE[s.tone] || 'text-ink'}`}>
                 {s.value}
               </span>
@@ -562,13 +570,13 @@ export function DailyBriefing({ config = {} }) {
       )}
 
       <div className="mt-3 space-y-2 border-t border-line pt-3">
-        {drivers.length === 0 && <p className="text-[13px] text-muted">No refactor signal yet.</p>}
+        {drivers.length === 0 && <p className="text-[0.8125rem] text-muted">No refactor signal yet.</p>}
         {drivers.map((d, i) => (
           <div key={i} className="flex gap-2">
-            <span className={`mt-px font-clock text-[10px] font-bold uppercase tracking-wide ${TONE[d.tone] || 'text-muted'}`}>
+            <span className={`mt-px font-clock text-[0.625rem] font-bold uppercase tracking-wide ${TONE[d.tone] || 'text-muted'}`}>
               READ
             </span>
-            <p className="text-[13px] leading-snug text-ink">{d.text}</p>
+            <p className="text-[0.8125rem] leading-snug text-ink">{d.text}</p>
           </div>
         ))}
       </div>
@@ -586,7 +594,7 @@ export function EmptyState({ config = {} }) {
     <div className="rounded-md border border-dashed border-line px-4 py-6 text-center">
       <div className="flex items-center justify-center gap-2">
         <span aria-hidden className="h-[7px] w-[7px] rounded-full bg-muted" />
-        <span className="font-clock text-[12px] uppercase tracking-[0.22em] text-muted">
+        <span className="font-clock text-[0.75rem] uppercase tracking-[0.22em] text-muted">
           {config.label || 'No signal'}
         </span>
       </div>
@@ -602,7 +610,7 @@ export function EmptyState({ config = {} }) {
           vectorEffect="non-scaling-stroke"
         />
       </svg>
-      {config.hint && <p className="mt-3 text-[12px] text-muted">{config.hint}</p>}
+      {config.hint && <p className="mt-3 text-[0.75rem] text-muted">{config.hint}</p>}
     </div>
   )
 }
@@ -618,22 +626,22 @@ export function FaithCard({ config = {} }) {
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between gap-2 border-b border-line pb-2">
-        <span className="font-clock text-[11px] uppercase tracking-widest2 text-muted">Offered</span>
+        <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">Offered</span>
         {config.position && (
-          <span className="font-clock text-[10px] uppercase tracking-widest2 text-muted">
+          <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
             {config.position}
           </span>
         )}
       </div>
       {config.verse && (
-        <p className="mt-3 text-[15px] leading-relaxed text-ink">“{config.verse}”</p>
+        <p className="mt-3 text-[0.9375rem] leading-relaxed text-ink">“{config.verse}”</p>
       )}
       {config.ref && (
-        <p className="mt-1.5 font-clock text-[11px] uppercase tracking-widest2 text-muted">
+        <p className="mt-1.5 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
           {config.ref}
         </p>
       )}
-      {config.cue && <p className="mt-3 text-[13px] leading-relaxed text-muted">{config.cue}</p>}
+      {config.cue && <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted">{config.cue}</p>}
     </Card>
   )
 }
@@ -657,7 +665,7 @@ export function WeekGrid({ config = {} }) {
               type="button"
               onClick={() => shareWeekCard({ days, title: (config.title || 'The week').toUpperCase() })}
               aria-label="Share the week"
-              className="-my-3 -mr-3 flex min-h-[44px] min-w-[44px] items-center justify-end px-3 font-clock text-[10px] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+              className="-my-3 -mr-3 flex min-h-[44px] min-w-[44px] items-center justify-end px-3 font-clock text-[0.625rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
             >
               Share
             </button>
@@ -671,16 +679,16 @@ export function WeekGrid({ config = {} }) {
             const tone = pct >= 80 ? 'text-pos' : pct >= 40 ? 'text-ink' : 'text-muted'
             return (
               <div key={day.d || i} className="flex flex-col items-center gap-1.5">
-                <span className="font-clock text-[9px] uppercase tracking-widest2 text-muted">
+                <span className="font-clock text-[0.5625rem] uppercase tracking-widest2 text-muted">
                   {day.d}
                 </span>
-                <span className={`font-clock tnum text-[13px] leading-none ${tone}`}>{pct}</span>
+                <span className={`font-clock tnum text-[0.8125rem] leading-none ${tone}`}>{pct}</span>
                 <div className="h-1 w-full overflow-hidden rounded-sm bg-surface2">
                   <div className="h-full bg-pos" style={{ width: `${pct}%` }} />
                 </div>
                 <span
                   aria-hidden
-                  className={`font-clock text-[9px] leading-none ${day.sealed ? 'text-accent' : 'text-muted'}`}
+                  className={`font-clock text-[0.5625rem] leading-none ${day.sealed ? 'text-accent' : 'text-muted'}`}
                 >
                   {day.sealed ? '✓' : '–'}
                 </span>

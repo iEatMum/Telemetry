@@ -24,10 +24,13 @@ export function appDayKey(d = new Date()) {
 }
 
 // 1–366. Used to rotate the daily verse so it's stable for the whole day.
+// Calendar-component math (via Date.UTC), NOT wall-clock ms difference: DST
+// shifts made the ms diff an hour short after spring-forward, so from 00:00 to
+// 00:59 the count read a day low and the verse flipped back for an hour.
 export function dayOfYear(d = new Date()) {
-  const start = new Date(d.getFullYear(), 0, 0)
-  const diff = d - start
-  return Math.floor(diff / 86400000)
+  const start = Date.UTC(d.getFullYear(), 0, 0)
+  const today = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+  return Math.round((today - start) / 86400000)
 }
 
 // Break an elapsed span into days/hours/minutes/seconds for the race-clock.

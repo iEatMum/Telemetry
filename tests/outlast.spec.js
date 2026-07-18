@@ -20,6 +20,15 @@ async function openDeck(page, slices) {
   await expect(page.getByText('Open the night page')).toBeVisible()
 }
 
+// HELP now opens on the LANDING frame (P1): a still page — no clock, nothing
+// logged — until "Start the ride". Every ride-contract test walks through it.
+async function startRide(page) {
+  await page.getByRole('button', { name: /help now/i }).click()
+  await expect(page.getByText(/that was the hard part/i)).toBeVisible()
+  await page.getByRole('button', { name: /start the ride/i }).click()
+  await expect(page.getByText(/outlast it/i).first()).toBeVisible()
+}
+
 async function holdFor(page, locator, ms) {
   await locator.scrollIntoViewIfNeeded()
   const box = await locator.boundingBox()
@@ -35,8 +44,7 @@ const readStreak = (page) =>
 test('hold-to-log-the-slip: early release cancels free; completing closes the position calmly', async ({ page }) => {
   await openDeck(page, { settings: { streakModel: 'avoidance', theme: 'terminal' } })
 
-  await page.getByRole('button', { name: /help now/i }).click()
-  await expect(page.getByText(/outlast it/i).first()).toBeVisible()
+  await startRide(page)
 
   const hold = page.getByRole('button', { name: /hold to log the slip/i })
 
@@ -62,7 +70,7 @@ test('hold-to-log-the-slip: early release cancels free; completing closes the po
 test('staying is one tap once armed: the WIN logs and grows the pile', async ({ page }) => {
   await openDeck(page, { settings: { streakModel: 'accumulation', theme: 'terminal' } })
 
-  await page.getByRole('button', { name: /help now/i }).click()
+  await startRide(page)
   // The exit is DISABLED until STAY_ARM_SECONDS (3s in DEV) — a drive-by tap
   // can't inflate the pile. The stable unarmed name proves the gate…
   await expect(
@@ -82,8 +90,7 @@ test('staying is one tap once armed: the WIN logs and grows the pile', async ({ 
 test('protocol steps unlock strictly in order', async ({ page }) => {
   await openDeck(page, { settings: { streakModel: 'engagement', theme: 'terminal' } })
 
-  await page.getByRole('button', { name: /help now/i }).click()
-  await expect(page.getByText(/outlast it/i).first()).toBeVisible()
+  await startRide(page)
 
   // The crisis line rides the ACTIVE screen too, not just the slipped close.
   await expect(page.getByRole('link', { name: /call 988/i })).toBeVisible()
@@ -100,12 +107,45 @@ test('protocol steps unlock strictly in order', async ({ page }) => {
 test('the quiet ✕ escape logs nothing — an accidental open forces no verdict', async ({ page }) => {
   await openDeck(page, { settings: { streakModel: 'engagement', theme: 'terminal' } })
 
-  await page.getByRole('button', { name: /help now/i }).click()
-  await expect(page.getByText(/outlast it/i).first()).toBeVisible()
+  // Even from a STARTED ride, ✕ writes nothing to the streak and leaves no
+  // resumable ride behind.
+  await startRide(page)
   await page.getByRole('button', { name: 'Close' }).click()
 
   await expect(page.getByText('Open the night page')).toBeVisible()
   const streak = await readStreak(page)
   expect(streak.resets || []).toHaveLength(0)
   expect(streak.urgesSurvived || []).toHaveLength(0)
+  const ride = await page.evaluate(() => window.localStorage.getItem('lockedin:__urge'))
+  expect(ride).toBeNull()
+})
+
+test('a killed ride RESUMES: reload mid-protocol reopens the night page with progress intact', async ({ page }) => {
+  await openDeck(page, { settings: { streakModel: 'engagement', theme: 'terminal' } })
+
+  await startRide(page)
+  const steps = page.locator('ol button')
+  await steps.nth(0).click() // step 1 done
+  // Simulate a process death mid-ride.
+  await page.reload()
+  // The shell reopens the ride on boot — no HELP tap needed — with the clock
+  // continuing (wall-anchored) and step 1 still marked.
+  await expect(page.getByText(/outlast it/i).first()).toBeVisible()
+  await expect(page.locator('ol button').nth(1)).toBeEnabled()
+})
+
+test('the landing frame starts nothing: opening HELP and leaving logs no invocation', async ({ page }) => {
+  await openDeck(page, { settings: { streakModel: 'engagement', theme: 'terminal' } })
+
+  await page.getByRole('button', { name: /help now/i }).click()
+  await expect(page.getByText(/that was the hard part/i)).toBeVisible()
+  // Crisis line is reachable WITHOUT starting a protocol.
+  await expect(page.getByRole('link', { name: /call 988/i })).toBeVisible()
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(page.getByText('Open the night page')).toBeVisible()
+  const inv = await page.evaluate(() => {
+    const g = JSON.parse(window.localStorage.getItem('lockedin:__guardian') || '{}')
+    return (g.invocations || []).length
+  })
+  expect(inv).toBe(0)
 })

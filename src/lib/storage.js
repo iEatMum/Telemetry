@@ -97,6 +97,47 @@ function keyOf(name) {
   return PREFIX + name
 }
 
+// --- failure honesty (MASTERPLAN P1 · "the book survives") ------------------
+// A write the store couldn't take, or a page too damaged to read, must surface —
+// silent loss in an app whose promise is "the book keeps the record" is the one
+// unforgivable failure. Alerts are deduped per (kind,name) per session and kept
+// in a list the banner can read even if it mounts after the event fired.
+const seenAlerts = new Set()
+const alertLog = []
+export function storageAlerts() {
+  return alertLog.slice()
+}
+function raiseAlert(kind, name) {
+  const key = `${kind}:${name}`
+  if (seenAlerts.has(key)) return
+  seenAlerts.add(key)
+  const detail = { kind, name, at: nowISO() }
+  alertLog.push(detail)
+  if (typeof window !== 'undefined') {
+    // Deferred: get() runs during React render; dispatching (→ setState in a
+    // listener) synchronously from there is a render-phase update.
+    setTimeout(() => {
+      try {
+        window.dispatchEvent(new CustomEvent('telemetry:storage-alert', { detail }))
+      } catch {
+        /* no CustomEvent — the log still has it */
+      }
+    }, 0)
+  }
+}
+
+// A page that won't parse is QUARANTINED, not discarded: the raw string moves to
+// a __quarantine sidecar (wiped with everything else on wipeAll) so nothing is
+// silently destroyed, and the slice heals to its default.
+function quarantine(name, raw) {
+  try {
+    localStorage.setItem(keyOf('__quarantine:' + name), raw)
+  } catch {
+    /* quota — the alert still fires; the raw value stays where it was */
+  }
+  raiseAlert('corrupt', name)
+}
+
 // --- change notifications (the sync engine's only hook into storage) -------
 // sync.js doesn't reach into this file; it subscribes. Every non-silent write
 // notifies subscribers with (name, nextValue, prevValue). Reads and writes stay
@@ -124,23 +165,31 @@ function readRaw(name) {
 export function get(name) {
   const fallback = structuredClone(DEFAULTS[name])
   let value = fallback
+  let raw = null
   try {
-    const raw = localStorage.getItem(keyOf(name))
+    raw = localStorage.getItem(keyOf(name))
     if (raw != null) {
       const parsed = JSON.parse(raw)
       if (fallback && typeof fallback === 'object' && !Array.isArray(fallback)) {
         // Object store: merge over defaults so new fields appear after an update,
         // but only if the stored value is itself a plain object (corruption to an
         // array/primitive under iOS eviction falls back to a clean default).
-        value = !parsed || typeof parsed !== 'object' || Array.isArray(parsed) ? fallback : { ...fallback, ...parsed }
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          quarantine(name, raw)
+          value = fallback
+        } else {
+          value = { ...fallback, ...parsed }
+        }
       } else if (Array.isArray(fallback) && !Array.isArray(parsed)) {
-        value = fallback // array store corrupted to a non-array
+        quarantine(name, raw) // array store corrupted to a non-array
+        value = fallback
       } else {
         value = parsed
       }
     }
   } catch (err) {
     console.warn(`[storage] could not read "${name}", using default`, err)
+    if (raw != null) quarantine(name, raw)
     value = fallback
   }
   // Final checks-and-balances pass: clamp/cap/drop anything out of shape.
@@ -157,8 +206,10 @@ export function set(name, value, opts = {}) {
   try {
     localStorage.setItem(keyOf(name), JSON.stringify(value))
   } catch (err) {
-    // Quota or private-mode failures shouldn't crash the app.
+    // Quota or private-mode failures shouldn't crash the app — but they must
+    // SURFACE: the user believes this write is in the book.
     console.warn(`[storage] could not write "${name}"`, err)
+    raiseAlert('write-failed', name)
   }
   if (announce) {
     for (const fn of subscribers) {

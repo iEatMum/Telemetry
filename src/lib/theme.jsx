@@ -14,6 +14,7 @@
 
 import { createContext, useContext, useEffect } from 'react'
 import { useStore } from './store.jsx'
+import { syncStatusBar } from './nativeChrome.js'
 
 export const THEMES = ['split_book', 'lamplight', 'carbon']
 export const DEFAULT_THEME = 'split_book'
@@ -50,6 +51,9 @@ export function ThemeProvider({ children }) {
     el.dataset.theme = theme
     // Keep native chrome (status bar text, form controls, scrollbars) in step.
     el.style.colorScheme = theme === 'split_book' ? 'light' : 'dark'
+    // And the REAL iOS status bar (P1 platform): dark glyphs over manila, light
+    // over the dark skins. Fail-soft no-op on web.
+    syncStatusBar(theme)
   }, [theme])
 
   const value = {

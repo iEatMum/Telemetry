@@ -29,7 +29,7 @@
 //   • The perps-era MarketSentimentWidget is GONE (M2 de-perps): the reflective
 //     page reads as a ledger — the week's balance, not a market.
 
-import { streakDays, dateKey, appDayKey, lastNDates, isAppSunday } from './dates.js'
+import { streakDays, appDayKey, appDayDate, lastNDates, isAppSunday } from './dates.js'
 import { isDue } from './tasks.js'
 import { readiness } from './wellness.js'
 import { refactorSignals, summarizeDay } from './engagement.js'
@@ -145,7 +145,10 @@ function scheduleRows(store) {
   // The user's own dictation lands next — timed blocks in time order.
   insertByTime(rows, Array.isArray(settings.dayBlocks) ? settings.dayBlocks : [])
 
-  const tk = dateKey()
+  // App-day key (P1 rollover unification): the same 3am day the checklist and
+  // header already live on — at 12:30am yesterday's finished dailies must not
+  // reappear as open rows.
+  const tk = appDayKey()
   for (const t of tasks.filter((t) => isDue(t, tk))) {
     rows.push({ time: '', block: t.title, status: 'open' })
   }
@@ -167,10 +170,17 @@ function deepWorkBlock(rows) {
     (r) => r.impact === 'high' && r.status === 'open' && r._tag !== 'wake' && r._tag !== 'phone'
   )
   if (!anchor) return null
+  // ONE impact record for one logical block (P1): the timer and its schedule
+  // row share the anchor row's stable id. Without this the same block was
+  // registered twice ('live-deepwork' + 'live-sched:N'), a finished timer
+  // still sealed the row as 'missed', the briefing scolded work the user did,
+  // and the stakes check could fire off that false miss. The row id must be
+  // stamped BEFORE buildLiveLayout maps rows into the ScheduleMatrix payload.
+  if (!anchor.id) anchor.id = 'live-anchor'
   return {
     type: 'DeepWorkTimer',
     id: 'live-deepwork',
-    config: { label: anchor.block, minutes: 50, at: anchor.time || undefined, highImpact: true },
+    config: { label: anchor.block, minutes: 50, at: anchor.time || undefined, highImpact: true, impactId: anchor.id },
   }
 }
 
@@ -180,7 +190,9 @@ function deepWorkBlock(rows) {
 // day-0/engagement demotion is now the universal state.)
 function pulseTiles(store) {
   const days = streakDays(store.streak.startedAt)
-  const tk = dateKey()
+  // Sprints are STORED under appDayKey (a 1am sprint counts for the day you're
+  // finishing) — the tile must read the same key-space it's written in.
+  const tk = appDayKey()
   const sprintsToday = store.sprints.find((s) => s.date === tk)?.count || 0
   return [
     { label: 'Streak', value: String(days), unit: 'days' },
@@ -219,7 +231,7 @@ function goalItems(store) {
 // a signal exists (gym → runs tagged as sessions; reading → plan index; work →
 // sprints), else surfaces the target at zero so the bar is honest, not faked.
 function focusGoalItem(store) {
-  const wk = new Set(lastNDates(7))
+  const wk = new Set(lastNDates(7, appDayDate()))
   switch (store.settings?.focusGoal) {
     case 'gym': {
       const sessions = store.sprints.filter((s) => wk.has(s.date)).length
@@ -274,7 +286,7 @@ function energyPoints(store) {
   // stream; otherwise it falls back to the real 14-day readiness signal.
   const hi = store.settings?.healthIntegration
   if (healthLinked(hi, 'activity')) return mockStream('activity').map((v, i) => ({ t: `d${i + 1}`, v }))
-  const keys = [...lastNDates(14)].sort() // chronological
+  const keys = [...lastNDates(14, appDayDate())].sort() // chronological
   const pts = []
   for (const k of keys) {
     const r = readiness(store.wellness[k])
@@ -332,7 +344,7 @@ function biometricBlocks(store) {
       config: {
         heading: 'Biometrics',
         source: 'health',
-        text: 'Not linked — tap Connect Apple Health on the HEALTH surface to stream sleep, activity, and heart-rate.',
+        text: 'Not linked — tap Connect Apple Health on the HEALTH page to stream sleep, activity, and heart-rate.',
         tone: 'muted',
       },
     }]
@@ -396,7 +408,7 @@ function faithBlock(store) {
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
 function weekGridDays() {
-  const keys = [...lastNDates(7)].sort() // chronological, ends today
+  const keys = [...lastNDates(7, appDayDate())].sort() // chronological, ends today
   return keys.map((k) => {
     const s = summarizeDay(k)
     const imp = s.impact || { total: 0, done: 0 }
@@ -458,9 +470,11 @@ export function buildLiveLayout(store, summary, opts = {}) {
   const tier = densityTier(store.settings?.executionRate7d)
   const rows = applyDensity(scheduleRows(store), tier)
   const briefing = { type: 'DailyBriefing', id: 'live-briefing', config: briefingConfig(summary || {}) }
+  // deepWorkBlock FIRST — it stamps the anchor row's shared impact id, which
+  // the ScheduleMatrix payload map below must carry.
+  const deep = deepWorkBlock(rows)
   // Strip the internal _tag here, at the payload boundary (deep uses it above).
   const sched = { type: 'ScheduleMatrix', id: 'live-sched', config: { title: 'Today', rows: rows.map(({ _tag, ...r }) => r) } }
-  const deep = deepWorkBlock(rows)
   const kpis = { type: 'KpiGrid', id: 'live-kpis', config: { title: 'Pulse', cols: 2, items: pulseTiles(store) } }
   // No live targets (no check-in yet, no focus item) → no block: an empty
   // Targets card is furniture, and furniture lies.

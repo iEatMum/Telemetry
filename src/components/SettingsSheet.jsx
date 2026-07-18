@@ -10,6 +10,7 @@ import { useStore } from '../lib/store.jsx'
 import { useTheme } from '../lib/theme.jsx'
 import { dateKey } from '../lib/dates.js'
 import { openLegal } from './LegalSheet.jsx'
+import { useEntitlement } from '../lib/purchases.js'
 
 function downloadJSON(data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -49,7 +50,7 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
           <input type="time" value={settings.bedTime} onChange={(e) => updateSettings({ bedTime: e.target.value })} className="input font-clock" />
         </Row>
       </div>
-      <p className="-mt-1 px-1 text-[11px] leading-relaxed text-muted">
+      <p className="-mt-1 px-1 text-[0.6875rem] leading-relaxed text-muted">
         Lock the wake time; let bedtime float to meet it. Up by ~7:00 still counts — forgiving clock,
         firm cue. Phone out = bed is for sleep only (and a recovery guardrail). Banked sleep runs
         faster — college sprinters ~0.7s (Mah 2011).
@@ -102,6 +103,13 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
       <Row label="iOS Focus shortcut name">
         <input value={settings.focusShortcutName} onChange={(e) => updateSettings({ focusShortcutName: e.target.value })} placeholder="Sprint" className="input" />
       </Row>
+
+      {/* The coach's standing (P1): once entitled every CoachGate disappears,
+          which used to make the paywall — and with it Restore and any status
+          read — unreachable for the people PAYING. This row is the subscriber's
+          one honest surface: current status + Apple's own manage page (cancel
+          guidance must survive past the point of purchase). */}
+      <CoachSection />
 
       {/* The fine print — the same documents the paywall links (3.1.2 requires
           them reachable in-app; they're bundled, so this works offline). */}
@@ -192,7 +200,7 @@ function ThemePicker() {
               }
             >
               <span className="block text-sm text-ink">{o.label}</span>
-              <span className="mt-1 block text-[11px] leading-snug text-muted">{o.sub}</span>
+              <span className="mt-1 block text-[0.6875rem] leading-snug text-muted">{o.sub}</span>
             </button>
           )
         })}
@@ -235,9 +243,9 @@ function ModulesSection({ settings, updateSettings }) {
               />
               <span className="flex-1">
                 <span className="block text-sm text-ink">{m.label}</span>
-                <span className="mt-0.5 block text-[11px] leading-snug text-muted">{m.sub}</span>
+                <span className="mt-0.5 block text-[0.6875rem] leading-snug text-muted">{m.sub}</span>
               </span>
-              <span className="font-clock text-[10px] uppercase tracking-widest2 text-muted">
+              <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
                 {on ? 'On' : 'Off'}
               </span>
             </button>
@@ -300,9 +308,9 @@ function AiConsentSection() {
         <span aria-hidden className={`h-[7px] w-[7px] flex-none rounded-full ${on ? 'bg-accent shadow-glow-sm' : 'bg-line'}`} />
         <span className="flex-1">
           <span className="block text-sm text-ink">Personalize with Claude</span>
-          <span className="mt-0.5 block text-[11px] leading-snug text-muted">Named provider, off by default, sends nothing in this version.</span>
+          <span className="mt-0.5 block text-[0.6875rem] leading-snug text-muted">Named provider, off by default, sends nothing in this version.</span>
         </span>
-        <span className="font-clock text-[10px] uppercase tracking-widest2 text-muted">{on ? 'On' : 'Off'}</span>
+        <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">{on ? 'On' : 'Off'}</span>
       </button>
     </Section>
   )
@@ -313,7 +321,7 @@ function AiConsentSection() {
 function Section({ title, hint, children }) {
   return (
     <div className="border-b border-line pb-5 pt-1">
-      <div className="font-clock text-[11px] font-medium uppercase tracking-widest2 text-muted">{title}</div>
+      <div className="font-clock text-[0.6875rem] font-medium uppercase tracking-widest2 text-muted">{title}</div>
       {hint && <p className="mb-3 mt-1 text-xs leading-snug text-muted">{hint}</p>}
       <div className="mt-3">{children}</div>
     </div>
@@ -414,5 +422,44 @@ function WipeButton({ onWipe }) {
         Tap again — erase everything
       </button>
     </div>
+  )
+}
+
+// The subscriber's standing surface (P1). Reads the live entitlement; the
+// manage link opens Apple's own subscription page (the only place cancel truly
+// lives). Free users get the honest line + the door to the paywall.
+function CoachSection() {
+  const ent = useEntitlement()
+  const status = ent?.status || 'none'
+  const LINE = {
+    none: 'Not hired — the book is free forever.',
+    trial: 'On trial. Renews through the App Store unless cancelled.',
+    active: 'Active. Managed through the App Store.',
+    expired: 'Lapsed — the book kept every page.',
+  }
+  return (
+    <Section title="The coach" hint="The AI layer — Guardian, weekly review, counsel. The book itself is never paid.">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-ink">{LINE[status] || LINE.none}</span>
+        {status === 'trial' || status === 'active' ? (
+          <a
+            href="https://apps.apple.com/account/subscriptions"
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 rounded-lg border border-line bg-surface2 px-4 py-2.5 text-sm text-ink"
+          >
+            Manage
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('telemetry:open-paywall'))}
+            className="shrink-0 rounded-lg border border-line bg-surface2 px-4 py-2.5 text-sm text-ink"
+          >
+            {status === 'expired' ? 'Re-hire' : 'See the coach'}
+          </button>
+        )}
+      </div>
+    </Section>
   )
 }

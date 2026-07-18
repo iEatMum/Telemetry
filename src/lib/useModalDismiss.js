@@ -16,8 +16,31 @@ export function useModalDismiss(onClose, focusRef) {
     stack.push(id)
     focusRef?.current?.focus?.()
     const onKey = (e) => {
-      if (e.key !== 'Escape') return
-      if (stack[stack.length - 1] === id) onClose()
+      if (stack[stack.length - 1] !== id) return
+      if (e.key === 'Escape') return onClose()
+      // Focus CONTAINMENT (P1 a11y): Tab cycles inside the top dialog instead
+      // of wandering into the deck behind it. aria-modal already hides the
+      // background from assistive tech; this closes the same hole for the
+      // keyboard. The dialog element is found from the focus anchor, so every
+      // caller gets containment without a signature change.
+      if (e.key === 'Tab') {
+        const dialog = focusRef?.current?.closest?.('[role="dialog"]')
+        if (!dialog) return
+        const focusables = dialog.querySelectorAll(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        if (!focusables.length) return
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        const inside = dialog.contains(document.activeElement)
+        if (e.shiftKey && (!inside || document.activeElement === first)) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => {

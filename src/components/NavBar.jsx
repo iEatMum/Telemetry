@@ -45,7 +45,7 @@ const SURFACES = [
   { id: 'command', label: 'Command' },
 ]
 
-export default function NavBar({ active, onChange, onHelp }) {
+export default function NavBar({ active, onChange, onHelp, helpActive = false }) {
   return (
     <nav
       className="fixed bottom-0 left-1/2 z-40 w-full max-w-app -translate-x-1/2 border-t border-line bg-bg/95 pb-safe backdrop-blur"
@@ -74,7 +74,7 @@ export default function NavBar({ active, onChange, onHelp }) {
                   {ICONS[s.id]}
                 </svg>
                 <span
-                  className={`font-clock text-[10px] uppercase tracking-widest2 ${
+                  className={`font-clock text-[0.625rem] uppercase tracking-widest2 ${
                     on ? 'text-accent' : 'text-muted'
                   }`}
                 >
@@ -85,28 +85,39 @@ export default function NavBar({ active, onChange, onHelp }) {
           )
         })}
         {/* HELP — the crisis path, docked as a permanent nav slot (M2) so it can
-            never float over content. One tap from any surface; lane-red is
-            sanctioned here (crisis = the commitment path under pressure). */}
+            never float over content. Its OWN glyph (a life ring — the old shield
+            was Guardian's icon twice over), and honest active-state: ink at rest,
+            accent only while the night page is actually open. The old permanent
+            accent made HELP read as the selected surface on every screen. */}
         {onHelp && (
           <li className="flex-1">
             <button
               type="button"
               onClick={onHelp}
               aria-label="Help now"
+              aria-haspopup="dialog"
+              aria-expanded={helpActive}
               className="flex h-16 w-full flex-col items-center justify-center gap-1"
             >
               <svg
                 viewBox="0 0 24 24"
-                className="h-6 w-6 text-accent"
+                className={`h-6 w-6 ${helpActive ? 'text-accent' : 'text-ink'}`}
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="1.7"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" />
+                {/* life ring */}
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="3.8" />
+                <path d="M5.7 5.7l3.6 3.6M14.7 14.7l3.6 3.6M18.3 5.7l-3.6 3.6M9.3 14.7l-3.6 3.6" />
               </svg>
-              <span className="font-clock text-[10px] font-semibold uppercase tracking-widest2 text-accent">
+              <span
+                className={`font-clock text-[0.625rem] font-semibold uppercase tracking-widest2 ${
+                  helpActive ? 'text-accent' : 'text-ink'
+                }`}
+              >
                 Help
               </span>
             </button>

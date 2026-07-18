@@ -6,8 +6,8 @@
     {
       "id": "executionRate7d",
       "type": "BaselineGrid",
-      "meta": { "tag": "baseline", "title": "How many of the last 7 days did you execute?", "hint": "Count the days you did the most important thing you planned. Behavior, not self-image — this calibrates how aggressive the protocol starts." },
-      "config": { "min": 0, "max": 7, "cols": 4, "unit": "/7", "readout": "last 7d", "anchorLo": "00 · nothing shipped", "anchorHi": "07 · perfect week" },
+      "meta": { "tag": "baseline", "title": "How many of the last 7 days did you execute?", "hint": "Count the days you did the most important thing you planned. Behavior, not self-image — this sets where the book starts." },
+      "config": { "min": 0, "max": 7, "cols": 4, "unit": "/7", "readout": "last 7d", "anchorLo": "00 · a blank week", "anchorHi": "07 · a perfect week" },
       "writes": "executionRate7d",
       "validate": { "var": "executionRate7d", "op": "isInt" },
       "next": {

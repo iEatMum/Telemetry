@@ -30,7 +30,7 @@ export default class ErrorBoundary extends Component {
     if (!this.state.error) return this.props.children
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6 text-center text-ink">
-        <div className="font-clock text-[12px] uppercase tracking-[0.25em] text-muted">
+        <div className="font-clock text-[0.75rem] uppercase tracking-[0.25em] text-muted">
           The page tore
         </div>
         <p className="mx-auto mt-4 max-w-xs text-sm leading-relaxed text-muted">

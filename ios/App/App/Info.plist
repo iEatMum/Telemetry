@@ -61,11 +61,11 @@
 	<array>
 		<string>armv7</string>
 	</array>
+	<!-- PORTRAIT LOCK (MASTERPLAN P1): the ledger is a portrait artifact — every
+	     surface is a single column and landscape just letterboxes the book. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
