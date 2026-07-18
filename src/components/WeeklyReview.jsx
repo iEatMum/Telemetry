@@ -132,7 +132,7 @@ function DebriefStat({ value, label }) {
   return (
     <div className="rounded-lg bg-surface2 py-3">
       <div className="font-clock tnum text-xl text-ink">{value}</div>
-      <div className="text-[0.625rem] uppercase tracking-wide text-muted">{label}</div>
+      <div className="text-[0.6875rem] uppercase tracking-wide text-muted">{label}</div>
     </div>
   )
 }

@@ -587,3 +587,49 @@
     color: var(--accent-text, var(--accent));
   }
 }
+
+/* ── P2 sanctioned motion ──────────────────────────────────────────────────
+   Three additions from the ratified set — all inside the four verbs, all dead
+   under prefers-reduced-motion (the global kill above zeroes durations). */
+
+/* rule-draw: the deck tab's underline draws in like a hairline being ruled.
+   Hangs off the REAL tab semantics ([role=tab][aria-selected]) so it needs no
+   per-component wiring. */
+@keyframes rule-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+[role='tab'] { position: relative; }
+[role='tab'][aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left center;
+  animation: rule-draw var(--dur-calm) var(--ease);
+}
+
+/* sheet-in: "a page pulled from the book" — the sheet rises a few points and
+   settles; the scrim breathes in with it. Entrance only: exits stay instant
+   (a dismissal must never make the user wait). */
+@keyframes sheet-in {
+  from { transform: translateY(18px); opacity: 0.55; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-sheet-in { animation: sheet-in var(--dur-calm) var(--ease) both; }
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-scrim-in { animation: scrim-in var(--dur-calm) var(--ease) both; }
+
+/* Pressed state: every enabled button dips 1.5% while held — the paper gives
+   under the finger. Transform only (no color, no shadow), so it composes with
+   the hold sweeps and seal-press without repaint cost. */
+@layer base {
+  button:not(:disabled) { transition: transform var(--dur-quick) var(--ease); }
+  button:not(:disabled):active { transform: scale(0.985); }
+}

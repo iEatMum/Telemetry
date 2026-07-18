@@ -52,7 +52,7 @@ export function Stat({ value, label, accent = false, delta, deltaDir, deltaSuffi
   const dir = deltaDir || (typeof delta === 'number' ? (delta >= 0 ? 'up' : 'down') : 'flat')
   return (
     <div className="flex flex-col px-1 py-2">
-      <div className="text-[0.625rem] uppercase tracking-widest2 text-muted">{label}</div>
+      <div className="text-[0.6875rem] uppercase tracking-widest2 text-muted">{label}</div>
       <div className="mt-1.5 flex items-baseline gap-1.5">
         <span
           className={`font-clock tnum text-2xl leading-none ${accent ? 'text-accent' : 'text-ink'}`}
@@ -123,7 +123,7 @@ export function CheckRow({ state, onCycle, label, tag, action }) {
         {label}
       </span>
       {missed && (
-        <span className="text-[0.625rem] uppercase tracking-wide text-muted">missed</span>
+        <span className="text-[0.6875rem] uppercase tracking-wide text-muted">missed</span>
       )}
       {tag && !missed && <span className="text-xs text-muted">{tag}</span>}
       {action}
@@ -187,7 +187,7 @@ export function ScoreboardUnit({ value, label, size = 'big' }) {
   return (
     <div className="flex flex-col items-center">
       <span className={`font-clock tnum leading-none ${numClass}`}>{value}</span>
-      <span className="mt-2 text-[0.625rem] uppercase tracking-widest3 text-muted">
+      <span className="mt-2 text-[0.6875rem] uppercase tracking-widest3 text-muted">
         {label}
       </span>
     </div>
@@ -216,7 +216,7 @@ export function LifetimePile({ value, label }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="font-clock tnum text-3xl leading-none text-ink">{value}</span>
-      <span className="text-[0.625rem] uppercase tracking-wide text-muted">{label}</span>
+      <span className="text-[0.6875rem] uppercase tracking-wide text-muted">{label}</span>
     </div>
   )
 }
@@ -239,7 +239,7 @@ export function ConsiderCard({ c, onDismiss }) {
           {c.source ? ` · ${c.source}` : ''}
         </span>
         {c.synthesis === 'local' && (
-          <span className="font-clock text-[0.625rem] uppercase tracking-wide text-muted/70">
+          <span className="font-clock text-[0.6875rem] uppercase tracking-wide text-muted/70">
             draft
           </span>
         )}
@@ -267,7 +267,7 @@ export function ConsiderResource({ r }) {
   const label = `${r.type || 'resource'} · ${r.by || ''}`.replace(/ · $/, '')
   return (
     <div className="mt-3 border-t border-line pt-3">
-      <div className="font-clock text-[0.625rem] uppercase tracking-wide text-muted">
+      <div className="font-clock text-[0.6875rem] uppercase tracking-wide text-muted">
         For the next 24h
       </div>
       <div className="mt-1 text-[0.875rem] text-ink">{r.title}</div>
@@ -663,7 +663,7 @@ export function BarMeter({ value = 0, max = 100, tone = 'accent', label, right, 
       {(label || right != null) && (
         <div className="mb-1.5 flex items-baseline justify-between gap-2">
           {label && (
-            <span className="text-[0.625rem] uppercase tracking-widest2 text-muted">{label}</span>
+            <span className="text-[0.6875rem] uppercase tracking-widest2 text-muted">{label}</span>
           )}
           {right != null && <span className="font-clock tnum text-xs text-ink">{right}</span>}
         </div>
@@ -699,7 +699,7 @@ export function KpiTile({
   return (
     <div className="py-2.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[0.625rem] uppercase tracking-widest2 text-muted">{label}</span>
+        <span className="text-[0.6875rem] uppercase tracking-widest2 text-muted">{label}</span>
         {delta != null && <DeltaTag value={delta} dir={dir} suffix={deltaSuffix} />}
       </div>
       <div className="mt-2 flex items-baseline gap-1">
@@ -733,7 +733,7 @@ export function DataTable({ columns = [], rows = [], className = '', onRowClick 
             {columns.map((c) => (
               <th
                 key={c.key}
-                className={`px-3 py-2 text-[0.625rem] font-medium uppercase tracking-widest2 text-muted ${
+                className={`px-3 py-2 text-[0.6875rem] font-medium uppercase tracking-widest2 text-muted ${
                   c.align === 'right' ? 'text-right' : ''
                 }`}
               >
@@ -764,5 +764,144 @@ export function DataTable({ columns = [], rows = [], className = '', onRowClick 
         </tbody>
       </table>
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────
+// SealRing — the 216px ◆ wax-seal ceremony (design handoff D2, built in P2).
+// The evening seal's hold, promoted from a bar to the ceremony ring:
+// press → the lane-red ring sweeps closed over 1.2s → the ◆ stamps (seal-press
+// settle + the one success haptic) → the page turns. Releasing early cancels
+// at zero cost. Same accessibility contract as HoldButton: keyboard hold works,
+// and synthetic/quick taps walk a two-step confirm so screen-reader users are
+// never locked out of sealing the day.
+// ─────────────────────────────────────────────
+const RING_R = 100
+const RING_C = 2 * Math.PI * RING_R
+const STAMP_MS = 520 // --dur-stamp: the stamp is SEEN before onComplete fires
+
+export function SealRing({ disabled, onComplete, children }) {
+  const [holding, setHolding] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [stamped, setStamped] = useState(false)
+  const timer = useRef(null)
+  const confirmTimer = useRef(null)
+  const stampTimer = useRef(null)
+  const downAt = useRef(0)
+  const keyHeld = useRef(false)
+
+  function complete() {
+    setConfirming(false)
+    clearTimeout(confirmTimer.current)
+    setStamped(true)
+    sealCommit() // the commit haptic lands ON the stamp frame
+    stampTimer.current = setTimeout(onComplete, STAMP_MS)
+  }
+  function start() {
+    if (disabled || stamped || timer.current) return
+    warmSeal()
+    downAt.current = Date.now()
+    setHolding(true)
+    timer.current = setTimeout(() => {
+      timer.current = null
+      setHolding(false)
+      complete()
+    }, HOLD_MS)
+  }
+  function cancel() {
+    setHolding(false)
+    if (timer.current) {
+      clearTimeout(timer.current)
+      timer.current = null
+    }
+  }
+  function onPointerUp() {
+    const quick = timer.current && Date.now() - downAt.current < 250
+    cancel()
+    if (!quick) return
+    if (confirming) complete()
+    else {
+      setConfirming(true)
+      clearTimeout(confirmTimer.current)
+      confirmTimer.current = setTimeout(() => setConfirming(false), 4000)
+    }
+  }
+  function onClick(e) {
+    if (disabled || stamped || e.detail !== 0 || keyHeld.current) return
+    if (confirming) complete()
+    else {
+      setConfirming(true)
+      clearTimeout(confirmTimer.current)
+      confirmTimer.current = setTimeout(() => setConfirming(false), 4000)
+    }
+  }
+  function onKeyDown(e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return
+    e.preventDefault()
+    if (e.repeat || keyHeld.current) return
+    keyHeld.current = true
+    start()
+  }
+  function onKeyUp(e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return
+    keyHeld.current = false
+    cancel()
+  }
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current)
+      clearTimeout(confirmTimer.current)
+      clearTimeout(stampTimer.current)
+    },
+    []
+  )
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onPointerDown={start}
+      onPointerUp={onPointerUp}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
+      className="relative mx-auto flex h-[216px] w-[216px] select-none flex-col items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-accent-deep"
+      style={{ touchAction: 'none' }}
+    >
+      <svg aria-hidden viewBox="0 0 216 216" className="absolute inset-0 h-full w-full -rotate-90">
+        <circle cx="108" cy="108" r={RING_R} fill="none" stroke="var(--line)" strokeWidth="3" />
+        <circle
+          cx="108"
+          cy="108"
+          r={RING_R}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={RING_C}
+          strokeDashoffset={stamped || holding ? 0 : RING_C}
+          style={{ transition: `stroke-dashoffset ${holding ? HOLD_MS : 150}ms linear` }}
+        />
+      </svg>
+      {stamped ? (
+        <span className="animate-seal-press text-[2.75rem] leading-none text-accent" aria-hidden>
+          ◆
+        </span>
+      ) : (
+        <>
+          <span aria-hidden className="text-[1.375rem] leading-none text-faint">
+            ◆
+          </span>
+          <span className="mt-2 max-w-[160px] text-center font-clock text-[0.75rem] uppercase leading-relaxed tracking-widest2 text-ink">
+            {children}
+          </span>
+          <span role="status" className="mt-1 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
+            {confirming ? 'tap again to seal' : ''}
+          </span>
+        </>
+      )}
+    </button>
   )
 }

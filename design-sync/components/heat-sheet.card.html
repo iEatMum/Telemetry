@@ -1,0 +1,50 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Heat sheet (ScheduleMatrix)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; background:var(--bg); color:var(--ink); padding:20px;
+         -webkit-font-smoothing:antialiased; }
+  .skin-split { --bg:#ede4ce;--surface:#f6efdd;--surface2:#e2d7bc;--line:#c9bc9c;--linebright:#ac9f7d;--ink:#1f1b12;--muted:#625843;--faint:#6c6451;--accent:#c93f22;--accent-text:#a83318;--accent-deep:#a93318;--accent-ink:#f9f3e2;--pos:#3f6e4e;--neg:#8e3b44;--warn:#8c671a;color-scheme:light; }
+  .skin-lamplight { --bg:#14100a;--surface:#1b160e;--surface2:#241d12;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#877c68;--accent:#b25b41;--accent-text:#c47254;--accent-deep:#8f462f;--accent-ink:#201409;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .skin-carbon { --bg:#101214;--surface:#16191c;--surface2:#1d2125;--line:#2a2f34;--linebright:#3b4249;--ink:#e8e6e1;--muted:#8d9298;--faint:#7a7f83;--accent:#c4553b;--accent-text:#d0755a;--accent-deep:#9e4029;--accent-ink:#f5efe6;--pos:#79b48d;--neg:#c97a83;--warn:#cfa25c;color-scheme:dark; }
+  .skin-invert { --bg:#17130b;--surface:#1e1910;--surface2:#262013;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#897e6a;--accent:#c6502f;--accent-text:#cf7250;--accent-deep:#9d3f22;--accent-ink:#f5ead6;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .clock { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tnum { font-variant-numeric:tabular-nums; }
+  .micro { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; text-transform:uppercase;
+           letter-spacing:.18em; color:var(--muted); }
+  .panel { background:var(--bg); color:var(--ink); border:1px solid var(--line);
+           padding:18px; border-radius:0; }
+  .hairline { border-top:1px solid var(--line); }
+  .note { font-size:12px; line-height:1.55; color:var(--muted); max-width:64ch; }
+  h1.card-title { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; text-transform:uppercase;
+                  letter-spacing:.2em; margin-bottom:4px; }
+  .sub { font-size:12px; color:var(--muted); margin-bottom:16px; }
+
+    .row { display:flex; align-items:center; gap:12px; min-height:44px; border-bottom:1px solid var(--line);
+           padding:6px 4px 6px 16px; position:relative; font-size:0.8125rem; }
+    .row.now { background:var(--surface2); border-left:2px solid var(--accent-deep); }
+    .dia { position:absolute; left:2px; color:var(--accent); font-size:9px; }
+    .t { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric:tabular-nums; font-size:0.75rem; color:var(--muted); width:44px; flex:none; }
+    .b { flex:1; } .b.missed { color:var(--faint); text-decoration:line-through dashed; }
+    .b.done { color:var(--muted); }
+    .g { width:20px; text-align:center; }
+    .circ { display:inline-block; width:12px; height:12px; border-radius:50%; border:1px solid var(--muted); }
+    </style></head>
+<body class="skin-split">
+<h1 class="card-title">Heat sheet (ScheduleMatrix)</h1>
+<p class="sub">The hero. The day as a ruled table — mono time, label, state glyph. ◆ confined to the left margin.</p>
+<div class='panel' style='max-width:420px'>
+      <div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px'>
+        <span class='micro'>Today</span><span class='clock tnum micro'>1/4 posted</span>
+      </div>
+      <div class='hairline'></div>
+      <div class='row'><span class='dia'>◆</span><span class='t'>05:30</span><span class='b done'>Wake — feet on floor</span><span class='g'>✓</span></div>
+      <div class='row now'><span class='dia'>◆</span><span class='t'>09:00</span><span class='b'>Chem — study block</span><span class='g clock' style='color:var(--accent-text);font-size:10px;letter-spacing:.18em'>◆ NOW</span></div>
+      <div class='row'><span class='t'>12:30</span><span class='b'>Train — tempo</span><span class='g open'></span></div>
+      <div class='row'><span class='t'>22:15</span><span class='b missed'>Phone out of the room</span><span class='g'><span class='circ'></span></span></div>
+      <p class='note' style='margin-top:12px'>Tap posts (sealCommit haptic); tap again un-posts — refused once
+      the day is ruled off. Done = ink ✓. Missed = open graphite circle + muted dashed label — ink withheld,
+      never red. The current block: surface-2 + accent-deep left rule.</p>
+    </div>
+</body></html>

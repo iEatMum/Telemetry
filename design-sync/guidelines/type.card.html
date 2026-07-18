@@ -1,0 +1,42 @@
+<!-- @dsCard group="Type" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Split Ledger — type</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; background:var(--bg); color:var(--ink); padding:20px;
+         -webkit-font-smoothing:antialiased; }
+  .skin-split { --bg:#ede4ce;--surface:#f6efdd;--surface2:#e2d7bc;--line:#c9bc9c;--linebright:#ac9f7d;--ink:#1f1b12;--muted:#625843;--faint:#6c6451;--accent:#c93f22;--accent-text:#a83318;--accent-deep:#a93318;--accent-ink:#f9f3e2;--pos:#3f6e4e;--neg:#8e3b44;--warn:#8c671a;color-scheme:light; }
+  .skin-lamplight { --bg:#14100a;--surface:#1b160e;--surface2:#241d12;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#877c68;--accent:#b25b41;--accent-text:#c47254;--accent-deep:#8f462f;--accent-ink:#201409;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .skin-carbon { --bg:#101214;--surface:#16191c;--surface2:#1d2125;--line:#2a2f34;--linebright:#3b4249;--ink:#e8e6e1;--muted:#8d9298;--faint:#7a7f83;--accent:#c4553b;--accent-text:#d0755a;--accent-deep:#9e4029;--accent-ink:#f5efe6;--pos:#79b48d;--neg:#c97a83;--warn:#cfa25c;color-scheme:dark; }
+  .skin-invert { --bg:#17130b;--surface:#1e1910;--surface2:#262013;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#897e6a;--accent:#c6502f;--accent-text:#cf7250;--accent-deep:#9d3f22;--accent-ink:#f5ead6;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .clock { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tnum { font-variant-numeric:tabular-nums; }
+  .micro { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; text-transform:uppercase;
+           letter-spacing:.18em; color:var(--muted); }
+  .panel { background:var(--bg); color:var(--ink); border:1px solid var(--line);
+           padding:18px; border-radius:0; }
+  .hairline { border-top:1px solid var(--line); }
+  .note { font-size:12px; line-height:1.55; color:var(--muted); max-width:64ch; }
+  h1.card-title { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; text-transform:uppercase;
+                  letter-spacing:.2em; margin-bottom:4px; }
+  .sub { font-size:12px; color:var(--muted); margin-bottom:16px; }
+</style></head>
+<body class="skin-split">
+<h1 class="card-title">Split Ledger — type</h1>
+<p class="sub">Two voices: the stopwatch face (IBM Plex Mono 400/500) and the human voice (SF Pro). Authored in rem — Dynamic Type scales the root.</p>
+<div class='panel'>
+      <div class='micro'>Days on the book</div>
+      <div class='clock tnum' style='font-size:4rem;line-height:1'>212</div>
+      <div class='clock tnum' style='font-size:3.5rem;line-height:1;margin-top:8px'>00:24</div>
+      <div class='micro' style='margin-top:6px'>the hero numerals — mono, tabular, never glowing</div>
+    </div>
+    <div class='panel' style='margin-top:12px'>
+      <div style='font-size:1.5rem;font-weight:600;letter-spacing:-0.01em'>You made it here. That was the hard part.</div>
+      <p style='font-size:0.9375rem;color:var(--muted);line-height:1.6;margin-top:8px;max-width:44ch'>
+        The human voice: body copy, supportive lines. System sans, calm weight, generous leading.</p>
+      <div class='micro' style='margin-top:14px'>Micro-caps · 11px floor · 0.18em tracking</div>
+      <p class='note' style='margin-top:8px'>The scale (rem): 0.6875 micro · 0.75 label · 0.8125 body-s ·
+      0.875 body · 0.9375 body-l · 1.5 display-s · 1.625 display · 3.5 clock · 4 hero.
+      Nothing below the 11px floor anywhere; nothing below it EVER on the night page.</p>
+    </div>
+</body></html>

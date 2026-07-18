@@ -97,7 +97,7 @@ export function EnergyTrendLine({ config = {} }) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <SectionLabel>{config.label || 'Energy · Today'}</SectionLabel>
-            <div className="mt-1 font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
+            <div className="mt-1 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
               {pts[0].t}–now · avg {Math.round(avg)}
             </div>
           </div>
@@ -160,7 +160,7 @@ export function EnergyTrendLine({ config = {} }) {
 
           {showAvg && (
             <span
-              className="absolute font-clock text-[0.5625rem] uppercase tracking-wide text-muted"
+              className="absolute font-clock text-[0.6875rem] uppercase tracking-wide text-muted"
               style={{ top: `${avgY}%`, right: 2, transform: 'translateY(-50%)' }}
             >
               avg {Math.round(avg)}
@@ -173,7 +173,7 @@ export function EnergyTrendLine({ config = {} }) {
             style={{ left: `${peakX}%`, top: `${peakY}%`, transform: 'translate(-50%,-50%)' }}
           />
           <span
-            className="absolute whitespace-nowrap font-clock tnum text-[0.625rem] text-ink"
+            className="absolute whitespace-nowrap font-clock tnum text-[0.6875rem] text-ink"
             style={{ left: `${clamp(peakX, 8, 92)}%`, top: `${peakY}%`, transform: `translate(-50%, ${peakY < 16 ? '60%' : '-150%'})` }}
           >
             {max}
@@ -185,7 +185,7 @@ export function EnergyTrendLine({ config = {} }) {
             style={{ left: `${lowX}%`, top: `${lowY}%`, transform: 'translate(-50%,-50%)', background: 'var(--warn)' }}
           />
           <span
-            className="absolute whitespace-nowrap font-clock tnum text-[0.625rem] text-warn"
+            className="absolute whitespace-nowrap font-clock tnum text-[0.6875rem] text-warn"
             style={{ left: `${clamp(lowX, 8, 92)}%`, top: `${lowY}%`, transform: `translate(-50%, ${lowY > 84 ? '-150%' : '60%'})` }}
           >
             {min}
@@ -197,7 +197,7 @@ export function EnergyTrendLine({ config = {} }) {
             style={{ left: `${nowX}%`, top: `${nowY}%`, height: 7, width: 7, transform: 'translate(-50%,-50%)', boxShadow: '0 0 0 2px var(--surface)' }}
           />
           <span
-            className={`absolute whitespace-nowrap font-clock text-[0.5625rem] uppercase tracking-wide ${nowTone}`}
+            className={`absolute whitespace-nowrap font-clock text-[0.6875rem] uppercase tracking-wide ${nowTone}`}
             style={{ left: `${clamp(nowX, 8, 92)}%`, top: `${nowY}%`, transform: `translate(-50%, ${nowY < 20 ? '130%' : '-210%'})` }}
           >
             now
@@ -206,13 +206,13 @@ export function EnergyTrendLine({ config = {} }) {
 
         {/* Footer — time axis + a calm peak/low caption in the margin voice */}
         <div className="mt-2 border-t border-line pt-2">
-          <div className="flex justify-between font-clock text-[0.625rem] uppercase tracking-wide text-muted">
+          <div className="flex justify-between font-clock text-[0.6875rem] uppercase tracking-wide text-muted">
             {ticks.map((t, i) => (
               <span key={i}>{t}</span>
             ))}
           </div>
           {config.caption !== false && (
-            <div className="mt-1 font-clock text-[0.625rem] uppercase tracking-wide text-muted">
+            <div className="mt-1 font-clock text-[0.6875rem] uppercase tracking-wide text-muted">
               {typeof config.caption === 'string' ? (
                 config.caption
               ) : (

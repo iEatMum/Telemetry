@@ -1,0 +1,46 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Bottom nav + HELP</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; background:var(--bg); color:var(--ink); padding:20px;
+         -webkit-font-smoothing:antialiased; }
+  .skin-split { --bg:#ede4ce;--surface:#f6efdd;--surface2:#e2d7bc;--line:#c9bc9c;--linebright:#ac9f7d;--ink:#1f1b12;--muted:#625843;--faint:#6c6451;--accent:#c93f22;--accent-text:#a83318;--accent-deep:#a93318;--accent-ink:#f9f3e2;--pos:#3f6e4e;--neg:#8e3b44;--warn:#8c671a;color-scheme:light; }
+  .skin-lamplight { --bg:#14100a;--surface:#1b160e;--surface2:#241d12;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#877c68;--accent:#b25b41;--accent-text:#c47254;--accent-deep:#8f462f;--accent-ink:#201409;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .skin-carbon { --bg:#101214;--surface:#16191c;--surface2:#1d2125;--line:#2a2f34;--linebright:#3b4249;--ink:#e8e6e1;--muted:#8d9298;--faint:#7a7f83;--accent:#c4553b;--accent-text:#d0755a;--accent-deep:#9e4029;--accent-ink:#f5efe6;--pos:#79b48d;--neg:#c97a83;--warn:#cfa25c;color-scheme:dark; }
+  .skin-invert { --bg:#17130b;--surface:#1e1910;--surface2:#262013;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#897e6a;--accent:#c6502f;--accent-text:#cf7250;--accent-deep:#9d3f22;--accent-ink:#f5ead6;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .clock { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tnum { font-variant-numeric:tabular-nums; }
+  .micro { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; text-transform:uppercase;
+           letter-spacing:.18em; color:var(--muted); }
+  .panel { background:var(--bg); color:var(--ink); border:1px solid var(--line);
+           padding:18px; border-radius:0; }
+  .hairline { border-top:1px solid var(--line); }
+  .note { font-size:12px; line-height:1.55; color:var(--muted); max-width:64ch; }
+  h1.card-title { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; text-transform:uppercase;
+                  letter-spacing:.2em; margin-bottom:4px; }
+  .sub { font-size:12px; color:var(--muted); margin-bottom:16px; }
+
+    .slot { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 0 14px;
+            color:var(--muted); font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:10px; letter-spacing:.18em; }
+    .slot svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.7;
+                stroke-linecap:round; stroke-linejoin:round; }
+    .slot.on { color:var(--accent-text); } .slot.help { color:var(--ink); font-weight:600; }
+    </style></head>
+<body class="skin-split">
+<h1 class="card-title">Bottom nav + HELP</h1>
+<p class="sub">Five surfaces + HELP docked as the sixth slot. HELP wears its OWN life-ring glyph — ink at rest, accent only while the night page is open.</p>
+<div class='panel' style='max-width:460px;padding:0'>
+      <div style='display:flex;border-top:1px solid var(--line)'>
+        <div class='slot on'><svg viewBox='0 0 24 24'><rect x='4' y='10' width='16' height='10' rx='1.5'/><path d='M6 7h12M8 4h8'/></svg><span>DECK</span></div>
+        <div class='slot'><svg viewBox='0 0 24 24'><circle cx='12' cy='14' r='7'/><path d='M12 11v3.5l2.5 1.5M10 2h4M12 2v3'/></svg><span>SPRINTS</span></div>
+        <div class='slot'><svg viewBox='0 0 24 24'><path d='M3 12h4l2-6 4 12 2-6h6'/></svg><span>HEALTH</span></div>
+        <div class='slot'><svg viewBox='0 0 24 24'><path d='M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3z'/></svg><span>GUARDIAN</span></div>
+        <div class='slot'><svg viewBox='0 0 24 24'><path d='M4 7h10M18 7h2M4 17h4M12 17h8'/><circle cx='16' cy='7' r='2'/><circle cx='10' cy='17' r='2'/></svg><span>COMMAND</span></div>
+        <div class='slot help'><svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='3.8'/><path d='M5.7 5.7l3.6 3.6M14.7 14.7l3.6 3.6M18.3 5.7l-3.6 3.6M9.3 14.7l-3.6 3.6'/></svg><span>HELP</span></div>
+      </div>
+    </div>
+    <p class='note' style='margin-top:12px'>Active surface = accent icon + label; everything else muted.
+    HELP: ink + semibold at rest (findable, never falsely “active”), accent while open. A docked slot can
+    never float over content.</p>
+</body></html>

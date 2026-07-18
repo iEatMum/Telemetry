@@ -30,7 +30,7 @@ function VectorRow({ v }) {
       <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${tone}`} />
       <span className="flex-1 text-[0.8125rem] text-ink">{v.note}</span>
       {!v.evidence && (
-        <span className="font-clock text-[0.625rem] uppercase tracking-wide text-muted/70">no data</span>
+        <span className="font-clock text-[0.6875rem] uppercase tracking-wide text-muted/70">no data</span>
       )}
     </div>
   )

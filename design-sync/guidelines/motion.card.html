@@ -1,0 +1,47 @@
+<!-- @dsCard group="Motion" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Split Ledger — motion</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; background:var(--bg); color:var(--ink); padding:20px;
+         -webkit-font-smoothing:antialiased; }
+  .skin-split { --bg:#ede4ce;--surface:#f6efdd;--surface2:#e2d7bc;--line:#c9bc9c;--linebright:#ac9f7d;--ink:#1f1b12;--muted:#625843;--faint:#6c6451;--accent:#c93f22;--accent-text:#a83318;--accent-deep:#a93318;--accent-ink:#f9f3e2;--pos:#3f6e4e;--neg:#8e3b44;--warn:#8c671a;color-scheme:light; }
+  .skin-lamplight { --bg:#14100a;--surface:#1b160e;--surface2:#241d12;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#877c68;--accent:#b25b41;--accent-text:#c47254;--accent-deep:#8f462f;--accent-ink:#201409;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .skin-carbon { --bg:#101214;--surface:#16191c;--surface2:#1d2125;--line:#2a2f34;--linebright:#3b4249;--ink:#e8e6e1;--muted:#8d9298;--faint:#7a7f83;--accent:#c4553b;--accent-text:#d0755a;--accent-deep:#9e4029;--accent-ink:#f5efe6;--pos:#79b48d;--neg:#c97a83;--warn:#cfa25c;color-scheme:dark; }
+  .skin-invert { --bg:#17130b;--surface:#1e1910;--surface2:#262013;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#897e6a;--accent:#c6502f;--accent-text:#cf7250;--accent-deep:#9d3f22;--accent-ink:#f5ead6;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .clock { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tnum { font-variant-numeric:tabular-nums; }
+  .micro { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; text-transform:uppercase;
+           letter-spacing:.18em; color:var(--muted); }
+  .panel { background:var(--bg); color:var(--ink); border:1px solid var(--line);
+           padding:18px; border-radius:0; }
+  .hairline { border-top:1px solid var(--line); }
+  .note { font-size:12px; line-height:1.55; color:var(--muted); max-width:64ch; }
+  h1.card-title { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; text-transform:uppercase;
+                  letter-spacing:.2em; margin-bottom:4px; }
+  .sub { font-size:12px; color:var(--muted); margin-bottom:16px; }
+
+    .sweep { position:absolute; inset:0; width:0; background:var(--accent);
+             animation:sweep 2.4s cubic-bezier(.4,0,.2,1) infinite; opacity:.85; }
+    @keyframes sweep { 0%{width:0} 50%{width:100%} 62%{width:100%} 100%{width:0} }
+    </style></head>
+<body class="skin-split">
+<h1 class="card-title">Split Ledger — motion</h1>
+<p class="sub">One ease — cubic-bezier(.4,0,.2,1). Four verbs. Print does not glow; nothing animates outside these.</p>
+<div class='panel'>
+      <table style='width:100%;border-collapse:collapse;font-size:12px'>
+        <tr class='hairline'><td class='clock' style='padding:8px 0;width:120px'>ink-settle</td><td style='color:var(--muted)'>140ms · content arriving (data-stream entry)</td></tr>
+        <tr class='hairline'><td class='clock' style='padding:8px 0'>breath</td><td style='color:var(--muted)'>1800ms · the one live pulse (running clock, LED)</td></tr>
+        <tr class='hairline'><td class='clock' style='padding:8px 0'>rule-draw</td><td style='color:var(--muted)'>280ms · a hairline drawing in (tab underline)</td></tr>
+        <tr class='hairline'><td class='clock' style='padding:8px 0'>seal-press</td><td style='color:var(--muted)'>1200ms hold sweep → 520ms stamp settle · the ceremony</td></tr>
+      </table>
+      <div style='margin-top:16px' class='micro'>seal-press, live:</div>
+      <div style='margin-top:8px;position:relative;height:48px;border:1px solid var(--accent-deep)'>
+        <div class='sweep'></div>
+        <div class='clock' style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;letter-spacing:.18em;text-transform:uppercase'>Hold to seal</div>
+      </div>
+      <p class='note' style='margin-top:12px'>Haptic grammar: sealCommit (one success beat) fires ONLY on
+      commitment — posting a row, "I stayed", INITIALIZE, the seal. A slip is SILENT. selectionTick for
+      pickers. Reduced-motion: every animation collapses to its end state.</p>
+    </div>
+</body></html>

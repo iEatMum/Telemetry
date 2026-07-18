@@ -402,7 +402,7 @@ function WeekChart({ sprints }) {
             <span className={`font-clock tnum text-[0.6875rem] ${i === 6 ? 'text-ink' : 'text-muted'}`}>
               {w.count}
             </span>
-            <span className="text-[0.625rem] uppercase text-muted">{w.day}</span>
+            <span className="text-[0.6875rem] uppercase text-muted">{w.day}</span>
           </div>
         ))}
       </div>

@@ -72,7 +72,7 @@ export function CoachGate({ line = 'The coach’s read is written on this page.'
         >
           ◆
         </span>
-        <span className="mt-2 font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">Coach · sealed</span>
+        <span className="mt-2 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">Coach · sealed</span>
         <p className="mt-1.5 max-w-[15rem] font-serif text-[0.875rem] italic leading-relaxed text-muted">{line}</p>
         <button
           type="button"
@@ -81,7 +81,7 @@ export function CoachGate({ line = 'The coach’s read is written on this page.'
         >
           Open the coach’s page · {TRIAL_DAYS}-day free
         </button>
-        <span className="mt-2 font-clock text-[0.625rem] uppercase tracking-wide text-faint">
+        <span className="mt-2 font-clock text-[0.6875rem] uppercase tracking-wide text-faint">
           Your book stays free. Always.
         </span>
       </div>
@@ -239,7 +239,7 @@ export default function Paywall({ onClose }) {
                 paid. Two columns make the boundary literal. */}
             <div className="mt-5 grid grid-cols-2 border-t border-line">
               <div className="border-r border-line py-4 pr-3">
-                <div className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
+                <div className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
                   The book · free
                 </div>
                 <ul className="mt-2.5 space-y-2 text-[0.75rem] leading-snug text-muted">
@@ -256,7 +256,7 @@ export default function Paywall({ onClose }) {
                 </ul>
               </div>
               <div className="py-4 pl-3">
-                <div className="font-clock text-[0.625rem] uppercase tracking-widest2 text-accent">
+                <div className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-accent">
                   The coach · {TRIAL_DAYS}-day free
                 </div>
                 <ul className="mt-2.5 space-y-2">

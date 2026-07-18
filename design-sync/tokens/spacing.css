@@ -1,0 +1,3 @@
+/* The ledger is square. */
+:root { --radius-card: 0px; --radius-control: 6px; --radius-sheet: 10px;
+        --pad-card: 16px; --gap-widget: 14px; --gap-stat: 12px; --keyboard-inset: 0px; }

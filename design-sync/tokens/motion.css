@@ -1,0 +1,4 @@
+/* One ease, four verbs. Nothing animates outside these. */
+:root { --ease: cubic-bezier(0.4,0,0.2,1); --dur-quick: 140ms; --dur-calm: 280ms;
+        --dur-pulse: 1800ms; --dur-seal: 1200ms; --dur-stamp: 520ms; }
+@media (prefers-reduced-motion: reduce) { * { animation-duration:.001ms !important; } }

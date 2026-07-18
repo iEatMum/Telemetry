@@ -43,7 +43,7 @@ function BookHeader({ store }) {
   return (
     <header className="flex items-end justify-between px-4 pb-3 pt-4">
       <div>
-        <div className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
+        <div className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
           {empty ? 'The book opens' : 'Days on the book'}
         </div>
         {empty ? (
@@ -72,7 +72,7 @@ function BookHeader({ store }) {
             type="button"
             onClick={() => shareBookCard({ total, run, wk })}
             aria-label="Share the book page"
-            className="-mb-3 -mr-3 flex min-h-[44px] min-w-[44px] items-center justify-end px-3 pb-3 font-clock text-[0.625rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+            className="-mb-3 -mr-3 flex min-h-[44px] min-w-[44px] items-center justify-end px-3 pb-3 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
           >
             Share
           </button>
@@ -127,7 +127,7 @@ function MilestoneShareCard({ total, run, wk }) {
     // bg-surface, not surface2: muted text must hold ≥4.5:1 on this card's own
     // ground, and the two actions pay for 44px hit areas with negative margins.
     <div className="mx-4 mb-1 border-l-2 border-linebright bg-surface px-4 py-3">
-      <div className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
+      <div className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
         Day {due} on the book
       </div>
       <p className="mt-1 font-serif text-[0.875rem] italic leading-relaxed text-muted">

@@ -189,15 +189,29 @@ function deepWorkBlock(rows) {
 // numeral itself, so every pulse tile prints in ink. (The old `demoteStreak`
 // day-0/engagement demotion is now the universal state.)
 function pulseTiles(store) {
-  const days = streakDays(store.streak.startedAt)
+  // Every number prints ONCE per page (P2 simplify): the old Streak and Clean
+  // tiles repeated the masthead's `run N` and the hero DAYS ON THE BOOK from
+  // 300pt above — half the grid was an echo. These four exist nowhere else on
+  // the deck.
   // Sprints are STORED under appDayKey (a 1am sprint counts for the day you're
-  // finishing) — the tile must read the same key-space it's written in.
+  // finishing) — the tiles must read the same key-space they're written in.
   const tk = appDayKey()
+  const wk = [...lastNDates(7, appDayDate())]
   const sprintsToday = store.sprints.find((s) => s.date === tk)?.count || 0
+  const deepWk = store.sprints.filter((s) => wk.includes(s.date)).reduce((n, s) => n + (s.count || 0), 0)
+  // Posted % across the week — only days that actually carried impact blocks
+  // count (an empty travel day is no data, not a zero).
+  const pcts = wk
+    .map((k) => {
+      const imp = summarizeDay(k).impact || { total: 0, done: 0 }
+      return imp.total ? imp.done / imp.total : null
+    })
+    .filter((v) => v != null)
+  const posted7 = pcts.length ? Math.round((pcts.reduce((a, b) => a + b, 0) / pcts.length) * 100) : 0
   return [
-    { label: 'Streak', value: String(days), unit: 'days' },
     { label: 'Sprints', value: String(sprintsToday), unit: 'today' },
-    { label: 'Clean', value: String(store.streak.cleanDates.length), unit: 'lifetime' },
+    { label: 'Posted', value: String(posted7), unit: '% · 7d' },
+    { label: 'Deep work', value: String(deepWk), unit: 'reps · 7d' },
     { label: 'Outlasted', value: String(store.streak.urgesSurvived.length), unit: 'urges' },
   ]
 }

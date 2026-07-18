@@ -6,15 +6,16 @@
 // Contract: { title, body, holdLabel, onSeal, onCancel }.
 
 import Sheet from './Sheet.jsx'
-import { HoldButton } from './ui.jsx'
+import { SealRing } from './ui.jsx'
 
 export default function ConfirmSheet({ title, body, holdLabel = 'Hold to seal', onSeal, onCancel }) {
   return (
     <Sheet title={title} onClose={onCancel}>
       {body && <p className="text-[0.875rem] leading-relaxed text-muted">{body}</p>}
-      <HoldButton commit onComplete={onSeal}>
-        {holdLabel}
-      </HoldButton>
+      {/* The ceremony ring (P2 · handoff D2): press-sweep → ◆ stamp → settle.
+          Same contract the old hold bar carried — early release free, keyboard
+          hold works, quick taps arm a two-step confirm. */}
+      <SealRing onComplete={onSeal}>{holdLabel}</SealRing>
       <button
         type="button"
         onClick={onCancel}

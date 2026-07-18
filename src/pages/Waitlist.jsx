@@ -157,14 +157,14 @@ function SamplePage() {
               {r.label}
             </span>
             {r.state === 'now' ? (
-              <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-accent">◆ now</span>
+              <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-accent">◆ now</span>
             ) : (
               <span className="font-clock text-[0.75rem] text-muted">{mark[r.state]}</span>
             )}
           </div>
         ))}
       </div>
-      <div className="mt-4 text-center font-clock text-[0.625rem] uppercase tracking-widest2 text-faint">
+      <div className="mt-4 text-center font-clock text-[0.6875rem] uppercase tracking-widest2 text-faint">
         A miss is logged, never punished
       </div>
     </div>

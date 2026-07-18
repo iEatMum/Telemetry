@@ -11,6 +11,7 @@ import { useTheme } from '../lib/theme.jsx'
 import { dateKey } from '../lib/dates.js'
 import { openLegal } from './LegalSheet.jsx'
 import { useEntitlement } from '../lib/purchases.js'
+import { selectionTick } from '../lib/haptics.js'
 
 function downloadJSON(data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -192,7 +193,10 @@ function ThemePicker() {
             <button
               key={o.key}
               type="button"
-              onClick={() => setTheme(o.key)}
+              onClick={() => {
+                if (!on) selectionTick() // skin choice = a picker tick (P2)
+                setTheme(o.key)
+              }}
               aria-pressed={on}
               className={
                 'rounded-lg border p-3 text-left transition-colors ' +
@@ -245,7 +249,7 @@ function ModulesSection({ settings, updateSettings }) {
                 <span className="block text-sm text-ink">{m.label}</span>
                 <span className="mt-0.5 block text-[0.6875rem] leading-snug text-muted">{m.sub}</span>
               </span>
-              <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">
+              <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
                 {on ? 'On' : 'Off'}
               </span>
             </button>
@@ -310,7 +314,7 @@ function AiConsentSection() {
           <span className="block text-sm text-ink">Personalize with Claude</span>
           <span className="mt-0.5 block text-[0.6875rem] leading-snug text-muted">Named provider, off by default, sends nothing in this version.</span>
         </span>
-        <span className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted">{on ? 'On' : 'Off'}</span>
+        <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">{on ? 'On' : 'Off'}</span>
       </button>
     </Section>
   )

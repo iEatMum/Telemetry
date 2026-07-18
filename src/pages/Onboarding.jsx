@@ -242,7 +242,7 @@ function SelectGrid({ options, value, onChange, recommended = null }) {
             }
           >
             {rec && (
-              <span className="absolute right-2 top-2 font-clock text-[0.5625rem] uppercase tracking-widest2 text-muted">suggested</span>
+              <span className="absolute right-2 top-2 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">suggested</span>
             )}
             <span className={'text-[0.875rem] leading-tight ' + (on ? 'font-medium text-ink' : 'text-ink')}>{o.label}</span>
             <span className="mt-2 block text-[0.6875rem] leading-snug text-muted">{o.sub}</span>

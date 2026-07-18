@@ -14,6 +14,7 @@
 import { Component, useEffect, useState } from 'react'
 import { getWidget } from '../lib/registry.js'
 import { recordSeen, recordUse, completeImpact } from '../lib/engagement.js'
+import { selectionTick } from '../lib/haptics.js'
 
 // Quiet placeholder for a type this build doesn't know (or can't render).
 function Placeholder({ title, detail }) {
@@ -126,12 +127,15 @@ export function LayoutHost({ layout, header, footer }) {
               aria-selected={t.key === active}
               aria-controls={`deck-panel-${t.key}`}
               onClick={() => {
+                if (t.key !== active) selectionTick() // picker grammar (P2)
                 setActive(t.key)
                 // Contract: deck scroll position resets on a tab switch.
                 window.scrollTo(0, 0)
               }}
-              className={`-mb-px min-h-[44px] whitespace-nowrap border-b-2 px-3 py-3 font-clock text-xs uppercase tracking-widest2 transition-colors duration-quick ${
-                t.key === active ? 'border-accent text-ink' : 'border-transparent text-muted'
+              // The active underline is drawn by CSS off aria-selected (the
+              // rule-draw verb) — the border here stays transparent for both.
+              className={`-mb-px min-h-[44px] whitespace-nowrap border-b-2 border-transparent px-3 py-3 font-clock text-xs uppercase tracking-widest2 transition-colors duration-quick ${
+                t.key === active ? 'text-ink' : 'text-muted'
               }`}
             >
               {t.label}
@@ -140,10 +144,13 @@ export function LayoutHost({ layout, header, footer }) {
         </nav>
 
         {/* gap rides the theme token so Zen's extra air applies as a token. */}
+        {/* key remounts the panel per tab — the page TURNS (ink-settle entry),
+            it doesn't morph. Reduced-motion collapses to an instant swap. */}
         <main
+          key={current?.key}
           role="tabpanel"
           id={`deck-panel-${current?.key}`}
-          className="pb-deck flex flex-col px-4 pt-5"
+          className="pb-deck animate-data-stream flex flex-col px-4 pt-5"
           style={{ gap: 'var(--gap-widget)' }}
         >
           {(current?.blocks || []).map((b, i) => (

@@ -1,0 +1,48 @@
+<!-- @dsCard group="Components" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>The night page (landing + ride)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; background:var(--bg); color:var(--ink); padding:20px;
+         -webkit-font-smoothing:antialiased; }
+  .skin-split { --bg:#ede4ce;--surface:#f6efdd;--surface2:#e2d7bc;--line:#c9bc9c;--linebright:#ac9f7d;--ink:#1f1b12;--muted:#625843;--faint:#6c6451;--accent:#c93f22;--accent-text:#a83318;--accent-deep:#a93318;--accent-ink:#f9f3e2;--pos:#3f6e4e;--neg:#8e3b44;--warn:#8c671a;color-scheme:light; }
+  .skin-lamplight { --bg:#14100a;--surface:#1b160e;--surface2:#241d12;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#877c68;--accent:#b25b41;--accent-text:#c47254;--accent-deep:#8f462f;--accent-ink:#201409;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .skin-carbon { --bg:#101214;--surface:#16191c;--surface2:#1d2125;--line:#2a2f34;--linebright:#3b4249;--ink:#e8e6e1;--muted:#8d9298;--faint:#7a7f83;--accent:#c4553b;--accent-text:#d0755a;--accent-deep:#9e4029;--accent-ink:#f5efe6;--pos:#79b48d;--neg:#c97a83;--warn:#cfa25c;color-scheme:dark; }
+  .skin-invert { --bg:#17130b;--surface:#1e1910;--surface2:#262013;--line:#3a3222;--linebright:#4e4430;--ink:#e7dcc4;--muted:#9a8d72;--faint:#897e6a;--accent:#c6502f;--accent-text:#cf7250;--accent-deep:#9d3f22;--accent-ink:#f5ead6;--pos:#7fa98b;--neg:#b07680;--warn:#c0985a;color-scheme:dark; }
+  .clock { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tnum { font-variant-numeric:tabular-nums; }
+  .micro { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px; text-transform:uppercase;
+           letter-spacing:.18em; color:var(--muted); }
+  .panel { background:var(--bg); color:var(--ink); border:1px solid var(--line);
+           padding:18px; border-radius:0; }
+  .hairline { border-top:1px solid var(--line); }
+  .note { font-size:12px; line-height:1.55; color:var(--muted); max-width:64ch; }
+  h1.card-title { font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:13px; text-transform:uppercase;
+                  letter-spacing:.2em; margin-bottom:4px; }
+  .sub { font-size:12px; color:var(--muted); margin-bottom:16px; }
+</style></head>
+<body class="skin-invert">
+<h1 class="card-title">The night page (landing + ride)</h1>
+<p class="sub">Always the data-invert skin, whatever the app wears. Landing starts NOTHING; the ride counts UP.</p>
+<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px'>
+      <div class='panel skin-invert' style='background:var(--bg);text-align:center;padding:26px 18px'>
+        <div class='micro'><span style='color:var(--accent-text)'>●</span> THE NIGHT PAGE</div>
+        <div style='font-size:1.35rem;font-weight:600;line-height:1.25;margin:14px auto;max-width:24ch'>You made it here. That was the hard part.</div>
+        <p class='note' style='margin:0 auto 16px'>Nothing starts, and nothing is written, until you say so.</p>
+        <div class='clock' style='background:var(--accent);color:var(--accent-ink);padding:13px;font-size:12px;letter-spacing:.18em;font-weight:600'>START THE RIDE</div>
+        <p class='note' style='margin-top:12px;font-size:11px'>In crisis? <u>Call 988</u> or <u>text 988</u> — every phase.</p>
+      </div>
+      <div class='panel skin-invert' style='background:var(--bg);text-align:center;padding:26px 18px'>
+        <div class='micro'>OUTLASTED — LIFETIME</div>
+        <div class='clock tnum' style='font-size:3rem;line-height:1;margin:8px 0'>12</div>
+        <div class='clock tnum' style='font-size:1.6rem'>07:41</div>
+        <div class='micro' style='color:var(--faint);margin-top:2px'>this ride</div>
+        <div style='text-align:left;margin-top:14px'>
+          <div style='border:1px solid var(--line);padding:9px 10px;font-size:12px;color:var(--muted)'>— &nbsp;A hard 2-minute effort <span style='float:right;font-size:10px'>set aside</span></div>
+          <div style='border:1px solid var(--accent-deep);background:var(--surface2);padding:9px 10px;font-size:12px;margin-top:6px'>2 &nbsp;Breathe 4-7-8, five rounds <span class='clock' style='float:right;font-size:10px;color:var(--accent-text);letter-spacing:.15em'>NOW</span></div>
+        </div>
+        <p class='note' style='margin-top:12px;font-size:11px'>“I stayed” arms at 60s · the slip costs a
+        1.2s hold and is logged in ONE compassionate voice — never red. The ride survives an app kill.</p>
+      </div>
+    </div>
+</body></html>

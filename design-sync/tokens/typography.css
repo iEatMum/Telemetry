@@ -1,0 +1,5 @@
+/* Split Ledger type — authored in rem; --type-scale multiplies the root */
+:root { --font-clock: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; --type-scale: 1; }
+html { font-size: calc(100% * var(--type-scale)); }
+/* scale: .6875 micro · .75 label · .8125 body-s · .875 body · .9375 body-l ·
+   1.5 display-s · 1.625 display · 3.5 clock · 4 hero — 11px floor everywhere */

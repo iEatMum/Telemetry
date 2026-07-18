@@ -216,7 +216,7 @@ export default function App() {
         <div className="flex items-center gap-2.5">
           <StatusLED status={conn.label} />
           {conn.label === 'OFFLINE' && queued > 0 && (
-            <span className="font-clock tnum text-[0.625rem] uppercase tracking-widest2 text-muted">
+            <span className="font-clock tnum text-[0.6875rem] uppercase tracking-widest2 text-muted">
               queued {queued}
             </span>
           )}

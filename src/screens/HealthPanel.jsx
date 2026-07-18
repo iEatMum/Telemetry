@@ -112,7 +112,7 @@ export default function HealthPanel() {
             <button
               type="button"
               onClick={disconnectHealth}
-              className="font-clock text-[0.625rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+              className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
             >
               Disconnect
             </button>

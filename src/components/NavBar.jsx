@@ -4,6 +4,8 @@
 // Successor to the retired TabBar.jsx (morning/examen/offerings), same idiom:
 // inline SVG icons, no icon library, pb-safe over the home indicator.
 
+import { selectionTick } from '../lib/haptics.js'
+
 const ICONS = {
   deck: (
     // stacked cards — the dealt deck
@@ -58,7 +60,10 @@ export default function NavBar({ active, onChange, onHelp, helpActive = false })
             <li key={s.id} className="flex-1">
               <button
                 type="button"
-                onClick={() => onChange(s.id)}
+                onClick={() => {
+                  if (!on) selectionTick() // surface switch = a picker tick (P2)
+                  onChange(s.id)
+                }}
                 aria-current={on ? 'page' : undefined}
                 className="flex h-16 w-full flex-col items-center justify-center gap-1"
               >
@@ -74,7 +79,7 @@ export default function NavBar({ active, onChange, onHelp, helpActive = false })
                   {ICONS[s.id]}
                 </svg>
                 <span
-                  className={`font-clock text-[0.625rem] uppercase tracking-widest2 ${
+                  className={`font-clock text-[0.6875rem] uppercase tracking-widest2 ${
                     on ? 'text-accent' : 'text-muted'
                   }`}
                 >
@@ -114,7 +119,7 @@ export default function NavBar({ active, onChange, onHelp, helpActive = false })
                 <path d="M5.7 5.7l3.6 3.6M14.7 14.7l3.6 3.6M18.3 5.7l-3.6 3.6M9.3 14.7l-3.6 3.6" />
               </svg>
               <span
-                className={`font-clock text-[0.625rem] font-semibold uppercase tracking-widest2 ${
+                className={`font-clock text-[0.6875rem] font-semibold uppercase tracking-widest2 ${
                   helpActive ? 'text-accent' : 'text-ink'
                 }`}
               >
