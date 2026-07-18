@@ -9,9 +9,23 @@
 // call returns { ok:false } and the client carries on with the local deck.
 
 import { supabase, isSupabaseConfigured } from './supabaseClient.js'
+import { aiConsentGranted } from './aiConsent.js'
+import { screen } from './guardian.js'
+
+// Any string the model authored anywhere in the layout must clear the shame
+// screen — a briefing "read" is model text just as much as an InsightCard.
+function screened(value) {
+  if (typeof value === 'string') return screen(value).ok
+  if (Array.isArray(value)) return value.every(screened)
+  if (value && typeof value === 'object') return Object.values(value).every(screened)
+  return true
+}
 
 async function invokeArchitect(body) {
   if (!isSupabaseConfigured || !supabase) return { ok: false, reason: 'local' }
+  // P3a rail: consent is checked CLIENT-side too — the server enforcing it is
+  // necessary, but no request should even leave the device without the word.
+  if (!aiConsentGranted()) return { ok: false, reason: 'no-consent' }
   let session = null
   try {
     const { data } = await supabase.auth.getSession()
@@ -24,6 +38,7 @@ async function invokeArchitect(body) {
   try {
     const { data, error } = await supabase.functions.invoke('architect', { body })
     if (error) return { ok: false, reason: 'error', error }
+    if (!screened(data)) return { ok: false, reason: 'blocked' } // failed the shame screen
     return { ok: true, ...(data || {}) }
   } catch (error) {
     return { ok: false, reason: 'error', error }

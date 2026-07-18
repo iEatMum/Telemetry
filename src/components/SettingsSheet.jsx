@@ -112,6 +112,30 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
           guidance must survive past the point of purchase). */}
       <CoachSection />
 
+      {/* Lock-screen privacy (P3b): generic reminder text. Defaults ON with the
+          recovery module — a visible lock screen must never tell a story. */}
+      <Section title="Private reminders" hint="Lock-screen text stays generic — no block names, no Guardian language.">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={settings.notifPrivacy ?? !!settings.modules?.recovery}
+          onClick={() => updateSettings({ notifPrivacy: !(settings.notifPrivacy ?? !!settings.modules?.recovery) })}
+          className={
+            'flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors duration-quick ' +
+            ((settings.notifPrivacy ?? !!settings.modules?.recovery) ? 'border-accent-deep bg-pos-soft' : 'border-line bg-surface2')
+          }
+        >
+          <span className="flex-1 text-sm text-ink">
+            {(settings.notifPrivacy ?? !!settings.modules?.recovery)
+              ? '“Telemetry · 22:15 · Scheduled block”'
+              : 'Full text on the lock screen'}
+          </span>
+          <span className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted">
+            {(settings.notifPrivacy ?? !!settings.modules?.recovery) ? 'On' : 'Off'}
+          </span>
+        </button>
+      </Section>
+
       {/* The fine print — the same documents the paywall links (3.1.2 requires
           them reachable in-app; they're bundled, so this works offline). */}
       <Section title="The fine print" hint="What the app does and doesn't do with your data.">

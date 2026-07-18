@@ -33,6 +33,7 @@ import { summarizeDay, subscribe as subscribeEngagement } from './engagement.js'
 import { readToday } from './health.js'
 import { screen } from './guardian.js'
 import { voice, windowLabel } from './toneEngine.js'
+import { privateReminders } from './notifications.js'
 
 const KEY = 'lockedin:__guardian'
 const WARN_NOTIF_ID = 1900000077 // fixed id — rescheduling replaces, never stacks
@@ -435,8 +436,11 @@ export async function scheduleGuardianWarning(assessment, profile = guardianProf
   const day = appDayKey()
   const g = readGuardian()
   if (g.lastWarnDay === day) return { ok: false, reason: 'already-warned' } // ONE per day — doctrine
-  const msg = voice(profile, 'warn.notification', voiceParams(assessment))
+  let msg = voice(profile, 'warn.notification', voiceParams(assessment))
   if (!msg || !screen(`${msg.title} ${msg.body}`).ok) return { ok: false, reason: 'blocked' }
+  // Lock-screen privacy (P3b): with private reminders on, the visible warning
+  // says nothing about windows, urges, or drift — the full read waits inside.
+  if (privateReminders()) msg = { title: 'Telemetry', body: 'A note is ready in your book.' }
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
     let perm = await LocalNotifications.checkPermissions()

@@ -15,6 +15,7 @@
 
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
+import * as storage from './storage.js'
 
 const IDS_KEY = 'lockedin:__notif_ids' // sidecar — the ids we currently own
 
@@ -109,7 +110,9 @@ export function layoutScheduleKey(layout) {
     .join('|')
 }
 
-/** Check — and if needed request — the OS notification permission (native prompt). */
+/** Check — and if needed request — the OS notification permission (native prompt).
+ *  Only the PRIMER calls this (P3b): the raw iOS ask fires exactly once, after
+ *  the user has read why, never ambiently from a scheduling pass. */
 export async function ensureNotificationPermission() {
   if (!native()) return { granted: false, reason: 'web' }
   try {
@@ -121,13 +124,45 @@ export async function ensureNotificationPermission() {
   }
 }
 
+/** Permission state WITHOUT prompting: 'web' | 'granted' | 'denied' | 'prompt'. */
+export async function notifPermission() {
+  if (!native()) return 'web'
+  try {
+    const perm = await LocalNotifications.checkPermissions()
+    if (perm.display === 'granted') return 'granted'
+    if (perm.display === 'denied') return 'denied'
+    return 'prompt'
+  } catch {
+    return 'web'
+  }
+}
+
+// LOCK-SCREEN PRIVACY (P3b): with the recovery module on (or the explicit
+// toggle), reminder bodies go generic — a visible lock screen must never print
+// a user-authored block name ("Phone out of the bedroom" reads like a story to
+// a roommate). Defaults ON for recovery users, controllable in Settings.
+export function privateReminders() {
+  const s = storage.get('settings')
+  return s.notifPrivacy ?? !!s.modules?.recovery
+}
+function applyPrivacy(items) {
+  if (!privateReminders()) return items
+  return items.map((n) => {
+    const time = /^(\d{1,2}:\d{2})/.exec(n.body || '')
+    return { ...n, title: 'Telemetry', body: time ? `${time[1]} · Scheduled block` : 'Scheduled block' }
+  })
+}
+
 /**
  * THE engine. Clears the previously-scheduled block notifications (the ids we
  * own) and schedules the current layout's set at each block's start time. Safe to
  * call on every layout change; no-ops on web. Returns { ok, reason?, scheduled }.
  */
+let lastLayout = null // what the primer reschedules the moment permission lands
+
 export async function scheduleDailyBlocks(layout) {
   if (!native()) return { ok: false, reason: 'web', scheduled: 0 }
+  lastLayout = layout
 
   // 1) Clear yesterday's (only the ids we previously scheduled — never anyone else's).
   const prev = loadIds()
@@ -137,15 +172,16 @@ export async function scheduleDailyBlocks(layout) {
     /* they may already have fired/expired — fine */
   }
 
-  // 2) Permission (fires the native prompt on first run).
-  const perm = await ensureNotificationPermission()
-  if (!perm.granted) {
+  // 2) Permission — CHECK ONLY (P3b). The raw iOS prompt never fires from an
+  // ambient scheduling pass; the primer (Guardian surface) owns the ask.
+  const state = await notifPermission()
+  if (state !== 'granted') {
     saveIds([])
-    return { ok: false, reason: perm.reason || 'denied', scheduled: 0 }
+    return { ok: false, reason: state === 'denied' ? 'denied' : 'unprimed', scheduled: 0 }
   }
 
   // 3) Schedule the layout's blocks — daily-repeating at each HH:MM.
-  const items = notificationsFromLayout(layout)
+  const items = applyPrivacy(notificationsFromLayout(layout))
   if (!items.length) {
     saveIds([])
     return { ok: true, scheduled: 0 }
@@ -171,6 +207,14 @@ export async function scheduleDailyBlocks(layout) {
 
 // The name the layout hook calls — same engine, reads better at the call site.
 export const syncNotificationsFromLayout = scheduleDailyBlocks
+
+/** The primer's action (P3b): fire the ONE real iOS prompt, then immediately
+ *  schedule the deck's reminders if it landed. Returns the resulting state. */
+export async function enableNotifications() {
+  const perm = await ensureNotificationPermission()
+  if (perm.granted && lastLayout) await scheduleDailyBlocks(lastLayout)
+  return perm.granted ? 'granted' : await notifPermission()
+}
 
 // Wipe support (MASTERPLAN P1): a data wipe must also silence the phone — a
 // "fresh start" that still fires yesterday's block reminders (possibly naming

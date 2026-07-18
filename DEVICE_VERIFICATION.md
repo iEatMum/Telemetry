@@ -24,6 +24,23 @@ below is about confirming it on device. Run it top to bottom on an iPhone.
   scheme so you can force trial / expiry / refund locally without waiting on
   sandbox. Cases A7/A8 below need it (or sandbox's accelerated renewals).
 
+## A0. TESTER build — walk the whole app with the gates OPEN (do this FIRST)
+
+Before any StoreKit work, verify the app itself with a tester build:
+
+```
+npm run ios:tester        # = VITE_TESTER=1 vite build && npx cap sync ios
+```
+
+then build/run from Xcode. In a tester build **every coach gate is simply
+open** — Guardian, Sunday review, counsel — with **zero paywall taps**
+(purchases.js `read()` returns an active mock entitlement whenever the flag is
+baked in). If Guardian still shows a paywall, the running binary was NOT built
+through `ios:tester` — a plain `npm run build` or an Xcode-only rebuild keeps
+the previous web bundle. Always re-run `ios:tester` after pulling changes.
+The flag cannot reach the App Store: `npm run ios:store` refuses to build if
+it's set.
+
 ## A. StoreKit — purchase / restore / entitlement (the A2 rewrite, highest risk)
 
 1. Fresh install, never purchased → open a coach surface (Guardian panel, Sunday
@@ -102,3 +119,39 @@ _Optional hardening (not required to ship):_ the plugin exposes a
 renewals/revocations without waiting for a launch/foreground refresh. The current
 launch + `visibilitychange` refresh in `App.jsx` is sufficient for v1; the
 listener is the more real-time upgrade if churn accuracy ever needs it.
+
+## E. ScreenGuard — app lockdown (Phase 3c)
+
+Build prerequisites (one-time, in Xcode):
+1. The App target already compiles `ScreenGuardPlugin.swift` + `AppViewController.swift`
+   and carries `com.apple.developer.family-controls` in App.entitlements. With
+   AUTOMATIC signing, Xcode registers the capability on the App ID for
+   DEVELOPMENT builds — no Apple approval needed to device-test. (TestFlight/
+   App Store distribution waits on FAMILY_CONTROLS_REQUEST.md approval.)
+2. For the SCHEDULED window (shield rises with the app closed): add the
+   **TelemetryGuard** Device Activity Monitor extension target per
+   `ios/App/TelemetryGuard/README.md`. "Shield now"/"Lift" work without it.
+
+Cases (Guardian surface → THE SHIELD, tester build):
+1. First open → "Enable the shield" → the system Screen Time consent sheet
+   appears → approve. Status flips to the roster row.
+2. "Choose" → Apple's FamilyActivityPicker sheet → pick 2-3 apps → Done →
+   row reads "N apps shielded".
+3. "Shield now" → switch to a shielded app → iOS shows the shield screen.
+   Back in Telemetry → "Lift" → the app opens normally again.
+4. (With TelemetryGuard target) Arm a 2-minute-away window → close Telemetry →
+   at window start the shielded app blocks; at window end it frees.
+5. Wipe-all in Settings, relaunch → shield status returns to "Enable" (the
+   selection lives in the App Group and is Apple-opaque either way).
+
+## F. Guardian notifications (Phase 3b)
+
+1. Fresh tester install → NO iOS notification prompt appears on its own.
+   Guardian surface shows the REMINDERS primer card → "Enable reminders" →
+   the ONE system prompt fires → allow → card disappears, block reminders
+   schedule (Settings → Notifications → Telemetry shows the app).
+2. Decline instead → card flips to the recovery copy naming
+   iOS Settings → Notifications → Telemetry.
+3. Private reminders (Settings toggle; defaults ON with the recovery module):
+   lock the phone, wait for a block reminder → lock screen reads
+   "Telemetry — HH:MM · Scheduled block", never the block's own name.

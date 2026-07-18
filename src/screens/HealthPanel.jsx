@@ -83,6 +83,11 @@ export default function HealthPanel() {
     setSnap(fresh)
     setAsking(false)
   }
+  // "Connected" was printed even when iOS DECLINED the grant (P3 honesty fix):
+  // on a real device with the SDK present but authorized:false, the truthful
+  // state is "declined — and here is the one place iOS lets you undo that."
+  const declinedOnDevice =
+    settings.healthIntegration?.nativeAvailable === true && settings.healthIntegration?.authorized === false
   function disconnectHealth() {
     updateSettings({ healthIntegration: { ...settings.healthIntegration, linked: false } })
   }
@@ -102,20 +107,36 @@ export default function HealthPanel() {
       <div>
         <SectionLabel className="mb-2 px-1">Apple Health</SectionLabel>
         {linked ? (
-          <Card className="flex items-center justify-between px-4 py-3">
+          <Card className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="text-[0.8125rem] text-ink">
-              Connected — sleep, activity, heart-rate
+              {declinedOnDevice ? 'Health access is off for Telemetry' : 'Connected — sleep, activity, heart-rate'}
               {settings.healthIntegration?.nativeAvailable === false && (
                 <span className="block text-[0.6875rem] text-muted">live readings arrive from Apple Health on your iPhone</span>
               )}
+              {declinedOnDevice && (
+                <span className="block text-[0.6875rem] leading-relaxed text-muted">
+                  iOS asks exactly once. Turn it on in the Health app → Sharing → Apps → Telemetry, then
+                  reopen this page.
+                </span>
+              )}
             </span>
-            <button
-              type="button"
-              onClick={disconnectHealth}
-              className="font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
-            >
-              Disconnect
-            </button>
+            {declinedOnDevice ? (
+              <button
+                type="button"
+                onClick={connectHealth}
+                className="shrink-0 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+              >
+                Retry
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={disconnectHealth}
+                className="shrink-0 font-clock text-[0.6875rem] uppercase tracking-widest2 text-muted underline decoration-line underline-offset-4"
+              >
+                Disconnect
+              </button>
+            )}
           </Card>
         ) : (
           <button

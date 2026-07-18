@@ -61,6 +61,12 @@ export const PLANS = [
 const DEFAULT = { status: 'none', productId: null, updatedAt: null, source: null }
 
 function read() {
+  // A TESTER build IS entitled, full stop (P3 device-testing fix). The old
+  // behavior only mocked the register — the tester still had to find the
+  // paywall and tap a plan before Guardian would open, which is exactly where
+  // device testing stalled. Now the gates just open. This can never ship:
+  // `vite build --mode store` refuses the flag outright.
+  if (TESTER) return { status: 'active', productId: 'tester', updatedAt: null, source: 'tester' }
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return { ...DEFAULT }

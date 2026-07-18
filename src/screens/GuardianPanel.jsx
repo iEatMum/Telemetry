@@ -8,6 +8,7 @@
 // the lifetime piles only grow) and what the protocol forge has learned about
 // which steps actually work for this user.
 
+import { useEffect, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
 import { useDriftSentinel, getInvocations } from '../lib/guardianEngine.js'
 import { stepStats, STEP_LIBRARY } from '../lib/protocolForge.js'
@@ -15,6 +16,219 @@ import { streakDays } from '../lib/dates.js'
 import { useEntitlement } from '../lib/purchases.js'
 import { CoachGate } from '../components/Paywall.jsx'
 import { Card, SectionLabel, LedgerNotice, LifetimePile, BarMeter } from '../components/ui.jsx'
+import {
+  guardStatus,
+  requestGuardAuth,
+  pickShieldedApps,
+  shieldNow,
+  liftShield,
+  armWindow,
+  disarmWindow,
+  windowDefaults,
+} from '../lib/lockdown.js'
+import { notifPermission, enableNotifications } from '../lib/notifications.js'
+
+// ── Reminder primer (P3b) ────────────────────────────────────────────────────
+// The raw iOS notification prompt fires exactly once, HERE, after the user has
+// read what it's for. Denied gets an honest recovery path, not silence.
+function ReminderSection() {
+  const [state, setState] = useState(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    notifPermission().then(setState)
+  }, [])
+  if (!state || state === 'web' || state === 'granted') return null
+  return (
+    <div>
+      <SectionLabel className="mb-2 px-1">Reminders</SectionLabel>
+      <Card className="px-4 py-3">
+        {state === 'denied' ? (
+          <p className="text-[0.8125rem] leading-relaxed text-muted">
+            Reminders are off for Telemetry, so the Guardian's pre-window note and your block
+            reminders can't reach you. iOS Settings → Notifications → Telemetry turns them back on.
+          </p>
+        ) : (
+          <>
+            <p className="text-[0.8125rem] leading-relaxed text-muted">
+              The Guardian sends ONE quiet note 30 minutes before the window you flagged, plus your
+              own block reminders at the times you wrote. Nothing promotional — ever.
+            </p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                setState(await enableNotifications())
+                setBusy(false)
+              }}
+              className="mt-3 w-full rounded-md border border-accent px-4 py-3 font-clock text-xs font-semibold uppercase tracking-widest2 text-accent disabled:opacity-50"
+            >
+              Enable reminders
+            </button>
+          </>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+// ── The Shield (Phase 3c — FREE tier) ────────────────────────────────────────
+// User-authored armor: during the window the user flagged, the apps THEY chose
+// go quiet. The selection is opaque Apple tokens — Telemetry never learns which
+// apps. Lifting the shield is always one tap (a bypass is data, not shame).
+// The AI read below is the paid layer; the armor itself is why the app earns
+// its place on the phone.
+function ShieldSection() {
+  const { settings } = useStore()
+  const [st, setSt] = useState(null) // null = probing
+  const [busy, setBusy] = useState(false)
+  const refresh = () => guardStatus().then(setSt)
+  useEffect(() => {
+    refresh()
+  }, [])
+
+  // Default window from the survey's danger window; the inputs stay editable.
+  const survey = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('lockedin:__survey') || 'null')
+    } catch {
+      return null
+    }
+  })()
+  const dflt = windowDefaults(survey?.dangerWindow, settings.wakeTime)
+  const [start, setStart] = useState(dflt.start)
+  const [end, setEnd] = useState(dflt.end)
+
+  const act = (fn) => async () => {
+    setBusy(true)
+    await fn()
+    await refresh()
+    setBusy(false)
+  }
+  const hm = (t) => {
+    const [h, m] = String(t).split(':').map((n) => parseInt(n, 10) || 0)
+    return [h, m]
+  }
+
+  let body
+  if (!st) {
+    body = <p className="px-4 py-3 text-[0.8125rem] text-muted">Checking the shield…</p>
+  } else if (!st.available) {
+    body = (
+      <p className="px-4 py-3 text-[0.8125rem] leading-relaxed text-muted">
+        Shields arm on your iPhone: pick the apps that pull at you, and during your window they go
+        quiet behind Apple's own screen. Nothing here reaches the App Store build until Apple's
+        Family Controls approval lands.
+      </p>
+    )
+  } else if (st.authorization !== 'approved') {
+    body = (
+      <div className="px-4 py-3">
+        <p className="text-[0.8125rem] leading-relaxed text-muted">
+          {st.authorization === 'denied'
+            ? 'Screen Time access is off. iOS Settings → Screen Time is where it turns back on.'
+            : 'One system permission arms the shield — Apple keeps which apps you pick invisible to us.'}
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={act(requestGuardAuth)}
+          className="mt-3 w-full rounded-md border border-accent px-4 py-3 font-clock text-xs font-semibold uppercase tracking-widest2 text-accent disabled:opacity-50"
+        >
+          Enable the shield
+        </button>
+      </div>
+    )
+  } else {
+    body = (
+      <div className="divide-y divide-line">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <span className="text-[0.8125rem] text-ink">
+            {st.selectionCount > 0 ? `${st.selectionCount} apps shielded` : 'No apps chosen yet'}
+            <span className="block text-[0.6875rem] text-muted">picked with Apple's own list — we never see it</span>
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={act(pickShieldedApps)}
+            className="shrink-0 rounded-md border border-line bg-surface2 px-4 py-2.5 text-[0.8125rem] text-ink disabled:opacity-50"
+          >
+            {st.selectionCount > 0 ? 'Edit' : 'Choose'}
+          </button>
+        </div>
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <span className="text-[0.8125rem] text-ink">
+            {st.shieldActive ? 'Shield is UP' : 'Shield is down'}
+            <span className="block text-[0.6875rem] text-muted">
+              {st.shieldActive ? 'lifting it is always yours — a lift is data, not shame' : 'raise it by hand anytime'}
+            </span>
+          </span>
+          <button
+            type="button"
+            disabled={busy || st.selectionCount === 0}
+            onClick={act(st.shieldActive ? liftShield : shieldNow)}
+            className={`shrink-0 rounded-md px-4 py-2.5 font-clock text-[0.6875rem] font-semibold uppercase tracking-widest2 disabled:opacity-50 ${
+              st.shieldActive ? 'border border-line bg-surface2 text-ink' : 'bg-accent text-accent-ink'
+            }`}
+          >
+            {st.shieldActive ? 'Lift' : 'Shield now'}
+          </button>
+        </div>
+        <div className="px-4 py-3">
+          <span className="text-[0.8125rem] text-ink">Arm the danger window nightly</span>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="time"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              disabled={st.scheduled}
+              aria-label="Window start"
+              className="min-w-[112px] rounded-md border border-line bg-surface2 px-1 py-2 text-center font-clock tnum text-[0.8125rem] text-ink outline-none focus:border-accent-deep disabled:opacity-60"
+            />
+            <span className="font-clock text-[0.6875rem] text-muted">to</span>
+            <input
+              type="time"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              disabled={st.scheduled}
+              aria-label="Window end"
+              className="min-w-[112px] rounded-md border border-line bg-surface2 px-1 py-2 text-center font-clock tnum text-[0.8125rem] text-ink outline-none focus:border-accent-deep disabled:opacity-60"
+            />
+            <button
+              type="button"
+              disabled={busy || st.selectionCount === 0}
+              onClick={act(() =>
+                st.scheduled
+                  ? disarmWindow()
+                  : armWindow({
+                      startHour: hm(start)[0],
+                      startMinute: hm(start)[1],
+                      endHour: hm(end)[0],
+                      endMinute: hm(end)[1],
+                    })
+              )}
+              className="ml-auto shrink-0 rounded-md border border-line bg-surface2 px-4 py-2.5 font-clock text-[0.6875rem] uppercase tracking-widest2 text-ink disabled:opacity-50"
+            >
+              {st.scheduled ? 'Disarm' : 'Arm'}
+            </button>
+          </div>
+          {st.scheduled && (
+            <p className="mt-2 text-[0.6875rem] leading-relaxed text-muted">
+              Armed — the shield rises and falls on its own inside the window, even with the app closed.
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <SectionLabel className="mb-2 px-1">The shield</SectionLabel>
+      <Card>{body}</Card>
+    </div>
+  )
+}
 
 const BAND_TONE = { stable: 'text-pos', watch: 'text-warn', critical: 'text-neg' }
 const BAND_LINE = {
@@ -65,6 +279,12 @@ export default function GuardianPanel() {
 
   return (
     <div className="space-y-5">
+      {/* The shield — FREE. Armor first, then the paid read below it. */}
+      <ShieldSection />
+
+      {/* Priming before any raw iOS prompt; hidden once granted (or on web). */}
+      <ReminderSection />
+
       {/* Live drift read — coach-gated */}
       <div>
         <SectionLabel className="mb-2 px-1">Drift sentinel</SectionLabel>
