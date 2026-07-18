@@ -1,74 +1,101 @@
-// Generates the PWA / home-screen icons into public/icons/ from one SVG.
-// The mark: a gold flame (the streak) on near-black. Re-run: npm run icons
+// gen-icons.mjs — the Telemetry app mark (Split Ledger, P2 art round).
+// Generates ALL icon assets from vector masters: the iOS AppIcon set
+// (light / dark / tinted 1024s) and the PWA/home-screen set. Re-run: npm run icons
+//
+// Three comps are drawn (A "The Seal", B "The Split Book", C "Ruled Off");
+// PICK selects which ships. A is the ratified mandate mark — "manila ground,
+// carbon ring, lane-red ◆ seal" — and stays legible at 60px. All comps render
+// into marketing/icon-comps/ so the choice stays one variable away.
+// (The old gold-flame-on-black mark was the terminal era; it died with it.)
 import sharp from 'sharp'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const outDir = resolve(root, 'public/icons')
-await mkdir(outDir, { recursive: true })
+const pwaDir = resolve(root, 'public/icons')
+const iosDir = resolve(root, 'ios/App/App/Assets.xcassets/AppIcon.appiconset')
+const compDir = resolve(root, 'marketing/icon-comps')
+await mkdir(pwaDir, { recursive: true })
+await mkdir(compDir, { recursive: true })
 
-const BG = '#0A0B0D'
-const A = '#F5A623' // accent gold
-const D = '#B5730A' // deeper gold
+// Split Ledger tokens (src/index.css is canonical).
+const LIGHT = { bg: '#ede4ce', ink: '#1f1b12', line: '#c9bc9c', accent: '#c93f22' }
+const DARK = { bg: '#101214', ink: '#e8e6e1', line: '#3b4249', accent: '#c4553b' }
 
-// A flame, drawn centered in a 512 box. Outer flame in a gold gradient, with a
-// smaller inner flame punched in the background color for depth.
-const flame = `
-  <g>
-    <path fill="url(#grad)" d="
-      M256 70
-      C 250 138 312 160 312 244
-      C 348 232 360 196 352 168
-      C 392 206 404 270 380 326
-      C 356 384 308 414 256 414
-      C 204 414 150 384 132 326
-      C 116 274 132 224 168 192
-      C 162 224 176 250 200 258
-      C 196 186 236 150 256 70 Z" />
-    <path fill="${BG}" d="
-      M256 214
-      C 252 252 286 266 286 308
-      C 286 338 274 360 256 360
-      C 238 360 226 338 226 308
-      C 226 280 240 262 256 214 Z" />
-  </g>`
+// The ◆ seal as a path (diamond), centered at (cx,cy) with half-diagonal r.
+const diamond = (cx, cy, r, fill) =>
+  `<path fill="${fill}" d="M${cx} ${cy - r} L${cx + r} ${cy} L${cx} ${cy + r} L${cx - r} ${cy} Z"/>`
 
-function master({ bleed }) {
-  // bleed = true → full-bleed background (for maskable + apple-touch, the OS
-  // rounds/masks). bleed = false → rounded square for the standard icon.
-  const bg = bleed
-    ? `<rect width="512" height="512" fill="${BG}"/>`
-    : `<rect width="512" height="512" rx="112" ry="112" fill="${BG}"/>`
-  // Maskable needs the mark inside the ~80% safe zone, so scale it down a touch.
-  const scale = bleed ? 0.78 : 0.92
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-    <defs>
-      <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="${A}"/>
-        <stop offset="1" stop-color="${D}"/>
-      </linearGradient>
-    </defs>
-    ${bg}
-    <g transform="translate(256 256) scale(${scale}) translate(-256 -256)">${flame}</g>
+// ── Comp A — THE SEAL. Manila ground · carbon ring · lane-red ◆. ────────────
+function compA(t) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+    <rect width="1024" height="1024" fill="${t.bg}"/>
+    <circle cx="512" cy="512" r="330" fill="none" stroke="${t.ink}" stroke-width="22"/>
+    ${diamond(512, 512, 148, t.accent)}
   </svg>`
 }
 
-const regular = Buffer.from(master({ bleed: false }))
-const maskable = Buffer.from(master({ bleed: true }))
-
-async function png(svg, size, name) {
-  await sharp(svg).resize(size, size).png().toFile(resolve(outDir, name))
-  console.log('wrote', `public/icons/${name}`)
+// ── Comp B — THE SPLIT BOOK. The ledger's rules; the seal posted on the line. ─
+function compB(t) {
+  const rows = [300, 448, 596, 744]
+    .map((y) => `<line x1="128" y1="${y}" x2="896" y2="${y}" stroke="${t.line}" stroke-width="10"/>`)
+    .join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+    <rect width="1024" height="1024" fill="${t.bg}"/>
+    ${rows}
+    <line x1="390" y1="152" x2="390" y2="872" stroke="${t.ink}" stroke-width="18"/>
+    ${diamond(390, 300, 96, t.accent)}
+  </svg>`
 }
 
-await png(regular, 192, 'pwa-192.png')
-await png(regular, 512, 'pwa-512.png')
-await png(maskable, 512, 'pwa-maskable-512.png')
-await png(maskable, 180, 'apple-touch-icon-180.png')
-await png(regular, 32, 'favicon-32.png')
+// ── Comp C — RULED OFF. Three rows; the middle one sealed. ───────────────────
+function compC(t) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+    <rect width="1024" height="1024" fill="${t.bg}"/>
+    <line x1="152" y1="332" x2="872" y2="332" stroke="${t.line}" stroke-width="12"/>
+    <line x1="152" y1="512" x2="700" y2="512" stroke="${t.ink}" stroke-width="26"/>
+    ${diamond(800, 512, 84, t.accent)}
+    <line x1="152" y1="692" x2="872" y2="692" stroke="${t.line}" stroke-width="12"/>
+  </svg>`
+}
 
-// An SVG favicon too (crisp at any size in modern browsers).
-await writeFile(resolve(root, 'public/favicon.svg'), master({ bleed: false }))
-console.log('wrote public/favicon.svg')
+const COMPS = { A: compA, B: compB, C: compC }
+const PICK = 'A'
+
+// Tinted (iOS 18+): grayscale on transparent — the system supplies the tint.
+function tintedFromComp(comp) {
+  return comp(LIGHT)
+    .replace(`<rect width="1024" height="1024" fill="${LIGHT.bg}"/>`, '')
+    .replaceAll(LIGHT.ink, '#b0b0b0')
+    .replaceAll(LIGHT.line, '#808080')
+    .replaceAll(LIGHT.accent, '#ffffff')
+}
+
+const png = (svg, size) => sharp(Buffer.from(svg)).resize(size, size).png()
+
+// iOS AppIcon set — light, dark, tinted 1024s (Contents.json carries the
+// luminosity appearances; Xcode 15+ single-size format).
+const mark = COMPS[PICK]
+await png(mark(LIGHT), 1024).toFile(resolve(iosDir, 'AppIcon-1024.png'))
+await png(mark(DARK), 1024).toFile(resolve(iosDir, 'AppIcon-1024-dark.png'))
+await png(tintedFromComp(mark), 1024).toFile(resolve(iosDir, 'AppIcon-1024-tinted.png'))
+
+// PWA / web set (light mark; the browser chrome does its own masking).
+await png(mark(LIGHT), 512).toFile(resolve(pwaDir, 'pwa-512.png'))
+await png(mark(LIGHT), 192).toFile(resolve(pwaDir, 'pwa-192.png'))
+await png(mark(LIGHT), 512).toFile(resolve(pwaDir, 'pwa-maskable-512.png'))
+await png(mark(LIGHT), 180).toFile(resolve(pwaDir, 'apple-touch-icon-180.png'))
+await png(mark(LIGHT), 32).toFile(resolve(pwaDir, 'favicon-32.png'))
+await writeFile(resolve(root, 'public/favicon.svg'), mark(LIGHT))
+
+// Comp sheet assets — every comp at review sizes, both appearances.
+for (const [name, comp] of Object.entries(COMPS)) {
+  for (const [label, t] of [['light', LIGHT], ['dark', DARK]]) {
+    for (const size of [1024, 180, 60]) {
+      await png(comp(t), size).toFile(resolve(compDir, `comp-${name}-${label}-${size}.png`))
+    }
+  }
+}
+
+console.log(`icons generated (shipping comp ${PICK}; alternates in marketing/icon-comps/)`)

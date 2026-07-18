@@ -633,3 +633,11 @@
   button:not(:disabled) { transition: transform var(--dur-quick) var(--ease); }
   button:not(:disabled):active { transform: scale(0.985); }
 }
+
+/* Graphic seals (illustrations, marks) keep the TRUE lane-red — the AA
+   .text-accent override above is for type, and these are drawings. */
+@layer utilities {
+  .text-seal {
+    color: var(--accent);
+  }
+}
