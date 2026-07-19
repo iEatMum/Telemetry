@@ -25,6 +25,14 @@ your readiness locally. Health data:
 - is **never** used for advertising, marketing, or sold/shared with anyone;
 - can be unlinked at any time in Settings or the iOS Health app.
 
+If you have separately consented to AI processing ("Connect Claude"), the
+optional **AI health read** sends a one-day numeric snapshot of the metrics
+you approved (numbers only — no names, notes, or identifiers) to our server,
+which forwards it to our AI provider (Anthropic) solely to generate that
+day's summary. It is not stored server-side and is never used to train
+models. Decline or revoke AI consent and no health data ever leaves your
+device.
+
 ## AI processing (optional, consent-gated)
 
 Some coaching features (the daily briefing, weekly review, plan generation)

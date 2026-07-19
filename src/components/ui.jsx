@@ -905,3 +905,29 @@ export function SealRing({ disabled, onComplete, children }) {
     </button>
   )
 }
+
+// ─────────────────────────────────────────────
+// InfoDot — the ⓘ disclosure (V3 text-diet). Long explanations collapse behind
+// a small tappable dot; one tap expands the detail inline, another folds it.
+// Accessible: real button, aria-expanded, the expansion is in-flow (no popover
+// to trap focus or clip on small screens).
+// ─────────────────────────────────────────────
+export function InfoDot({ label = 'More about this', children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={label}
+        className="ml-1.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-line align-middle font-clock text-[0.6875rem] leading-none text-muted"
+      >
+        i
+      </button>
+      {open && (
+        <span className="mt-1.5 block text-[0.75rem] leading-relaxed text-muted">{children}</span>
+      )}
+    </>
+  )
+}

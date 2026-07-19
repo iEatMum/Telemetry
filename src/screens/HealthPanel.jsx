@@ -10,11 +10,12 @@
 
 import { useEffect, useState } from 'react'
 import { useStore } from '../lib/store.jsx'
-import { readToday, requestHealthAuth, isHealthAvailable } from '../lib/health.js'
+import { readToday, requestHealthAuth, requestFullHealthAuth, isHealthAvailable, readAllToday, HEALTH_METRICS } from '../lib/health.js'
+import { getHealthReport } from '../lib/healthReportClient.js'
 import { readGuardian } from '../lib/guardianEngine.js'
 import { calculateReadinessScore } from '../lib/readiness.js'
 import { appDayKey } from '../lib/dates.js'
-import { Card, SectionLabel, Grid, KpiTile, LedgerNotice, Stat } from '../components/ui.jsx'
+import { Card, SectionLabel, Grid, KpiTile, LedgerNotice, Stat, InfoDot } from '../components/ui.jsx'
 import WellnessSheet from '../components/WellnessSheet.jsx'
 
 const READY_TONE = { low: 'text-warn', moderate: 'text-ink', high: 'text-accent' }
@@ -33,11 +34,18 @@ export default function HealthPanel() {
   // its only live door since the Morning screen retired (M2). Without it the
   // panel promised a check-in "below" that nothing could actually enter.
   const [checkinOpen, setCheckinOpen] = useState(false)
+  // V3: the FULL instrument panel (all plugin-supported metrics) + the AI read.
+  const [all, setAll] = useState(null)
+  const [report, setReport] = useState(null)
+  const [reportBusy, setReportBusy] = useState(false)
   useEffect(() => {
     let alive = true
     readToday()
       .then((s) => alive && setSnap(s))
       .catch(() => alive && setSnap(null))
+    readAllToday()
+      .then((a) => alive && setAll(a))
+      .catch(() => alive && setAll(null))
     isHealthAvailable().then((ok) => alive && setAvailable(ok))
     return () => {
       alive = false
@@ -74,7 +82,7 @@ export default function HealthPanel() {
     }
     try {
       hi.nativeAvailable = await isHealthAvailable()
-      const auth = hi.nativeAvailable ? await requestHealthAuth() : { ok: false, reason: 'unavailable' }
+      const auth = hi.nativeAvailable ? await requestFullHealthAuth() : { ok: false, reason: 'unavailable' }
       hi.authorized = !!auth?.ok
       hi.lastReason = auth?.reason || null // 'denied' | 'timeout' | 'unavailable' | null
     } catch {
@@ -84,6 +92,7 @@ export default function HealthPanel() {
     updateSettings({ healthIntegration: hi })
     const fresh = await readToday().catch(() => null)
     setSnap(fresh)
+    readAllToday().then(setAll).catch(() => {})
     setAsking(false)
   }
   // "Connected" was printed even when iOS DECLINED the grant (P3 honesty fix):
@@ -120,8 +129,12 @@ export default function HealthPanel() {
               {!declinedOnDevice && settings.healthIntegration?.nativeAvailable !== false && (
                 <span className="block text-[0.6875rem] leading-relaxed text-muted">
                   today: sleep {snap?.sleepHours != null ? '✓' : '—'} · steps {snap?.steps != null ? '✓' : '—'} · heart{' '}
-                  {snap?.restingHR != null || snap?.hrv != null ? '✓' : '—'} — a “—” means iOS holds no reading
-                  (heart needs an Apple Watch; per-metric switches: Health app → Sharing → Apps → Telemetry)
+                  {snap?.restingHR != null || snap?.hrv != null ? '✓' : '—'}
+                  <InfoDot label="Why some readings show a dash">
+                    A “—” means iOS holds no reading today. Heart metrics need an Apple Watch — an iPhone
+                    alone has no heart sensor. Each metric also has its own switch on Apple's grant sheet:
+                    Health app → Sharing → Apps → Telemetry.
+                  </InfoDot>
                 </span>
               )}
               {settings.healthIntegration?.nativeAvailable === false && (
@@ -208,6 +221,57 @@ export default function HealthPanel() {
             <KpiTile label="Resting HR" value={snap.restingHR ?? '—'} unit="bpm" />
           </Grid>
         )}
+      </div>
+
+      {/* V3 · THE FULL INSTRUMENT PANEL — every metric the plugin can read,
+          watch → Health → Telemetry. Code-complete, deliberately undesigned
+          (the redesign styles it). A — is an honest "iOS holds no reading". */}
+      <div>
+        <SectionLabel className="mb-2 px-1">All metrics · today</SectionLabel>
+        <Card className="divide-y divide-line">
+          <div className="flex items-center justify-between px-4 py-2">
+            <span className="text-[0.8125rem] text-ink">Sleep</span>
+            <span className="font-clock tnum text-[0.8125rem] text-ink">
+              {all?.sleepHours != null ? `${all.sleepHours} h` : '—'}
+            </span>
+          </div>
+          {HEALTH_METRICS.map((m) => (
+            <div key={m.key} className="flex items-center justify-between px-4 py-2">
+              <span className="text-[0.8125rem] text-ink">{m.label}</span>
+              <span className="font-clock tnum text-[0.8125rem] text-ink">
+                {all?.[m.key] != null ? `${all[m.key].toLocaleString?.() ?? all[m.key]} ${m.unit}` : '—'}
+              </span>
+            </div>
+          ))}
+        </Card>
+      </div>
+
+      {/* V3 · AI HEALTH READ — the coach reads today's numbers. Consent-gated,
+          screened, cached one per app-day. NOT medical advice, and it says so. */}
+      <div>
+        <SectionLabel className="mb-2 px-1">AI health read</SectionLabel>
+        {report ? (
+          <Card className="p-4">
+            <p className="text-[0.875rem] leading-relaxed text-ink">{report.text}</p>
+          </Card>
+        ) : (
+          <button
+            type="button"
+            disabled={reportBusy}
+            onClick={async () => {
+              setReportBusy(true)
+              setReport(await getHealthReport(all))
+              setReportBusy(false)
+            }}
+            className="w-full rounded-md border border-line bg-surface px-4 py-3 text-left text-[0.875rem] text-ink disabled:opacity-50"
+          >
+            {reportBusy ? 'Reading…' : 'Get today’s read'}
+          </button>
+        )}
+        <p className="mt-2 px-1 text-[0.6875rem] leading-relaxed text-muted">
+          Patterns in your own numbers — never a diagnosis, never medical advice. For anything
+          health-related that worries you, see a clinician.
+        </p>
       </div>
 
       {/* The manual morning check-in (works everywhere, syncs) */}

@@ -13,6 +13,7 @@ import { openLegal } from './LegalSheet.jsx'
 import { useEntitlement } from '../lib/purchases.js'
 import { selectionTick } from '../lib/haptics.js'
 import { testCoachWire } from '../lib/counselClient.js'
+import { InfoDot } from './ui.jsx'
 
 function downloadJSON(data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -382,10 +383,13 @@ function AiConsentSection() {
 // De-boxed (G2): a section is a mono SectionLabel over a hairline, not a bordered
 // box — so Settings reads as the same ledger, not a rounder different app.
 function Section({ title, hint, children }) {
+  // V3 text-diet: the hint no longer prints by default — it folds behind ⓘ.
   return (
     <div className="border-b border-line pb-5 pt-1">
-      <div className="font-clock text-[0.6875rem] font-medium uppercase tracking-widest2 text-muted">{title}</div>
-      {hint && <p className="mb-3 mt-1 text-xs leading-snug text-muted">{hint}</p>}
+      <div className="font-clock text-[0.6875rem] font-medium uppercase tracking-widest2 text-muted">
+        {title}
+        {hint && <InfoDot label={`About ${title}`}>{hint}</InfoDot>}
+      </div>
       <div className="mt-3">{children}</div>
     </div>
   )

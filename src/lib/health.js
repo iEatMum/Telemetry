@@ -221,3 +221,107 @@ export function toReadinessInputs(snapshot) {
   const sleep = h == null ? undefined : h >= 8 ? 5 : h >= 7 ? 4 : h >= 6 ? 3 : h >= 5 ? 2 : 1
   return { sleep, rhr: snapshot.restingHR ?? undefined }
 }
+
+// ── V3: the FULL instrument panel (watch → Health → Telemetry) ───────────────
+// Every read-type the installed plugin supports, with the right reduction per
+// metric. `samples` + a reducer is used for everything (uniform + safe: the
+// plugin forbids aggregation on several types); the four core guardian metrics
+// keep their tuned paths in readToday() above.
+//   sum      — additive counts over the day (steps, distance, calories…)
+//   avg      — physiological rates (HR, SpO2, respiratory, HRV)
+//   last     — body measurements where the newest reading IS the value
+//   minutes  — interval union (mindfulness, workouts, exercise time)
+export const HEALTH_METRICS = [
+  { key: 'steps', type: 'steps', reduce: 'sum', unit: 'steps', label: 'Steps' },
+  { key: 'distance', type: 'distance', reduce: 'sum', unit: 'm', label: 'Walk + run distance' },
+  { key: 'flightsClimbed', type: 'flightsClimbed', reduce: 'sum', unit: 'floors', label: 'Flights climbed' },
+  { key: 'distanceCycling', type: 'distanceCycling', reduce: 'sum', unit: 'm', label: 'Cycling distance' },
+  { key: 'activeCalories', type: 'calories', reduce: 'sum', unit: 'kcal', label: 'Active energy' },
+  { key: 'basalCalories', type: 'basalCalories', reduce: 'sum', unit: 'kcal', label: 'Resting energy' },
+  { key: 'totalCalories', type: 'totalCalories', reduce: 'sum', unit: 'kcal', label: 'Total energy' },
+  { key: 'exerciseTime', type: 'exerciseTime', reduce: 'minutes', unit: 'min', label: 'Exercise minutes' },
+  { key: 'workouts', type: 'workouts', reduce: 'minutes', unit: 'min', label: 'Workout time' },
+  { key: 'mindfulness', type: 'mindfulness', reduce: 'minutes', unit: 'min', label: 'Mindful minutes' },
+  { key: 'heartRate', type: 'heartRate', reduce: 'avg', unit: 'bpm', label: 'Heart rate (avg)' },
+  { key: 'restingHeartRate', type: 'restingHeartRate', reduce: 'last', unit: 'bpm', label: 'Resting heart rate' },
+  { key: 'hrv', type: 'heartRateVariability', reduce: 'avg', unit: 'ms', label: 'Heart-rate variability' },
+  { key: 'respiratoryRate', type: 'respiratoryRate', reduce: 'avg', unit: 'br/min', label: 'Respiratory rate' },
+  { key: 'oxygenSaturation', type: 'oxygenSaturation', reduce: 'avg', unit: '%', label: 'Blood oxygen' },
+  { key: 'vo2Max', type: 'vo2Max', reduce: 'last', unit: 'mL/min/kg', label: 'VO₂ max' },
+  { key: 'bloodPressure', type: 'bloodPressure', reduce: 'last', unit: 'mmHg', label: 'Blood pressure' },
+  { key: 'bloodGlucose', type: 'bloodGlucose', reduce: 'last', unit: 'mg/dL', label: 'Blood glucose' },
+  { key: 'bodyTemperature', type: 'bodyTemperature', reduce: 'last', unit: '°C', label: 'Body temperature' },
+  { key: 'weight', type: 'weight', reduce: 'last', unit: 'kg', label: 'Weight' },
+  { key: 'height', type: 'height', reduce: 'last', unit: 'cm', label: 'Height' },
+  { key: 'bodyFat', type: 'bodyFat', reduce: 'last', unit: '%', label: 'Body fat' },
+]
+
+// The full read-authorization set: the 4 guardian core types + every panel type.
+export const ALL_READ_TYPES = [...new Set([...READ_TYPES, ...HEALTH_METRICS.map((m) => m.type)])]
+
+/** Request read access to the WHOLE panel (the V3 grant). Same contract as
+ *  requestHealthAuth; iOS shows one sheet with per-metric switches. */
+export async function requestFullHealthAuth() {
+  const kit = await loadKit()
+  if (!kit) return { ok: false, reason: 'unavailable' }
+  try {
+    const res = await timebox(
+      kit.requestAuthorization({ read: ALL_READ_TYPES, write: [] }).then(() => ({ ok: true })),
+      AUTH_TIMEOUT_MS,
+      { ok: false, reason: 'timeout' },
+      'requestFullAuth'
+    )
+    return res
+  } catch (error) {
+    console.warn('[health] requestFullAuth → rejected:', error?.message || error)
+    return { ok: false, reason: 'denied', error }
+  }
+}
+
+function reduceSamples(rows, mode) {
+  if (!rows.length) return null
+  if (mode === 'minutes') {
+    const mins = unionMinutes(rows.map((r) => [Date.parse(r.startDate), Date.parse(r.endDate)]))
+    return mins > 0 ? Math.round(mins) : null
+  }
+  const vals = rows.map((r) => Number(r.value)).filter(Number.isFinite)
+  if (!vals.length) return null
+  if (mode === 'sum') return Math.round(vals.reduce((s, v) => s + v, 0))
+  if (mode === 'avg') return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10
+  // 'last' — samples arrive newest-first by default (ascending:false)
+  return Math.round(vals[0] * 10) / 10
+}
+
+/** Today's FULL snapshot: { [key]: number|null } for every HEALTH_METRICS row,
+ *  plus sleepHours from the tuned reader. Never throws; null everywhere on web. */
+export async function readAllToday() {
+  const kit = await loadKit()
+  const out = { sleepHours: null }
+  for (const m of HEALTH_METRICS) out[m.key] = null
+  if (!kit) return out
+  const startDate = startOfTodayISO()
+  const endDate = new Date().toISOString()
+  // Sequential on purpose: HealthKit fans one query at a time more reliably
+  // than 22 concurrent reads, and each leg is individually timeboxed.
+  for (const m of HEALTH_METRICS) {
+    try {
+      const res = await timebox(
+        kit.readSamples({ dataType: m.type, startDate, endDate, limit: 1000 }),
+        READ_TIMEOUT_MS,
+        null,
+        `readSamples:${m.type}`
+      )
+      const rows = Array.isArray(res?.samples) ? res.samples : []
+      out[m.key] = reduceSamples(rows, m.reduce)
+    } catch {
+      /* scope missing / type unsupported on this device — stays null */
+    }
+  }
+  const core = await readToday()
+  if (core) {
+    out.sleepHours = core.sleepHours
+    // The tuned aggregate beats a sample sum for steps (row-cap safe).
+    if (core.steps != null) out.steps = core.steps
+  }
+  return out
+}

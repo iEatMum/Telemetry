@@ -15,7 +15,7 @@ import { stepStats, STEP_LIBRARY } from '../lib/protocolForge.js'
 import { streakDays } from '../lib/dates.js'
 import { useEntitlement } from '../lib/purchases.js'
 import { CoachGate } from '../components/Paywall.jsx'
-import { Card, SectionLabel, LedgerNotice, LifetimePile, BarMeter } from '../components/ui.jsx'
+import { Card, SectionLabel, LedgerNotice, LifetimePile, BarMeter, InfoDot } from '../components/ui.jsx'
 import {
   guardStatus,
   requestGuardAuth,
@@ -145,7 +145,10 @@ function ShieldSection() {
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <span className="text-[0.8125rem] text-ink">
             {st.selectionCount > 0 ? `${st.selectionCount} apps shielded` : 'No apps chosen yet'}
-            <span className="block text-[0.6875rem] text-muted">picked with Apple's own list — we never see it</span>
+            <InfoDot label="How app picking works">
+              You pick with Apple's own list. The selection is opaque tokens — Telemetry never learns
+              which apps you chose.
+            </InfoDot>
           </span>
           <button
             type="button"
@@ -159,9 +162,10 @@ function ShieldSection() {
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <span className="text-[0.8125rem] text-ink">
             {st.shieldActive ? 'Shield is UP' : 'Shield is down'}
-            <span className="block text-[0.6875rem] text-muted">
-              {st.shieldActive ? 'lifting it is always yours — a lift is data, not shame' : 'raise it by hand anytime'}
-            </span>
+            <InfoDot label="About the shield">
+              During the shield, your chosen apps sit behind Apple's block screen. Lifting it is always
+              one tap and always yours — a lift is data, never shame.
+            </InfoDot>
           </span>
           <button
             type="button"

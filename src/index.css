@@ -641,3 +641,76 @@
     color: var(--accent);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   V3 BARE CANVAS (CEO directive 2026-07-18): the redesign starts from zero.
+   Every skin resolves to plain white/black/gray; the ONE exception is the
+   night page, which stays functionally dark (pure black) for the 2am reader.
+   pos/neg/warn keep minimal functional color — they carry DATA semantics
+   (biometrics, state), not brand. Ambient/decorative motion is off; motion
+   that IS feedback (the hold sweeps, the seal ring's progress) is inline CSS
+   on the components and untouched.
+
+   Split Ledger is NOT deleted: it lives in git history (≤ commit 29894e1) and
+   in the claude.ai design project. Deleting this block restores it wholesale.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='split_book'],
+[data-theme='lamplight'],
+[data-theme='carbon'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f4;
+  --line: #d9d9d9;
+  --line-bright: #bfbfbf;
+  --text: #000000;
+  --muted: #4b4b4b;
+  --faint: #5f5f5f;
+  --accent: #000000;
+  --accent-text: #000000;
+  --accent-deep: #000000;
+  --accent-ink: #ffffff;
+  --accent-glow: transparent;
+  --pos: #006622;
+  --neg: #aa0000;
+  --warn: #7a5a00;
+  --pos-soft: rgba(0, 102, 34, 0.08);
+  --neg-soft: rgba(170, 0, 0, 0.08);
+  --warn-soft: rgba(122, 90, 0, 0.08);
+  --grid: rgba(0, 0, 0, 0.06);
+  --scrim: rgba(0, 0, 0, 0.5);
+  --radius-card: 0px;
+  --radius-control: 0px;
+  --radius-sheet: 0px;
+}
+/* The night page: black, white ink, nothing else. Function, not design. */
+[data-invert] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #171717;
+  --line: #333333;
+  --line-bright: #4d4d4d;
+  --text: #ffffff;
+  --muted: #bbbbbb;
+  --faint: #a3a3a3;
+  --accent: #ffffff;
+  --accent-text: #ffffff;
+  --accent-deep: #ffffff;
+  --accent-ink: #000000;
+  --pos: #4caf50;
+  --neg: #ef5350;
+  --warn: #d4a017;
+}
+/* Ambient + decorative motion off for the canvas period. Feedback motion
+   (hold sweeps, ring progress — inline styles) is unaffected. */
+.animate-pulse-accent,
+.animate-breath,
+.animate-data-stream,
+.animate-sheet-in,
+.animate-scrim-in,
+.animate-seal-press,
+[role='tab'][aria-selected='true']::after {
+  animation: none !important;
+}
