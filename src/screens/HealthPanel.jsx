@@ -112,7 +112,18 @@ export default function HealthPanel() {
         {linked ? (
           <Card className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="text-[0.8125rem] text-ink">
-              {declinedOnDevice ? 'Health access is off for Telemetry' : 'Connected — sleep, activity, heart-rate'}
+              {declinedOnDevice ? 'Health access is off for Telemetry' : 'Connected to Apple Health'}
+              {/* HONEST per-metric state (Ian's device find): "connected" is the
+                  pipe, not the data. A — is iOS having no reading — heart
+                  metrics simply don't exist without an Apple Watch, and each
+                  metric has its own toggle on Apple's grant sheet. */}
+              {!declinedOnDevice && settings.healthIntegration?.nativeAvailable !== false && (
+                <span className="block text-[0.6875rem] leading-relaxed text-muted">
+                  today: sleep {snap?.sleepHours != null ? '✓' : '—'} · steps {snap?.steps != null ? '✓' : '—'} · heart{' '}
+                  {snap?.restingHR != null || snap?.hrv != null ? '✓' : '—'} — a “—” means iOS holds no reading
+                  (heart needs an Apple Watch; per-metric switches: Health app → Sharing → Apps → Telemetry)
+                </span>
+              )}
               {settings.healthIntegration?.nativeAvailable === false && (
                 <span className="block text-[0.6875rem] text-muted">live readings arrive from Apple Health on your iPhone</span>
               )}
