@@ -103,7 +103,10 @@ function MaybeRestore() {
   const [snap, setSnap] = useState(undefined) // undefined=looking · null=none → onboard
   useEffect(() => {
     let alive = true
-    latestSnapshot().then((s) => alive && setSnap(s), () => alive && setSnap(null))
+    Promise.race([latestSnapshot(), new Promise((r) => setTimeout(() => r(null), 6000))]).then(
+      (s) => alive && setSnap(s),
+      () => alive && setSnap(null)
+    )
     return () => {
       alive = false
     }

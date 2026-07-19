@@ -767,37 +767,41 @@ export default function Onboarding() {
       consent: { aiProcessing: answers.consent, provider: 'anthropic' },
       createdAt: new Date().toISOString(),
     }
-    // Arm the Guardian with day-0 priors BEFORE anything else — the drift
-    // sentinel reads this the first time the deck mounts.
-    writeGuardianSeed(deriveGuardianSeed(answers))
-    // If the user opted into health linking, invoke the native connector now.
-    // On device this fires the HealthKit/Health-Connect auth prompt; on web/sim
-    // it no-ops (isHealthAvailable false) and the mock streams stand in.
-    await linkHealth(survey)
-    applyLocally(survey)
-    // The book is safe locally from this line on — burn the interview draft.
-    try {
-      localStorage.removeItem(INTAKE_DRAFT_KEY)
-    } catch {
-      /* ignore */
-    }
-    const floor = new Promise((r) => setTimeout(r, 1300)) // keep the opening screen visible
-    // TIMEBOXED network (P1): the survey is already saved locally above, so a
-    // flaky/paused backend must never strand the user on the Processing screen
-    // — 5s each, then the deck opens regardless.
+    // THE BOOK IS SAVED FIRST (device-hang fix): survey + Guardian seed land
+    // in storage before any native or network leg runs, and the redirect sits
+    // in `finally` — nothing below can strand the Processing screen anymore.
     const timebox = (p, ms) => Promise.race([Promise.resolve(p).catch(() => {}), new Promise((r) => setTimeout(r, ms))])
-    await timebox(
-      writeProfile(survey, {
-        theme_preference: answers.theme,
-        streak_model: answers.streakModel,
-        stake_preference: answers.stakePref,
-        stake_target: answers.stakeTarget,
-      }),
-      5000
-    )
-    if (answers.consent) await timebox(buildInitialLayout(), 5000)
-    await floor
-    window.location.href = '/'
+    try {
+      writeGuardianSeed(deriveGuardianSeed(answers))
+      applyLocally(survey)
+      try {
+        localStorage.removeItem(INTAKE_DRAFT_KEY)
+      } catch {
+        /* ignore */
+      }
+      const floor = new Promise((r) => setTimeout(r, 1300)) // keep the opening screen visible
+      // Health link fires the OS grant sheet mid-processing on device — caught
+      // AND timeboxed (30s: a human may be reading the sheet; past that the
+      // deck opens and HEALTH → Connect remains the retry path).
+      await timebox(linkHealth(survey), 30_000)
+      // TIMEBOXED network (P1): flaky/paused backend must never strand — 5s
+      // each, then the deck opens regardless.
+      await timebox(
+        writeProfile(survey, {
+          theme_preference: answers.theme,
+          streak_model: answers.streakModel,
+          stake_preference: answers.stakePref,
+          stake_target: answers.stakeTarget,
+        }),
+        5000
+      )
+      if (answers.consent) await timebox(buildInitialLayout(), 5000)
+      await floor
+    } catch (err) {
+      console.warn('[onboarding] finish leg failed — opening the book anyway:', err?.message || err)
+    } finally {
+      window.location.href = '/'
+    }
   }
 
   if (phase === 'processing') return <Processing consent={answers.consent} />
@@ -868,6 +872,14 @@ function Step({ index, tag, title, hint, children }) {
 }
 
 function Processing({ consent }) {
+  // If ANY leg still finds a way to stall (a native promise outside our
+  // timeboxes), the user gets a door after 15s. The survey is already saved
+  // by then, so forcing the redirect loses nothing.
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 15_000)
+    return () => clearTimeout(t)
+  }, [])
   const lines = [
     "Setting the guardian's watch…",
     'Ruling the pages…',
@@ -885,6 +897,17 @@ function Processing({ consent }) {
           <span key={i} className="animate-data-stream" style={{ animationDelay: `${i * 220}ms` }}>{l}</span>
         ))}
       </div>
+      {slow && (
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = '/'
+          }}
+          className="rounded-md border border-line px-6 py-3 font-clock text-[0.75rem] uppercase tracking-widest2 text-muted"
+        >
+          Taking long — open the book
+        </button>
+      )}
     </div>
   )
 }
