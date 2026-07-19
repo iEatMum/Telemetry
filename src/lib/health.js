@@ -15,6 +15,28 @@
 
 import { Capacitor } from '@capacitor/core'
 
+// P3 hang-proofing: no native health promise may hold the UI hostage. Every
+// plugin call races a hard clock; a timeout resolves to the fallback and logs a
+// [health] line to the Xcode console, so a stall names its own leg instead of
+// spinning "Connecting…" forever. 25s on the auth call — the iOS grant sheet is
+// modal and a human is reading it; 8s on data reads, which have no UI.
+const AUTH_TIMEOUT_MS = 25_000
+const READ_TIMEOUT_MS = 8_000
+function timebox(promise, ms, fallback, label) {
+  return Promise.race([
+    promise.then((v) => {
+      console.log(`[health] ${label} → ok`)
+      return v
+    }),
+    new Promise((resolve) =>
+      setTimeout(() => {
+        console.warn(`[health] ${label} → TIMEOUT after ${ms}ms (native promise never settled)`)
+        resolve(fallback)
+      }, ms)
+    ),
+  ])
+}
+
 // @capgo's HealthDataType string literals (verbatim from its TS API). We
 // authorize all four, then read each via whichever query the plugin supports.
 const READ_TYPES = ['steps', 'sleep', 'heartRate', 'heartRateVariability']
@@ -41,7 +63,7 @@ export async function isHealthAvailable() {
   const kit = await loadKit()
   if (!kit) return false
   try {
-    const res = await kit.isAvailable()
+    const res = await timebox(kit.isAvailable(), READ_TIMEOUT_MS, null, 'isAvailable')
     return res?.available === true
   } catch {
     return false
@@ -60,9 +82,15 @@ export async function requestHealthAuth() {
   const kit = await loadKit()
   if (!kit) return { ok: false, reason: 'unavailable' }
   try {
-    await kit.requestAuthorization({ read: READ_TYPES, write: [] })
-    return { ok: true }
+    const res = await timebox(
+      kit.requestAuthorization({ read: READ_TYPES, write: [] }).then(() => ({ ok: true })),
+      AUTH_TIMEOUT_MS,
+      { ok: false, reason: 'timeout' },
+      'requestAuthorization'
+    )
+    return res
   } catch (error) {
+    console.warn('[health] requestAuthorization → rejected:', error?.message || error)
     return { ok: false, reason: 'denied', error }
   }
 }
@@ -112,7 +140,12 @@ export async function readToday() {
   // failure / missing scope). Only valid for @capgo's aggregatable types.
   const aggregate = async (dataType, aggregation) => {
     try {
-      const res = await kit.queryAggregated({ dataType, startDate, endDate, bucket: 'day', aggregation })
+      const res = await timebox(
+        kit.queryAggregated({ dataType, startDate, endDate, bucket: 'day', aggregation }),
+        READ_TIMEOUT_MS,
+        null,
+        `queryAggregated:${dataType}`
+      )
       const arr = res?.samples
       return Array.isArray(arr) ? arr.map((s) => Number(s.value)).filter(Number.isFinite) : []
     } catch {
@@ -123,7 +156,12 @@ export async function readToday() {
   // Raw samples for a metric → HealthSample[] (or [] on failure / missing scope).
   const samples = async (dataType) => {
     try {
-      const res = await kit.readSamples({ dataType, startDate, endDate, limit: 1000 })
+      const res = await timebox(
+        kit.readSamples({ dataType, startDate, endDate, limit: 1000 }),
+        READ_TIMEOUT_MS,
+        null,
+        `readSamples:${dataType}`
+      )
       const arr = res?.samples
       return Array.isArray(arr) ? arr : []
     } catch {

@@ -61,7 +61,7 @@ export async function invokeCounsel(pattern, { partnerName } = {}) {
 
   try {
     const { data, error } = await supabase.functions.invoke('counsel', {
-      body: { pattern, partnerName },
+      body: { pattern, partnerName, mission: surveyMission() },
     })
     if (error || !data || data.error) return null
     if (!screened(data)) return null // model text failed the shame screen
@@ -71,5 +71,35 @@ export async function invokeCounsel(pattern, { partnerName } = {}) {
     return data
   } catch {
     return null
+  }
+}
+
+// The user's mission line (survey) rides along so the persona's THE GOAL YOU
+// SERVE speaks their own words. Clamped here; screened server-side.
+export function surveyMission() {
+  try {
+    const s = JSON.parse(localStorage.getItem('lockedin:__survey') || 'null')
+    return String(s?.mission || '').slice(0, 140)
+  } catch {
+    return ''
+  }
+}
+
+/** TESTER/DEV diagnostics only: one raw round-trip to the counsel function,
+ *  skipping cache and caps (NOT the consent gate — that result is itself the
+ *  diagnosis). Returns { ok, state, detail } for the Settings wire-test row. */
+export async function testCoachWire() {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, state: 'no-backend', detail: 'Supabase keys absent in this build' }
+  if (!aiConsentGranted()) return { ok: false, state: 'consent-off', detail: 'AI consent is off (Settings → Connect Claude)' }
+  try {
+    const { data, error } = await supabase.functions.invoke('counsel', {
+      body: { pattern: { key: 'general', summary: 'Wire test from device verification.' }, mission: surveyMission() },
+    })
+    if (error) return { ok: false, state: 'transport', detail: String(error.message || error).slice(0, 160) }
+    if (data?.error) return { ok: false, state: 'function', detail: `${data.error} — ${data.detail || ''}`.slice(0, 200) }
+    if (!screened(data)) return { ok: false, state: 'screened-out', detail: 'model text failed the shame screen' }
+    return { ok: true, state: 'live', detail: (data.text || '').slice(0, 160) }
+  } catch (e) {
+    return { ok: false, state: 'transport', detail: String(e?.message || e).slice(0, 160) }
   }
 }

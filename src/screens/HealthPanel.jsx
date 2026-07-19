@@ -74,9 +74,12 @@ export default function HealthPanel() {
     }
     try {
       hi.nativeAvailable = await isHealthAvailable()
-      hi.authorized = hi.nativeAvailable ? !!(await requestHealthAuth())?.ok : false
+      const auth = hi.nativeAvailable ? await requestHealthAuth() : { ok: false, reason: 'unavailable' }
+      hi.authorized = !!auth?.ok
+      hi.lastReason = auth?.reason || null // 'denied' | 'timeout' | 'unavailable' | null
     } catch {
       hi.authorized = false
+      hi.lastReason = 'error'
     }
     updateSettings({ healthIntegration: hi })
     const fresh = await readToday().catch(() => null)
@@ -115,8 +118,9 @@ export default function HealthPanel() {
               )}
               {declinedOnDevice && (
                 <span className="block text-[0.6875rem] leading-relaxed text-muted">
-                  iOS asks exactly once. Turn it on in the Health app → Sharing → Apps → Telemetry, then
-                  reopen this page.
+                  {settings.healthIntegration?.lastReason === 'timeout'
+                    ? 'The iOS permission sheet never arrived (the request stalled). Force-quit Telemetry, reopen, and Retry — the Xcode console logs which call stalls.'
+                    : 'iOS asks exactly once. Turn it on in the Health app → Sharing → Apps → Telemetry, then reopen this page.'}
                 </span>
               )}
             </span>

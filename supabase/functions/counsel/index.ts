@@ -23,7 +23,9 @@ import persona from '../_shared/guardianPersona.json' with { type: 'json' }
 import library from '../_shared/counselLibrary.json' with { type: 'json' }
 import { screen } from '../_shared/guardianVoice.ts'
 
-const MODEL = Deno.env.get('COUNSEL_MODEL') || 'claude-opus-4-8'
+// MASTERPLAN 3a cost tier: counsel = Layer 1, HAIKU by default (~$0.08/user/mo
+// at 2 capped calls/day). COUNSEL_MODEL secret overrides for quality tests.
+const MODEL = Deno.env.get('COUNSEL_MODEL') || 'claude-haiku-4-5-20251001'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -59,7 +61,7 @@ Deno.serve(async (req: Request) => {
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
   if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY not set' }, 500)
 
-  let payload: { pattern?: Pattern; partnerName?: string }
+  let payload: { pattern?: Pattern; partnerName?: string; mission?: string }
   try {
     payload = await req.json()
   } catch {
@@ -83,16 +85,23 @@ Deno.serve(async (req: Request) => {
   const rawPartner = (payload.partnerName || '').toString().slice(0, 60)
   const partnerName = rawPartner && screen(rawPartner).ok ? rawPartner : 'your partner'
 
+  // The user's mission line (survey) personalizes THE GOAL YOU SERVE in the
+  // persona ({mission} placeholder). Clamped + screened like partnerName; empty
+  // or unsafe falls back to the persona's own plain-goal branch.
+  const rawMission = (payload.mission || '').toString().slice(0, 140)
+  const mission = rawMission && screen(rawMission).ok ? rawMission : 'clean, disciplined, and free'
+  const systemPrompt = ((persona as any).systemPrompt as string).replaceAll('{mission}', mission)
+
   const resource = selectResource(pattern.key)
 
   // Build the prompt. The model writes ONLY the card text — the resource is
   // selected deterministically above and attached after. The pattern summary is
   // app-generated (no free text) and capped; partnerName is the one user-authored
-  // value and is clamped + screened above. So nothing of his own raw words can be
+  // value and is clamped + screened above. So nothing of their own raw words can be
   // echoed back.
   const dangerNote = pattern.danger
-    ? `This is a DANGER pattern (the late-night high-risk window). You MUST route him to ${partnerName} (text one line, before — not after) AND keep one concrete 60-second action. Do not leave him alone with willpower.`
-    : `End with one concrete action he can take in the next 24 hours.`
+    ? `This is a DANGER pattern (the late-night high-risk window). You MUST route them to ${partnerName} (text one line, before — not after) AND keep one concrete 60-second action. Do not leave them alone with willpower.`
+    : `End with one concrete action they can take in the next 24 hours.`
 
   const userPrompt = [
     `A drift has shown up in the witnessed record. Write a single short "Consider" card for tonight's Examen — one or two sentences, in your voice.`,
@@ -101,10 +110,10 @@ Deno.serve(async (req: Request) => {
     `${dangerNote}`,
     ``,
     resource
-      ? `Point him toward this one resource for the next 24 hours (name it naturally; do not invent a different one): "${resource.title}" by ${resource.by} (${resource.type}).`
+      ? `Point them toward this one resource for the next 24 hours (name it naturally; do not invent a different one): "${resource.title}" by ${resource.by} (${resource.type}).`
       : `No resource is available; just give the framing and the action.`,
     ``,
-    `Remember the HARD RULES: data not verdict, never shame, never quote his own words, never moralize about faith. Output ONLY the card text — no preamble, no quotes, no markdown.`,
+    `Remember the HARD RULES: data not verdict, never shame, never quote their own words, never moralize about faith. Output ONLY the card text — no preamble, no quotes, no markdown.`,
   ].join('\n')
 
   try {
@@ -112,7 +121,7 @@ Deno.serve(async (req: Request) => {
     const msg = await client.messages.create({
       model: MODEL,
       max_tokens: 1024,
-      system: (persona as any).systemPrompt,
+      system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     })
 
@@ -150,6 +159,11 @@ Deno.serve(async (req: Request) => {
     // Fail soft — the client keeps its local rule-based card. Log the detail
     // server-side rather than returning it (the client discards it anyway).
     console.error('[counsel] synthesis failed:', (err as Error)?.message)
-    return json({ error: 'synthesis failed' }, 502)
+    // A short sanitized detail (status + message head) rides back so device
+    // verification can tell a bad key from a billing block from a model typo.
+    // The client treats any `error` response as null and keeps its local card,
+    // so this never reaches a user's screen.
+    const detail = `${(err as any)?.status ?? ''} ${String((err as Error)?.message ?? '').slice(0, 140)}`.trim()
+    return json({ error: 'synthesis failed', detail }, 502)
   }
 })

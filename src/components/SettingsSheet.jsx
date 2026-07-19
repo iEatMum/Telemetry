@@ -12,6 +12,7 @@ import { dateKey } from '../lib/dates.js'
 import { openLegal } from './LegalSheet.jsx'
 import { useEntitlement } from '../lib/purchases.js'
 import { selectionTick } from '../lib/haptics.js'
+import { testCoachWire } from '../lib/counselClient.js'
 
 function downloadJSON(data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -75,6 +76,8 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
       <ModulesSection settings={settings} updateSettings={updateSettings} />
 
       <AiConsentSection />
+
+      <CoachWireRow />
 
       {/* Accountability partners — the HELP button */}
       <Section title="Accountability partners" hint="Everyone here shows up on the HELP NOW protocol for a one-tap text.">
@@ -186,6 +189,38 @@ export default function SettingsSheet({ onClose, onOpenReview }) {
 
       <button type="button" onClick={onClose} className="w-full py-2 text-sm text-muted">Done</button>
     </Sheet>
+  )
+}
+
+// TESTER/DEV only (P3 device verification): one tap proves the whole Guardian
+// wire — consent gate → Supabase function → Anthropic → shame screen — and
+// names the failing leg when it breaks (bad key vs no consent vs transport).
+// Store builds never render this (no DEV, no TESTER flag).
+function CoachWireRow() {
+  const [res, setRes] = useState(null)
+  const [busy, setBusy] = useState(false)
+  if (!(import.meta.env.DEV || import.meta.env.VITE_TESTER === '1')) return null
+  return (
+    <Section title="Coach wire (tester build)" hint="Round-trips the Guardian's AI once and names the failing leg.">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true)
+          setRes(await testCoachWire())
+          setBusy(false)
+        }}
+        className="w-full rounded-lg border border-line bg-surface2 py-2.5 text-sm text-ink disabled:opacity-50"
+      >
+        {busy ? 'Calling…' : 'Test the coach’s wire'}
+      </button>
+      {res && (
+        <p className={`mt-2 text-[0.75rem] leading-relaxed ${res.ok ? 'text-pos' : 'text-warn'}`}>
+          <span className="font-clock uppercase tracking-widest2">{res.state}</span>
+          {res.detail ? ` — ${res.detail}` : ''}
+        </p>
+      )}
+    </Section>
   )
 }
 

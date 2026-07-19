@@ -53,6 +53,8 @@
 	<string>Telemetry reads your steps, sleep, resting heart rate, and heart-rate variability to calculate your daily readiness score.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Telemetry does not write any data to Apple Health.</string>
+	<key>UIDesignRequiresCompatibility</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -61,8 +63,6 @@
 	<array>
 		<string>armv7</string>
 	</array>
-	<!-- PORTRAIT LOCK (MASTERPLAN P1): the ledger is a portrait artifact — every
-	     surface is a single column and landscape just letterboxes the book. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -75,12 +75,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
-	<!-- iOS 26 (temporary, v1 — removed in Xcode 27): opt native controls OUT of
-	     automatic Liquid Glass so the paper surfaces stay on-brand. The app's
-	     surfaces are designed to harmonize with glass for that eventual handoff.
-	     Design handoff G1 / 05 §F. -->
-	<key>UIDesignRequiresCompatibility</key>
 	<true/>
 </dict>
 </plist>
