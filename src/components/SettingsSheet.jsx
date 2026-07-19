@@ -481,7 +481,17 @@ function WipeButton({ onWipe }) {
       <button type="button" onClick={() => setArmed(false)} className="flex-1 rounded-lg border border-line py-2 text-xs text-muted">
         Cancel
       </button>
-      <button type="button" onClick={onWipe} className="flex-1 rounded-lg border border-muted py-2 text-xs text-ink">
+      <button
+        type="button"
+        onClick={async () => {
+          await onWipe()
+          // A wiped book must land on the interview, not a deck of fresh
+          // defaults (Ian's device find: without this reload the survey gate
+          // never re-checks and the questions "don't work").
+          window.location.href = '/'
+        }}
+        className="flex-1 rounded-lg border border-muted py-2 text-xs text-ink"
+      >
         Tap again — erase everything
       </button>
     </div>

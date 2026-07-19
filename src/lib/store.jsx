@@ -436,13 +436,16 @@ export function StoreProvider({ children }) {
     setHandover(storage.get('handover'))
     return true
   }
-  function wipeData() {
+  async function wipeData() {
     // Silence the phone and burn the disk copies BEFORE the store goes: pending
     // native notifications (their ids are read synchronously inside the call,
     // ahead of wipeAll deleting the sidecar) and the sandbox snapshots — a
     // "fresh start" must leave neither a reminder nor a recoverable book behind.
-    cancelAllOwnedNotifications()
-    deleteAllSnapshots()
+    // AWAITED (Ian's device find): the wipe button reloads the app the moment
+    // this resolves, and the snapshot deletion must have finished by then or
+    // the empty boot "finds" the very book that was just wiped.
+    await cancelAllOwnedNotifications().catch(() => {})
+    await deleteAllSnapshots().catch(() => {})
     storage.wipeAll()
     setSettings(initSettings())
     setStreak(initStreak())

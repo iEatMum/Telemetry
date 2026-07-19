@@ -57,6 +57,10 @@ export async function writeSnapshot() {
   if (!native()) return { ok: false, reason: 'web' }
   const image = snapshotImage()
   if (!Object.keys(image.keys).length) return { ok: false, reason: 'empty-store' }
+  // No interview → no book. Right after a wipe the store re-seeds defaults
+  // (settings/streak/tasks) within milliseconds; snapshotting that would make
+  // a deliberately-erased book "recoverable" at the next boot.
+  if (!image.keys['lockedin:__survey']) return { ok: false, reason: 'no-book' }
   try {
     const { Filesystem, Directory, Encoding } = await fs()
     await Filesystem.writeFile({
@@ -104,7 +108,8 @@ export async function latestSnapshot() {
       try {
         const { data } = await Filesystem.readFile({ path: `${DIR}/${n}`, directory: Directory.Data, encoding: Encoding.UTF8 })
         const snap = JSON.parse(typeof data === 'string' ? data : '')
-        if (snap && snap.keys && Object.keys(snap.keys).length) return snap
+        // Only a snapshot carrying an interview counts as a restorable book.
+        if (snap && snap.keys && snap.keys['lockedin:__survey']) return snap
       } catch {
         /* damaged file — try the next-oldest */
       }
